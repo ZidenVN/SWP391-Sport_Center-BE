@@ -1,0 +1,14 @@
+root = true
+
+# Áp dụng cho tất cả các file
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Riêng các file cấu hình thì lùi 2 space cho dễ nhìn
+[*.{yml,yaml,json,xml,properties}]
+indent_size = 2

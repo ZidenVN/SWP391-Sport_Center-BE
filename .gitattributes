@@ -1,0 +1,7 @@
+# Bắt buộc toàn bộ code (Java, XML, Properties...) dùng chuẩn LF
+* text=auto eol=lf
+
+# Cấu hình riêng cho các file thực thi
+/mvnw text eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
