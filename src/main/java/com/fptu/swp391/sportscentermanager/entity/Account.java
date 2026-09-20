@@ -19,7 +19,7 @@ public class Account {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "account_id")
-    private Long accoutId;
+    private Long accountId;
 
     @Column(name = "username", nullable = false, unique = true, columnDefinition = "varchar(50)")
     private String username;
