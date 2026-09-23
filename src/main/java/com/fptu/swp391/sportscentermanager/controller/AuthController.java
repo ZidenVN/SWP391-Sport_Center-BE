@@ -2,7 +2,10 @@ package com.fptu.swp391.sportscentermanager.controller;
 
 import com.fptu.swp391.sportscentermanager.dto.AuthRequest;
 import com.fptu.swp391.sportscentermanager.dto.AuthResponse;
+import com.fptu.swp391.sportscentermanager.entity.User;
 import com.fptu.swp391.sportscentermanager.security.JwtUtils;
+import com.fptu.swp391.sportscentermanager.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,11 +23,27 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
 
+    private final UserService userService;
+
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request){
-        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
-        String username = authentication.getName();
-        String token = jwtUtils.generateToken(username);
-        return ResponseEntity.ok(new AuthResponse(token));
+    public ResponseEntity<?> login(@RequestBody AuthRequest request){
+        try {
+            Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+            String username = authentication.getName();
+            String token = jwtUtils.generateToken(username);
+            return ResponseEntity.ok(new AuthResponse(token));
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body("Sai Username hoặc Password!");
+        }
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<?> registerUser(@Valid @RequestBody User user){
+        try{
+            String responseMessage = userService.registerUser(user);
+            return ResponseEntity.ok(responseMessage);
+        } catch (RuntimeException e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

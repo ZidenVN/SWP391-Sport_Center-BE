@@ -3,6 +3,9 @@ package com.fptu.swp391.sportscentermanager.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
@@ -32,10 +35,19 @@ public class User {
     @Column(name = "phone", nullable = false, unique = true)
     private String phone;
 
+    @Column(name = "username", nullable = false, unique = true, columnDefinition = "varchar(50)")
+    private String username;
+
+    @Column(name = "password_hash", nullable = false, columnDefinition = "varchar(255)")
+    private String passwordHash;
+
     private String status;
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "account_id", unique = true)
-    private Account account;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "role_id")
+    private Role role;
 
+    @CreationTimestamp
+    @Column(name = "create_at", updatable = false, nullable = false)
+    private LocalDateTime createdAt;
 }
