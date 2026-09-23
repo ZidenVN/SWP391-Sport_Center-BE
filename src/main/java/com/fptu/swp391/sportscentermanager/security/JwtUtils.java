@@ -1,4 +1,4 @@
-package com.fptu.swp391.sportscentermanager.config;
+package com.fptu.swp391.sportscentermanager.security;
 
 
 import io.jsonwebtoken.*;
@@ -11,7 +11,7 @@ import java.util.Date;
 
 @Component
 public class JwtUtils {
-    private static final String SECRET = "secret";
+    private static final String SECRET = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
 
     private Key getSigningKey() {
         byte[] bytesKey = Decoders.BASE64.decode(SECRET);
