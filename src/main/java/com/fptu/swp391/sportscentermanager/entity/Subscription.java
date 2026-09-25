@@ -16,7 +16,7 @@ public class Subscription {
 
     @Column(name = "start_date")
     private LocalDateTime startDate;
-    @Column(name = "start_date")
+    @Column(name = "end_date")
     private LocalDateTime endDate;
     private String status;
     private String attribute;
