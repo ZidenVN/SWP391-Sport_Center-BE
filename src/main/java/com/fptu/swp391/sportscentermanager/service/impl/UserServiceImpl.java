@@ -1,6 +1,8 @@
 package com.fptu.swp391.sportscentermanager.service.impl;
 
+import com.fptu.swp391.sportscentermanager.entity.Role;
 import com.fptu.swp391.sportscentermanager.entity.User;
+import com.fptu.swp391.sportscentermanager.repository.RoleRepository;
 import com.fptu.swp391.sportscentermanager.repository.UserRepository;
 import com.fptu.swp391.sportscentermanager.service.UserService;
 import jakarta.transaction.Transactional;
@@ -15,6 +17,7 @@ import java.util.List;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -31,6 +34,10 @@ public class UserServiceImpl implements UserService {
 
         user.setStatus("ACTIVE");
         user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
+        
+        // (Tùy chọn) Gán role mặc định là MEMBER nếu muốn
+        roleRepository.findById(4L).ifPresent(user::setRole); // Giả sử ID 4 là MEMBER
+
         userRepository.save(user);
         return "User registered successfully!";
     }
@@ -68,5 +75,17 @@ public class UserServiceImpl implements UserService {
             user.setStatus("ACTIVE");
         }
         userRepository.save(user);
+    }
+    
+    @Override
+    @Transactional
+    public User assignRoleToUser(Long userId, Long roleId) {
+        User user = getUserById(userId);
+        Role role = roleRepository.findById(roleId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Role với ID: " + roleId));
+                
+        user.setRole(role);
+        // Nhờ @Transactional, Hibernate sẽ tự động lưu cập nhật.
+        return user;
     }
 }

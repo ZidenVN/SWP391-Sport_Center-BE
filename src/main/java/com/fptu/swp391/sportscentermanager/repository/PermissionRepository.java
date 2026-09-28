@@ -1,4 +1,7 @@
 package com.fptu.swp391.sportscentermanager.repository;
 
-public interface PermissionRepository {
+import com.fptu.swp391.sportscentermanager.entity.Permission;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface PermissionRepository extends JpaRepository<Permission, Long> {
 }

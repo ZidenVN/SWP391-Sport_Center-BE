@@ -12,5 +12,6 @@ public interface UserService {
     User getUserById(Long id);
     User updateUser(Long id, User userdetails);
     void toggleUserStatus(Long id);
+    User assignRoleToUser(Long userId, Long roleId);
 
 }

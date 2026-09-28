@@ -4,6 +4,7 @@ import com.fptu.swp391.sportscentermanager.entity.User;
 import com.fptu.swp391.sportscentermanager.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,10 +29,16 @@ public class UserController {
     public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
         return ResponseEntity.ok(userService.updateUser(id, userDetails));
     }
-
-    @PutMapping("/{id}/status")
+    
+    @PreAuthorize("hasAuthority('DELETE_USER')")
+    @PatchMapping("/{id}/status")
     public ResponseEntity<String> toggleUserStatus(@PathVariable Long id) {
         userService.toggleUserStatus(id);
         return ResponseEntity.ok("Đã cập nhật trạng thái user thành công!");
+    }
+
+    @PatchMapping("/{userId}/role/{roleId}")
+    public ResponseEntity<User> assignRoleToUser(@PathVariable Long userId, @PathVariable Long roleId) {
+        return ResponseEntity.ok(userService.assignRoleToUser(userId, roleId));
     }
 }
