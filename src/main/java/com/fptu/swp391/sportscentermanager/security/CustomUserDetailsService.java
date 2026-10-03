@@ -23,10 +23,10 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     @Transactional
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username).orElseThrow(()  -> new UsernameNotFoundException("Không tìm thấy user: " + username));
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        User user = userRepository.findByEmail(email).orElseThrow(()  -> new UsernameNotFoundException("Không tìm thấy email: " + email));
         List<String> permissionNames = new ArrayList<>();
-        
+
         if (user.getRole() != null){
             user.getRole().getRoleName();
             List<RolePermission> rolePermissions = rolePermissionRepository.findAllByRole_RoleId(user.getRole().getRoleId());

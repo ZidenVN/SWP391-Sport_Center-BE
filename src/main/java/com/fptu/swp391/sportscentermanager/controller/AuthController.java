@@ -28,12 +28,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest request){
         try {
-            Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
-            String username = authentication.getName();
-            String token = jwtUtils.generateToken(username);
+            Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+            String email = authentication.getName();
+            String token = jwtUtils.generateToken(email);
             return ResponseEntity.ok(new AuthResponse(token));
         } catch (Exception e) {
-            return ResponseEntity.status(401).body("Sai Username hoặc Password!");
+            return ResponseEntity.status(401).body("Sai Email hoặc Password!");
         }
     }
 

@@ -29,7 +29,7 @@ public class UserController {
     public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
         return ResponseEntity.ok(userService.updateUser(id, userDetails));
     }
-    
+
     @PreAuthorize("hasAuthority('DELETE_USER')")
     @PatchMapping("/{id}/status")
     public ResponseEntity<String> toggleUserStatus(@PathVariable Long id) {
@@ -37,6 +37,7 @@ public class UserController {
         return ResponseEntity.ok("Đã cập nhật trạng thái user thành công!");
     }
 
+    @PreAuthorize("hasAuthority('UPDATE_USER')")  // chỉ cho phép người có quyền UPDATE_USER hoặc MANAGER_ROLE mới gọi được API
     @PatchMapping("/{userId}/role/{roleId}")
     public ResponseEntity<User> assignRoleToUser(@PathVariable Long userId, @PathVariable Long roleId) {
         return ResponseEntity.ok(userService.assignRoleToUser(userId, roleId));

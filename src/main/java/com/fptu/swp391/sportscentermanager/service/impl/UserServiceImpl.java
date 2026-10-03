@@ -22,9 +22,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public String registerUser(User user) {
-        if (userRepository.existsByUsername(user.getUsername())) {
-            throw new RuntimeException("Username is already taken!");
-        }
+
         if (userRepository.existsByEmail(user.getEmail())) {
             throw new RuntimeException("Email is already taken!");
         }

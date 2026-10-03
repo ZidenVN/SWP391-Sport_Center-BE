@@ -18,16 +18,16 @@ public class JwtUtils {
         return Keys.hmacShaKeyFor(bytesKey);
     }
 
-    public String generateToken(String username){
+    public String generateToken(String email){
         return Jwts.builder()
-            .setSubject(username)
+            .setSubject(email)
             .setIssuedAt(new Date(System.currentTimeMillis()))
             .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
             .signWith(getSigningKey(), SignatureAlgorithm.HS256)
             .compact();
     }
 
-    public String extractUsername(String token) {
+    public String extractEmail(String token) {
         return Jwts.parser()
             .setSigningKey(getSigningKey())
             .build()
@@ -37,9 +37,9 @@ public class JwtUtils {
 
     }
 
-    public boolean isTokenValid(String token, String usernameFromUserDetails){
-        final String usernameFromToken = extractUsername(token);
-        return (usernameFromToken.equals(usernameFromUserDetails) && !isTokenExpired(token));
+    public boolean isTokenValid(String token, String emailFromUserDetails){
+        final String emailFromToken = extractEmail(token);
+        return (emailFromToken.equals(emailFromUserDetails) && !isTokenExpired(token));
     }
 
     public boolean isTokenExpired(String token) {

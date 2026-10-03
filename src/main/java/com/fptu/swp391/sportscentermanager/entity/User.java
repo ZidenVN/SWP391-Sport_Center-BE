@@ -35,8 +35,7 @@ public class User {
     @Column(name = "phone", nullable = false, unique = true)
     private String phone;
 
-    @Column(name = "username", nullable = false, unique = true, columnDefinition = "varchar(50)")
-    private String username;
+
 
     @Column(name = "password_hash", nullable = false, columnDefinition = "varchar(255)")
     private String passwordHash;
