@@ -1,0 +1,19 @@
+$kind: http-request
+name: http://localhost:8080/api/v1/packages
+description: ""
+url: http://localhost:8080/api/v1/packages
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "packageName": "Gói VIP 1 Tháng",
+        "durationDays": 30,
+        "description": "Tập full thời gian",
+        "price": 500000.0
+    }
+auth:
+  type: bearer
+  credentials:
+    token: ""
+order: 4502993870050165

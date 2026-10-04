@@ -1,0 +1,19 @@
+$kind: http-request
+name: http://localhost:8080/api/v1/auth/register
+description: ""
+url: http://localhost:8080/api/v1/auth/register
+method: POST
+body:
+  type: json
+  content: |-
+    // create member
+    {
+      "firstName": "Toi La",
+      "lastName": "Member",
+      "gender": "FEMALE",
+      "email": "member@me.com",
+      "phone": "0345678912",
+      "username": "member",
+      "passwordHash": "toilamember"
+    }
+order: 4499562171438477

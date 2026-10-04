@@ -41,6 +41,6 @@ public class MembershipPackageController {
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deletePackage(@PathVariable Long id) {
         packageService.deletePackage(id);
-        return ResponseEntity.ok("Đã xóa thành công gói đăng kí!");
+        return ResponseEntity.ok("Đã xóa thành công gói đăng ký!");
     }
 }

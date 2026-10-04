@@ -1,0 +1,13 @@
+$kind: http-request
+name: http://localhost:8080/api/v1/roles/1/permissions
+description: ""
+url: http://localhost:8080/api/v1/roles/1/permissions
+method: PUT
+body:
+  type: json
+  content: "[1, 2, 3, 4, 5]"
+auth:
+  type: bearer
+  credentials:
+    token: ""
+order: 4247214339881189

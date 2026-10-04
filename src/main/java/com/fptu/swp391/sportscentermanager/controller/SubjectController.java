@@ -1,5 +1,7 @@
 package com.fptu.swp391.sportscentermanager.controller;
 
+import com.fptu.swp391.sportscentermanager.dto.SubjectRequestDTO;
+import com.fptu.swp391.sportscentermanager.dto.SubjectResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.Subject;
 import com.fptu.swp391.sportscentermanager.service.SubjectService;
 import lombok.RequiredArgsConstructor;
@@ -28,15 +30,17 @@ public class SubjectController {
 
     @PreAuthorize("hasAuthority('MANAGER_SUBJECT')")
     @PostMapping
-    public ResponseEntity<Subject> createSubject(@RequestBody Subject subject) {
-        return  ResponseEntity.ok(subjectService.createSubject(subject));
+    public ResponseEntity<SubjectResponseDTO> createSubject(@RequestBody SubjectRequestDTO subjectRequestDTO) {
+        return  ResponseEntity.ok(subjectService.createSubject(subjectRequestDTO));
     }
 
+    @PreAuthorize("hasAuthority('MANAGER_SUBJECT')")
     @PutMapping("/{id}")
-    public ResponseEntity<Subject> updateSubject(@PathVariable Long id, @RequestBody Subject subjectDetails) {
-        return ResponseEntity.ok(subjectService.updateSubject(id, subjectDetails));
+    public ResponseEntity<SubjectResponseDTO> updateSubject(@PathVariable Long id, @RequestBody SubjectRequestDTO subjectRequestDTO) {
+        return ResponseEntity.ok(subjectService.updateSubject(id, subjectRequestDTO));
     }
 
+    @PreAuthorize("hasAuthority('MANAGER_SUBJECT')")
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteSubject(@PathVariable Long id) {
         subjectService.deleteSubjectById(id);

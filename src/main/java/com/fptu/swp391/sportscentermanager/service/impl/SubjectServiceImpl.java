@@ -1,5 +1,7 @@
 package com.fptu.swp391.sportscentermanager.service.impl;
 
+import com.fptu.swp391.sportscentermanager.dto.SubjectRequestDTO;
+import com.fptu.swp391.sportscentermanager.dto.SubjectResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.Subject;
 import com.fptu.swp391.sportscentermanager.repository.SubjectRepository;
 import com.fptu.swp391.sportscentermanager.service.SubjectService;
@@ -8,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+
+import static com.fptu.swp391.sportscentermanager.dto.SubjectResponseDTO.*;
 
 @Service
 @RequiredArgsConstructor
@@ -27,16 +31,32 @@ public class SubjectServiceImpl implements SubjectService {
 
     @Override
     @Transactional
-    public Subject createSubject(Subject subject) {
-        return subjectRepository.save(subject);
+    public SubjectResponseDTO createSubject(SubjectRequestDTO subjectRequestDTO) {
+            Subject newSubject = Subject.builder()
+                .subjectName(subjectRequestDTO.getSubjectName())
+                .description(subjectRequestDTO.getDescription())
+                .build();
+            Subject savedSubject = subjectRepository.save(newSubject);
+
+            return SubjectResponseDTO.builder()
+                .subjectId(savedSubject.getSubjectId())
+                .subjectName(savedSubject.getSubjectName())
+                .description(savedSubject.getDescription())
+                .build();
+
     }
 
     @Override
-    public Subject updateSubject(Long id, Subject subjectDetails) {
-        Subject subject = getSubjectById(id);
-        subject.setSubjectName(subjectDetails.getSubjectName());
-        subject.setDescription(subjectDetails.getDescription());
-        return subjectRepository.save(subject);
+    public SubjectResponseDTO updateSubject(Long id, SubjectRequestDTO requestDTO) {
+       Subject existingSubject = getSubjectById(id);
+       existingSubject.setSubjectName(requestDTO.getSubjectName());
+       existingSubject.setDescription(requestDTO.getDescription());
+
+       Subject updatedSubject = subjectRepository.save(existingSubject);
+       return SubjectResponseDTO.builder()
+           .subjectName(updatedSubject.getSubjectName())
+           .description(updatedSubject.getDescription())
+           .build();
     }
 
     @Override
