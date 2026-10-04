@@ -1,0 +1,30 @@
+package com.fptu.swp391.sportscentermanager.controller;
+
+import com.fptu.swp391.sportscentermanager.dto.SportClassRequestDTO;
+import com.fptu.swp391.sportscentermanager.dto.SportClassResponseDTO;
+import com.fptu.swp391.sportscentermanager.entity.SportClass;
+import com.fptu.swp391.sportscentermanager.service.SportClassService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/v1/classes")
+@RequiredArgsConstructor
+public class SportClassController {
+    private final SportClassService sportClassService;
+
+    @PreAuthorize("hasAuthority('MANAGE_CLASS')")
+    @PostMapping
+    public ResponseEntity<SportClassResponseDTO> createClass(@RequestBody SportClassRequestDTO requestDTO){
+        return   ResponseEntity.ok(sportClassService.createClass(requestDTO));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<SportClassResponseDTO>> getAllClasses(){
+        return ResponseEntity.ok(sportClassService.getAllClasses());
+    }
+}

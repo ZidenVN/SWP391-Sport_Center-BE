@@ -28,7 +28,7 @@ public class SubjectController {
         return ResponseEntity.ok(subjectService.getSubjectById(id));
     }
 
-    @PreAuthorize("hasAuthority('MANAGER_SUBJECT')")
+    @PreAuthorize("hasAuthority('MANAGE_SUBJECT')")
     @PostMapping
     public ResponseEntity<SubjectResponseDTO> createSubject(@RequestBody SubjectRequestDTO subjectRequestDTO) {
         return  ResponseEntity.ok(subjectService.createSubject(subjectRequestDTO));
@@ -40,7 +40,7 @@ public class SubjectController {
         return ResponseEntity.ok(subjectService.updateSubject(id, subjectRequestDTO));
     }
 
-    @PreAuthorize("hasAuthority('MANAGER_SUBJECT')")
+    @PreAuthorize("hasAuthority('MANAGE_SUBJECT')")
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteSubject(@PathVariable Long id) {
         subjectService.deleteSubjectById(id);

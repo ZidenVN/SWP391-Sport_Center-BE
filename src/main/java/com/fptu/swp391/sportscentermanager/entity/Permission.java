@@ -21,4 +21,5 @@ public class Permission {
 
     @Column(name = "description")
     private String description;
+
 }
