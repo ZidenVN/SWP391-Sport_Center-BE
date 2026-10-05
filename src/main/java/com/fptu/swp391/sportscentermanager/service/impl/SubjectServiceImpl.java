@@ -64,6 +64,7 @@ public class SubjectServiceImpl implements SubjectService {
     @Override
     public void deleteSubjectById(Long id) {
         Subject subject = getSubjectById(id);
+        subject.setStatus("INACTIVE");
         subjectRepository.deleteById(id);
     }
 }

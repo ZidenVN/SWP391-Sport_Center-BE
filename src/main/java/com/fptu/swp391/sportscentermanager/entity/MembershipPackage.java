@@ -6,6 +6,8 @@ import lombok.Setter;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 @Getter
 @Setter
@@ -14,6 +16,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @Entity
 @Table(name = "packages")
+
+@SQLDelete(sql = "update packages set status = 'INACTIVE' where package_id = ?")
+
+@SQLRestriction("status = 'ACTIVE'")
 public class MembershipPackage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,4 +34,9 @@ public class MembershipPackage {
 
     private String description;
     private double price;
+
+    @Column(name = "status")
+    @Builder.Default
+    private String status = "ACTIVE";
+
 }

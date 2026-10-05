@@ -32,7 +32,7 @@ public class RoomServiceImpl implements RoomService {
         Room newRoom = Room.builder()
             .roomName(requestDTO.getRoomName())
             .capacity(requestDTO.getCapacity())
-            .status("AVAILABLE")
+            .status("ACTIVE")
             .build();
 
         Room savedRoom = roomRepository.save(newRoom);
@@ -61,6 +61,7 @@ public class RoomServiceImpl implements RoomService {
     @Override
     public void deleteRoomById(Long id) {
         Room room = getRoomById(id);
+        room.setStatus("INACTIVE");
         roomRepository.delete(room);
     }
 }
