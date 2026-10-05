@@ -30,12 +30,13 @@ public class SportClassServiceImpl implements SportClassService {
 
     @Override
     public SportClassResponseDTO createClass(SportClassRequestDTO requestDTO) {
+
        Room room = roomRepository.findById(requestDTO.getRoomId()).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
 
        Subject subject = subjectRepository.findById(requestDTO.getSubjectId()).orElseThrow(() -> new AppException(ErrorCode.SUBJECT_NOT_FOUND));
 
        Coach coach = coachRepository.findById(requestDTO.getCoachId()).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
-       
+
         SportClass newClass = SportClass.builder().maxCapacity(requestDTO.getMaxCapacity()).scheduleTime(requestDTO.getScheduleTime()).status("OPENING").room(room).subject(subject).coach(coach).build();
 
         SportClass savedClass = sportClassRepository.save(newClass);

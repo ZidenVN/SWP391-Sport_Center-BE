@@ -14,7 +14,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/subjects")
 @RequiredArgsConstructor
-public class SubjectController {
+public class
+SubjectController {
     private final SubjectService subjectService;
 
     @GetMapping
