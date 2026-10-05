@@ -3,6 +3,8 @@ package com.fptu.swp391.sportscentermanager.service.impl;
 import com.fptu.swp391.sportscentermanager.dto.RoomRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.RoomResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.Room;
+import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
+import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.RoomRepository;
 import com.fptu.swp391.sportscentermanager.service.RoomService;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +24,7 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     public Room getRoomById(Long id) {
-        return roomRepository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy phòng học với ID " + id));
+        return roomRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
     }
 
     @Override

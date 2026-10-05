@@ -5,6 +5,8 @@ import com.fptu.swp391.sportscentermanager.entity.User;
 import com.fptu.swp391.sportscentermanager.repository.RoleRepository;
 import com.fptu.swp391.sportscentermanager.repository.UserRepository;
 import com.fptu.swp391.sportscentermanager.service.UserService;
+import com.fptu.swp391.sportscentermanager.exception.AppException;
+import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,20 +26,20 @@ public class UserServiceImpl implements UserService {
     public String registerUser(User user) {
 
         if (userRepository.existsByEmail(user.getEmail())) {
-            throw new RuntimeException("Email is already taken!");
+            throw new AppException(ErrorCode.EMAIL_ALREADY_TAKEN);
         }
         if (userRepository.existsByPhone(user.getPhone())) {
-            throw new RuntimeException("Phone number is already taken!");
+            throw new AppException(ErrorCode.PHONE_ALREADY_TAKEN);
         }
 
         user.setStatus("ACTIVE");
         user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
-        
-        // (Tùy chọn) Gán role mặc định là MEMBER nếu muốn
+
+        // (Tùy chọn) Gán role mặc định là MEMBER
         roleRepository.findById(4L).ifPresent(user::setRole); // Giả sử ID 4 là MEMBER
 
         userRepository.save(user);
-        return "User registered successfully!";
+        return "Đăng ký tài khoản thành công!";
     }
 
     @Override
@@ -47,7 +49,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User getUserById(Long id) {
-        return userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        return userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     }
 
     @Override
@@ -74,14 +76,14 @@ public class UserServiceImpl implements UserService {
         }
         userRepository.save(user);
     }
-    
+
     @Override
     @Transactional
     public User assignRoleToUser(Long userId, Long roleId) {
         User user = getUserById(userId);
         Role role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Role với ID: " + roleId));
-                
+                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+
         user.setRole(role);
         // Nhờ @Transactional, Hibernate sẽ tự động lưu cập nhật.
         return user;

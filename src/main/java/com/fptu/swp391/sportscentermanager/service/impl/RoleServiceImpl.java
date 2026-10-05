@@ -4,6 +4,8 @@ import com.fptu.swp391.sportscentermanager.dto.RoleRequest;
 import com.fptu.swp391.sportscentermanager.entity.Permission;
 import com.fptu.swp391.sportscentermanager.entity.Role;
 import com.fptu.swp391.sportscentermanager.entity.RolePermission;
+import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
+import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.PermissionRepository;
 import com.fptu.swp391.sportscentermanager.repository.RolePermissionRepository;
 import com.fptu.swp391.sportscentermanager.repository.RoleRepository;
@@ -33,7 +35,7 @@ public class RoleServiceImpl implements RoleService {
     @Transactional
     public Role updateRolePermissions(Long roleId, List<Long> permissionIds) {
         Role role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Role ID: " + roleId));
+                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
 
         // 1. Xóa toàn bộ quyền cũ của Role này
         rolePermissionRepository.deleteByRole(role);
@@ -42,7 +44,7 @@ public class RoleServiceImpl implements RoleService {
         if (permissionIds != null && !permissionIds.isEmpty()) {
             for (Long permissionId : permissionIds) {
                 Permission permission = permissionRepository.findById(permissionId)
-                        .orElseThrow(() -> new RuntimeException("Không tìm thấy Permission ID: " + permissionId));
+                        .orElseThrow(() -> new AppException(ErrorCode.PERMISSION_NOT_FOUND));
                 RolePermission rolePermission = new RolePermission();
                 rolePermission.setRole(role);
                 rolePermission.setPermission(permission);

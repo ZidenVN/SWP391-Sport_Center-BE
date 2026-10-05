@@ -1,6 +1,8 @@
 package com.fptu.swp391.sportscentermanager.service.impl;
 
 import com.fptu.swp391.sportscentermanager.entity.MembershipPackage;
+import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
+import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.MembershipPackageRepository;
 import com.fptu.swp391.sportscentermanager.service.MembershipPackageService;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +23,7 @@ public class MembershipPackageServiceImp implements MembershipPackageService {
 
     @Override
     public MembershipPackage getPackageById(Long id) {
-        return packageRepository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy gói tập với ID: " + id));
+        return packageRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND));
     }
 
     @Override

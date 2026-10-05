@@ -3,6 +3,8 @@ package com.fptu.swp391.sportscentermanager.service.impl;
 import com.fptu.swp391.sportscentermanager.dto.SubjectRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.SubjectResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.Subject;
+import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
+import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.SubjectRepository;
 import com.fptu.swp391.sportscentermanager.service.SubjectService;
 import jakarta.transaction.Transactional;
@@ -26,7 +28,7 @@ public class SubjectServiceImpl implements SubjectService {
 
     @Override
     public Subject getSubjectById(Long id) {
-        return subjectRepository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy Bộ môn với ID " + id));
+        return subjectRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.SUBJECT_NOT_FOUND));
     }
 
     @Override

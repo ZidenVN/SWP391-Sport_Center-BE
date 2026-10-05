@@ -23,6 +23,7 @@ public class SportClassController {
         return   ResponseEntity.ok(sportClassService.createClass(requestDTO));
     }
 
+    @PreAuthorize("hasAuthority('VIEW_CLASS')")
     @GetMapping
     public ResponseEntity<List<SportClassResponseDTO>> getAllClasses(){
         return ResponseEntity.ok(sportClassService.getAllClasses());

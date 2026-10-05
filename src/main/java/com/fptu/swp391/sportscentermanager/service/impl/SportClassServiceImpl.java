@@ -6,6 +6,8 @@ import com.fptu.swp391.sportscentermanager.entity.Coach;
 import com.fptu.swp391.sportscentermanager.entity.Room;
 import com.fptu.swp391.sportscentermanager.entity.SportClass;
 import com.fptu.swp391.sportscentermanager.entity.Subject;
+import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
+import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.CoachRepository;
 import com.fptu.swp391.sportscentermanager.repository.RoomRepository;
 import com.fptu.swp391.sportscentermanager.repository.SportClassRepository;
@@ -28,12 +30,12 @@ public class SportClassServiceImpl implements SportClassService {
 
     @Override
     public SportClassResponseDTO createClass(SportClassRequestDTO requestDTO) {
-        Room room = roomRepository.findById(requestDTO.getRoomId()).orElseThrow(() -> new RuntimeException("Phòng tập không tồn tại!"));
+       Room room = roomRepository.findById(requestDTO.getRoomId()).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
 
-        Subject subject =  subjectRepository.findById(requestDTO.getSubjectId()).orElseThrow(() -> new RuntimeException("Môn học không tồn tại!"));
+       Subject subject = subjectRepository.findById(requestDTO.getSubjectId()).orElseThrow(() -> new AppException(ErrorCode.SUBJECT_NOT_FOUND));
 
-        Coach coach = coachRepository.findById(requestDTO.getCoachId()).orElseThrow(() -> new RuntimeException("Huấn luyện viên không tông tại!"));
-
+       Coach coach = coachRepository.findById(requestDTO.getCoachId()).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
+       
         SportClass newClass = SportClass.builder().maxCapacity(requestDTO.getMaxCapacity()).scheduleTime(requestDTO.getScheduleTime()).status("OPENING").room(room).subject(subject).coach(coach).build();
 
         SportClass savedClass = sportClassRepository.save(newClass);
