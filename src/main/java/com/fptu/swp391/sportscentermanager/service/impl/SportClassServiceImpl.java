@@ -35,12 +35,17 @@ public class SportClassServiceImpl implements SportClassService {
        Subject subject = subjectRepository.findById(requestDTO.getSubjectId()).orElseThrow(() -> new AppException(ErrorCode.SUBJECT_NOT_FOUND));
 
        Coach coach = coachRepository.findById(requestDTO.getCoachId()).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
-       
+
         SportClass newClass = SportClass.builder().maxCapacity(requestDTO.getMaxCapacity()).scheduleTime(requestDTO.getScheduleTime()).status("OPENING").room(room).subject(subject).coach(coach).build();
 
         SportClass savedClass = sportClassRepository.save(newClass);
 
         return SportClassResponseDTO.builder().classId(savedClass.getClassId()).maxCapacity(savedClass.getMaxCapacity()).scheduleTime(savedClass.getScheduleTime()).status(savedClass.getStatus()).roomName(savedClass.getRoom().getRoomName()).subjectName(savedClass.getSubject().getSubjectName()).coachName(savedClass.getCoach().getFirstName() + " " + savedClass.getCoach().getLastName()).build();
+    }
+
+    @Override
+    public SportClass getClassById(Long id) {
+        return sportClassRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
     }
 
     @Override
@@ -60,5 +65,32 @@ public class SportClassServiceImpl implements SportClassService {
             result.add(dto);
         }
         return result;
+    }
+
+    @Override
+    public SportClassResponseDTO assignCoachToClass(Long classId, Long coachId) {
+        SportClass sportClass = sportClassRepository.findById(classId).orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
+
+        Coach coach = coachRepository.findById(coachId).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
+
+        sportClass.setCoach(coach);
+        SportClass savedClass = sportClassRepository.save(sportClass);
+
+        return SportClassResponseDTO.builder()
+            .classId(savedClass.getClassId())
+            .maxCapacity(savedClass.getMaxCapacity())
+            .scheduleTime(savedClass.getScheduleTime())
+            .status(savedClass.getStatus())
+            .roomName(savedClass.getRoom().getRoomName())
+            .subjectName(savedClass.getSubject().getSubjectName())
+            .coachName(savedClass.getCoach().getFirstName() + " " + savedClass.getCoach().getLastName())
+            .build();
+    }
+
+    @Override
+    public void deleteClassById(Long id) {
+        SportClass sportClass = getClassById(id);
+        sportClass.setStatus("INACTIVE");
+        sportClassRepository.delete(sportClass);
     }
 }

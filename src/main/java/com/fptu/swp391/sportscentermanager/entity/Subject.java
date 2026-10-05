@@ -2,12 +2,18 @@ package com.fptu.swp391.sportscentermanager.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "subjects")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter @Setter @Builder
+
+@SQLDelete(sql = "update subjects set status = 'INACTIVE' where subject_id = ?")
+
+@SQLRestriction("status = 'ACTIVE'")
 public class Subject {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,4 +26,7 @@ public class Subject {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "status")
+    @Builder.Default
+    private String status = "ACTIVE";
 }

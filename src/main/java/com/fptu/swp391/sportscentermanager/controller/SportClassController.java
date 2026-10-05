@@ -28,4 +28,19 @@ public class SportClassController {
     public ResponseEntity<List<SportClassResponseDTO>> getAllClasses(){
         return ResponseEntity.ok(sportClassService.getAllClasses());
     }
+
+    @PreAuthorize("hasAuthority('MANAGE_CLASS')")
+    @PutMapping("/{classId}/coach/{coachId}")
+    public ResponseEntity<SportClassResponseDTO> assignCoachToClass(@PathVariable Long classId, @PathVariable Long coachId){
+        return ResponseEntity.ok(sportClassService.assignCoachToClass(classId, coachId));
+    }
+
+    @PreAuthorize("hasAuthority('MANAGE_CLASS')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteClass(@PathVariable Long id){
+        sportClassService.deleteClassById(id);
+        return ResponseEntity.ok("Đã xóa lớp học thành công!");
+    }
+
+
 }

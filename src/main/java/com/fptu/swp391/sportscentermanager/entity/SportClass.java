@@ -4,12 +4,16 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "classes")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter @Setter @Builder
+@SQLDelete(sql = "update classes set status = 'INACTIVE' where class_id = ?")
+@SQLRestriction("status = 'OPENING'")
 public class SportClass {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
