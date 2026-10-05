@@ -15,11 +15,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
 public class CoachServiceImpl implements CoachService {
-    private CoachRepository coachRepository;
-    private UserRepository userRepository;
-    private RoleRepository roleRepository;
-    private PasswordEncoder passwordEncoder;
+    private final CoachRepository coachRepository;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public CoachResponseDTO createCoach(CoachRequestDTO requestDTO) {
@@ -70,4 +75,59 @@ public class CoachServiceImpl implements CoachService {
         }
         return result;
     }
+
+    @Override
+    public CoachResponseDTO getCoachById(Long id) {
+        Coach c = coachRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
+        if ("INACTIVE".equals(c.getStatus())) {
+            throw new AppException(ErrorCode.COACH_NOT_FOUND);
+        }
+        return CoachResponseDTO.builder()
+            .coachId(c.getUserId())
+            .firstName(c.getFirstName())
+            .lastName(c.getLastName())
+            .phone(c.getPhone())
+            .email(c.getEmail())
+            .speciality(c.getSpeciality())
+            .build();
+    }
+
+    @Override
+    public CoachResponseDTO updateCoach(Long id, CoachRequestDTO requestDTO) {
+        Coach coach = coachRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
+
+        if (!coach.getEmail().equals(requestDTO.getEmail()) && userRepository.existsByEmail(requestDTO.getEmail())) {
+            throw new AppException(ErrorCode.EMAIL_ALREADY_TAKEN);
+        }
+
+        coach.setFirstName(requestDTO.getFirstName());
+        coach.setLastName(requestDTO.getLastName());
+        coach.setGender(requestDTO.getGender());
+        coach.setPhone(requestDTO.getPhone());
+        coach.setEmail(requestDTO.getEmail());
+        coach.setSpeciality(requestDTO.getSpecialty());
+
+        if (requestDTO.getPassword() != null && !requestDTO.getPassword().isBlank()){
+            coach.setPasswordHash(passwordEncoder.encode(requestDTO.getPassword()));
+        }
+
+        Coach savedCoach = coachRepository.save(coach);
+
+        return CoachResponseDTO.builder()
+            .coachId(savedCoach.getUserId())
+            .firstName(savedCoach.getFirstName())
+            .lastName(savedCoach.getLastName())
+            .phone(savedCoach.getPhone())
+            .speciality(savedCoach.getSpeciality())
+            .build();
+    }
+
+    @Override
+    public void deleteCoach(Long id) {
+        Coach coach = coachRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
+        coach.setStatus("INACTIVE");
+        coachRepository.save(coach);
+    }
+
 }
+

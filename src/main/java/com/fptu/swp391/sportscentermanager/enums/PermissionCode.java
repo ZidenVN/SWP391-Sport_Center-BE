@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @Getter
-@RequiredArgsConstructor
+
 public enum PermissionCode {
     VIEW_PACKAGE("Xem gói tập"),
     MANAGE_PACKAGE("Quản lý gói tập"),
@@ -32,4 +32,5 @@ public enum PermissionCode {
     VIEW_OWN_SCHEDULE("Xem lịch cá nhân");
 
     private final String description;
+    PermissionCode(String description) { this.description = description; }
 }

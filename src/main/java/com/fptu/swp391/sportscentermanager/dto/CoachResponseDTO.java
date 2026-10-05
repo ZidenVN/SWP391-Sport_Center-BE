@@ -2,11 +2,13 @@ package com.fptu.swp391.sportscentermanager.dto;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import lombok.Setter;
 
 @Getter @Setter
-@Builder @RequiredArgsConstructor
+@Builder @NoArgsConstructor @AllArgsConstructor
 public class CoachResponseDTO {
     private Long coachId;
     private String firstName;

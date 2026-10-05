@@ -2,7 +2,6 @@ package com.fptu.swp391.sportscentermanager.controller;
 
 import com.fptu.swp391.sportscentermanager.dto.SportClassRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.SportClassResponseDTO;
-import com.fptu.swp391.sportscentermanager.entity.SportClass;
 import com.fptu.swp391.sportscentermanager.service.SportClassService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +31,7 @@ public class SportClassController {
     @PreAuthorize("hasAuthority('VIEW_CLASS')")
     @GetMapping("/{id}")
     public ResponseEntity<SportClassResponseDTO> getClassById(@PathVariable Long id){
-        return ResponseEntity.ok(sportClassService.getSportClassDTOById(id));
+        return ResponseEntity.ok(sportClassService.getSportClassById(id));
     }
 
 
@@ -43,9 +42,15 @@ public class SportClassController {
     }
 
     @PreAuthorize("hasAuthority('MANAGE_CLASS')")
+    @PutMapping("/{id}")
+    public ResponseEntity<SportClassResponseDTO> updateClass(@PathVariable Long id, @RequestBody SportClassRequestDTO requestDTO){
+        return ResponseEntity.ok(sportClassService.updateClass(id, requestDTO));
+    }
+
+    @PreAuthorize("hasAuthority('MANAGE_CLASS')")
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteClass(@PathVariable Long id){
-        sportClassService.deleteClassById(id);
+        sportClassService.deleteClass(id);
         return ResponseEntity.ok("Đã xóa lớp học thành công!");
     }
 

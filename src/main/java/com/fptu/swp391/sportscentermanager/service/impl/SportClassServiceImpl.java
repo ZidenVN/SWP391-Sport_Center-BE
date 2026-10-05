@@ -53,7 +53,7 @@ public class SportClassServiceImpl implements SportClassService {
     }
 
     @Override
-    public SportClassResponseDTO getSportClassDTOById(Long id) {
+    public SportClassResponseDTO getSportClassById(Long id) {
         SportClass c = getClassById(id);
         return SportClassResponseDTO.builder()
             .classId(c.getClassId())
@@ -107,7 +107,36 @@ public class SportClassServiceImpl implements SportClassService {
     }
 
     @Override
-    public void deleteClassById(Long id) {
+    public SportClassResponseDTO updateClass(Long id, SportClassRequestDTO requestDTO) {
+        SportClass sportClass = sportClassRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
+
+        sportClass.setMaxCapacity(requestDTO.getMaxCapacity());
+        sportClass.setScheduleTime(requestDTO.getScheduleTime());
+
+        if (!sportClass.getRoom().getRoomId().equals(requestDTO.getRoomId())){
+            Room newRoom = roomRepository.findById(requestDTO.getRoomId()).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
+            sportClass.setRoom(newRoom);
+        }
+
+        if (!sportClass.getSubject().getSubjectId().equals(requestDTO.getSubjectId())){
+            Subject newSubject = subjectRepository.findById(requestDTO.getSubjectId()).orElseThrow(() -> new AppException(ErrorCode.SUBJECT_NOT_FOUND));
+            sportClass.setSubject(newSubject);
+        }
+
+        if (requestDTO.getCoachId() != null){
+            Coach newCoach = coachRepository.findById(requestDTO.getCoachId()).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
+            sportClass.setCoach(newCoach);
+        } else {
+            sportClass.setCoach(null);
+        }
+
+        SportClass savedClass = sportClassRepository.save(sportClass);
+
+        return getSportClassById(savedClass.getClassId());
+    }
+
+    @Override
+    public void deleteClass(Long id) {
         SportClass sportClass = getClassById(id);
         sportClass.setStatus("INACTIVE");
         sportClassRepository.delete(sportClass);

@@ -28,4 +28,11 @@ public class CoachController {
         return ResponseEntity.ok(coachService.getAllCoaches());
     }
 
+    @PreAuthorize("hasAuthority('MANAGE_USER')")
+    @PutMapping("/{id}")
+    public ResponseEntity<String> deleteCoach(@PathVariable Long id) {
+        coachService.deleteCoach(id);
+        return ResponseEntity.ok("Đã khóa tài khoản thành công!");
+    }
+
 }
