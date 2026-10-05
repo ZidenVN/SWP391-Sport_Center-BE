@@ -10,6 +10,7 @@ import java.util.List;
 public interface SportClassService {
     SportClassResponseDTO createClass(SportClassRequestDTO requestDTO);
     SportClass getClassById(Long id);
+    SportClassResponseDTO getSportClassDTOById(Long id);
     List<SportClassResponseDTO> getAllClasses();
     SportClassResponseDTO assignCoachToClass(Long classId, Long coachId);
     void deleteClassById(Long id);

@@ -29,6 +29,13 @@ public class SportClassController {
         return ResponseEntity.ok(sportClassService.getAllClasses());
     }
 
+    @PreAuthorize("hasAuthority('VIEW_CLASS')")
+    @GetMapping("/{id}")
+    public ResponseEntity<SportClassResponseDTO> getClassById(@PathVariable Long id){
+        return ResponseEntity.ok(sportClassService.getSportClassDTOById(id));
+    }
+
+
     @PreAuthorize("hasAuthority('MANAGE_CLASS')")
     @PutMapping("/{classId}/coach/{coachId}")
     public ResponseEntity<SportClassResponseDTO> assignCoachToClass(@PathVariable Long classId, @PathVariable Long coachId){

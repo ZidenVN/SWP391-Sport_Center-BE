@@ -32,7 +32,7 @@ public class RoomServiceImpl implements RoomService {
         Room newRoom = Room.builder()
             .roomName(requestDTO.getRoomName())
             .capacity(requestDTO.getCapacity())
-            .status("AVAILABLE")
+            .status("ACTIVE")
             .build();
 
         Room savedRoom = roomRepository.save(newRoom);
