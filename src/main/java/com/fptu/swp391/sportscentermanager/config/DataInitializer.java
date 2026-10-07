@@ -66,7 +66,8 @@ public class DataInitializer implements CommandLineRunner {
         "MEMBER", EnumSet.of(
             PermissionCode.VIEW_PACKAGE, PermissionCode.VIEW_CLASS, PermissionCode.REGISTER_CLASS,
             PermissionCode.VIEW_OWN_PROFILE, PermissionCode.UPDATE_OWN_PROFILE,
-            PermissionCode.VIEW_OWN_SCHEDULE
+            PermissionCode.VIEW_OWN_SCHEDULE,
+            PermissionCode.SUBSCRIBE_PACKAGE
         )
     );
 
