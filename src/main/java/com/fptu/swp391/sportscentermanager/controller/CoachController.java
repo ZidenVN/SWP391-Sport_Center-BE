@@ -30,6 +30,12 @@ public class CoachController {
 
     @PreAuthorize("hasAuthority('MANAGE_USER')")
     @PutMapping("/{id}")
+    public ResponseEntity<CoachResponseDTO> updateCoach(@PathVariable Long id, @RequestBody CoachRequestDTO requestDTO) {
+        return ResponseEntity.ok(coachService.updateCoach(id, requestDTO));
+    }
+
+    @PreAuthorize("hasAuthority('MANAGE_USER')")
+    @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteCoach(@PathVariable Long id) {
         coachService.deleteCoach(id);
         return ResponseEntity.ok("Đã khóa tài khoản thành công!");

@@ -33,12 +33,13 @@ public class DataInitializer implements CommandLineRunner {
     @Value("${app.init.manager.password:toilaadmin}")
     private String managerPassword;
 
-    private static final Map<String, String> ROLES = Map.of(
-        "CENTER_MANAGER", "Quản lý trung tâm",
-        "RECEPTIONIST", "Lễ tân",
-        "COACH", "Huấn luyện viên",
-        "MEMBER", "Hội viên"
-        );
+    private static final Map<String, String> ROLES = new LinkedHashMap<>();
+    static {
+        ROLES.put("CENTER_MANAGER", "Quản lý trung tâm");
+        ROLES.put("COACH", "Huấn luyện viên");
+        ROLES.put("RECEPTIONIST", "Lễ tân");
+        ROLES.put("MEMBER", "Hội viên");
+    }
 
     private static final Map<String, Set<PermissionCode>> ROLE_PERMISSIONS = Map.of(
         "CENTER_MANAGER", EnumSet.allOf(PermissionCode.class),

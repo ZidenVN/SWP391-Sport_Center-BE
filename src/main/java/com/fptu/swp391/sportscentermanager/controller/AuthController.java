@@ -78,7 +78,10 @@ public class AuthController {
                 // kiểm tra db user đã tồn tại chưa
                 java.util.Optional<User> userOption = userRepository.findByEmail(email);
                 if (userOption.isEmpty()) {
-                    com.fptu.swp391.sportscentermanager.entity.Role memberRole = roleRepository.findById(4L).orElseThrow(() -> new RuntimeException("Không tìm thấy Role MEMBER"));
+                    com.fptu.swp391.sportscentermanager.entity.Role memberRole = roleRepository.findByRoleName("MEMBER");
+                    if (memberRole == null) {
+                        throw new RuntimeException("Không tìm thấy Role MEMBER");
+                    }
 
                     Member memberUser = Member.builder()
                         .email(email)

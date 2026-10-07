@@ -50,7 +50,7 @@ public class UserServiceImpl implements UserService {
             .trainingGoal("Chưa cập nhật")
             .build();
 
-        userRepository.save(user);
+        userRepository.save(member);
         return "Đăng ký tài khoản thành công!";
     }
 
