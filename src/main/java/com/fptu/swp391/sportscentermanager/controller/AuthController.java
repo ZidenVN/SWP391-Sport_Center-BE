@@ -88,6 +88,7 @@ public class AuthController {
                         .passwordHash("LOGIN_BY_GOOGLE")
                         .status("ACTIVE")
                         .role(memberRole)
+                        .trainingGoal("Chưa cập nhật")
                         .build();
                     userRepository.save(memberUser);
                 }
