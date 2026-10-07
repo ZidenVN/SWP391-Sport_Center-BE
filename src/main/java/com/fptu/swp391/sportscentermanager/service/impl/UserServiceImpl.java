@@ -36,7 +36,10 @@ public class UserServiceImpl implements UserService {
         user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
 
         // (Tùy chọn) Gán role mặc định là MEMBER
-        roleRepository.findById(4L).ifPresent(user::setRole); // Giả sử ID 4 là MEMBER
+        Role memberRole = roleRepository.findByRoleName("MEMBER");
+        if (memberRole != null) {
+            user.setRole(memberRole);
+        }
 
         userRepository.save(user);
         return "Đăng ký tài khoản thành công!";
