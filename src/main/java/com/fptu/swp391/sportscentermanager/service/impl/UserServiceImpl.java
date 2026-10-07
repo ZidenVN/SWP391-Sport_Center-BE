@@ -32,8 +32,10 @@ public class UserServiceImpl implements UserService {
             throw new AppException(ErrorCode.PHONE_ALREADY_TAKEN);
         }
 
-        user.setStatus("ACTIVE");
-        user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
+        Role memberRole = roleRepository.findByRoleName("MEMBER");   // thay cho findById(4L)
+        if (memberRole == null) {
+            throw new AppException(ErrorCode.ROLE_NOT_FOUND);
+        }
 
         // (Tùy chọn) Gán role mặc định là MEMBER
         roleRepository.findById(4L).ifPresent(user::setRole); // Giả sử ID 4 là MEMBER
