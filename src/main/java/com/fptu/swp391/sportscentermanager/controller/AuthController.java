@@ -79,7 +79,7 @@ public class AuthController {
                 if (userOption.isEmpty()) {
                     com.fptu.swp391.sportscentermanager.entity.Role memberRole = roleRepository.findById(4L).orElseThrow(() -> new RuntimeException("Không tìm thấy Role MEMBER"));
 
-                    User memberUser = User.builder()
+                    Member memberUser = Member.builder()
                         .email(email)
                         .firstName(firstName != null ? firstName : "User")
                         .lastName(lastName != null ? lastName : "Google")
