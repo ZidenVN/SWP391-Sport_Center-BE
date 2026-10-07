@@ -1,5 +1,6 @@
 package com.fptu.swp391.sportscentermanager.service.impl;
 
+import com.fptu.swp391.sportscentermanager.entity.Member;
 import com.fptu.swp391.sportscentermanager.entity.Role;
 import com.fptu.swp391.sportscentermanager.entity.User;
 import com.fptu.swp391.sportscentermanager.repository.RoleRepository;
@@ -32,16 +33,24 @@ public class UserServiceImpl implements UserService {
             throw new AppException(ErrorCode.PHONE_ALREADY_TAKEN);
         }
 
-        user.setStatus("ACTIVE");
-        user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
-
-        // (Tùy chọn) Gán role mặc định là MEMBER
-        Role memberRole = roleRepository.findByRoleName("MEMBER");
-        if (memberRole != null) {
-            user.setRole(memberRole);
+        Role memberRole = roleRepository.findByRoleName("MEMBER");   // thay cho findById(4L)
+        if (memberRole == null) {
+            throw new AppException(ErrorCode.ROLE_NOT_FOUND);
         }
 
-        userRepository.save(user);
+        Member member = Member.builder()
+            .firstName(user.getFirstName())
+            .lastName(user.getLastName())
+            .gender(user.getGender())
+            .email(user.getEmail())
+            .phone(user.getPhone())
+            .passwordHash(passwordEncoder.encode(user.getPasswordHash()))
+            .status("ACTIVE")
+            .role(memberRole)
+            .trainingGoal("Chưa cập nhật")
+            .build();
+
+        userRepository.save(member);
         return "Đăng ký tài khoản thành công!";
     }
 

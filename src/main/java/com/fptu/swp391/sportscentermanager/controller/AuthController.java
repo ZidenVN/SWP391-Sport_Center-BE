@@ -3,6 +3,7 @@ package com.fptu.swp391.sportscentermanager.controller;
 import com.fptu.swp391.sportscentermanager.dto.AuthRequest;
 import com.fptu.swp391.sportscentermanager.dto.AuthResponse;
 import com.fptu.swp391.sportscentermanager.dto.GoogleLoginRequest;
+import com.fptu.swp391.sportscentermanager.entity.Member;
 import com.fptu.swp391.sportscentermanager.entity.User;
 import com.fptu.swp391.sportscentermanager.repository.RoleRepository;
 import com.fptu.swp391.sportscentermanager.repository.UserRepository;
@@ -82,7 +83,7 @@ public class AuthController {
                         throw new RuntimeException("Không tìm thấy Role MEMBER");
                     }
 
-                    User memberUser = User.builder()
+                    Member memberUser = Member.builder()
                         .email(email)
                         .firstName(firstName != null ? firstName : "User")
                         .lastName(lastName != null ? lastName : "Google")
@@ -91,8 +92,9 @@ public class AuthController {
                         .passwordHash("LOGIN_BY_GOOGLE")
                         .status("ACTIVE")
                         .role(memberRole)
+                        .trainingGoal("Chưa cập nhật")
                         .build();
-                    User user = userRepository.save(memberUser);
+                    userRepository.save(memberUser);
                 }
 
                 String jwtToken = jwtUtils.generateToken(email);

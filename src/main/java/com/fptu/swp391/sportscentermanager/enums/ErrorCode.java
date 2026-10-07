@@ -16,8 +16,19 @@ public enum ErrorCode {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_USER_404", "Người dùng không tồn tại!"),
     EMAIL_ALREADY_TAKEN(HttpStatus.BAD_REQUEST, "ERR_USER_001", "Email đã được sử dụng!"),
     PHONE_ALREADY_TAKEN(HttpStatus.BAD_REQUEST, "ERR_USER_002", "Số điện thoại đã được sử dụng!"),
-    CLASS_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_CLASS_404", "Lớp học không tồn tại!")
+    CLASS_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_CLASS_404", "Lớp học không tồn tại!"),
 
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_MEMBER_404","Hội viên không tồn tại!"),
+    SUBSCRIPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_SUBSCRIPTION_404","Gói đăng ký không tồn tại!"),
+    REGISTRATION_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_REGISTRATION_404","Chưa đăng ký lớp này!"),
+    TICKET_NOT_FOUND(HttpStatus.NOT_FOUND,"ERR_TICKET_404","Yêu cầu hỗ trợ không tồn tại!"),
+
+    NO_ACTIVE_SUBSCRIPTION(HttpStatus.BAD_REQUEST,"ERR_SUBSCRIPTION_001","Hội viên chưa có gói tập co hiệu lực!"),
+    SUBSCRIPTION_EXPIRED(HttpStatus.BAD_REQUEST,"ERR_SUBSCRIPTION_002","Gói tập đã hết hạn!"),
+    CLASS_FULL(HttpStatus.CONFLICT,"ERR_CLASS_001","Lớp học đã đủ số lượng!"),
+    ALREADY_REGISTERED(HttpStatus.CONFLICT,"ERR_CLASS_002","Bạn đã đăng ký lớp học này rồi!"),
+    CLASS_NOT_OPEN(HttpStatus.BAD_REQUEST,"ERR_CLASS_003","Lớp học không còn mở đăng ký!"),
+    ALREADY_CHECK_IN(HttpStatus.CONFLICT,"ERR_CHECKIN_001","Hội viên đã check-in rồi!")
     // TODO: thêm các code error nếu cần.
         ;
 

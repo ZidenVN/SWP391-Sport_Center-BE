@@ -29,7 +29,12 @@ public enum PermissionCode {
     MANAGE_ROLE("Quản lý phân quyền"),
     VIEW_OWN_PROFILE("Xem hồ sơ cá nhân"),
     UPDATE_OWN_PROFILE("Cập nhật hồ sơ cá nhân"),
-    VIEW_OWN_SCHEDULE("Xem lịch cá nhân");
+    VIEW_OWN_SCHEDULE("Xem lịch cá nhân"),
+    // ---- Member / Receptionist ----
+    SUBSCRIBE_PACKAGE("Đăng ký/gia hạn gói tập (hội viên tự thực hiện)"), //Member tự đăng ký hoặc gia hạn gói
+    MANAGE_SUBSCRIPTION("Quản lý đăng ký gói tập của hội viên"), //Lễ tân bán hoặc gia hạn gói cho member
+    SEARCH_MEMBER("Tìm kiếm thông tin hội viên"), //Lễ tân tìm member
+    MANAGE_TICKET("Quản lý yêu cầu hỗ trợ"); //Lễ tân ghi nhận và xem yêu cầu hỗ trợ
 
     private final String description;
     PermissionCode(String description) { this.description = description; }
