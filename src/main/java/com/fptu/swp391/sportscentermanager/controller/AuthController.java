@@ -89,7 +89,7 @@ public class AuthController {
                         .status("ACTIVE")
                         .role(memberRole)
                         .build();
-                    User user = userRepository.save(memberUser);
+                    userRepository.save(memberUser);
                 }
 
                 String jwtToken = jwtUtils.generateToken(email);
