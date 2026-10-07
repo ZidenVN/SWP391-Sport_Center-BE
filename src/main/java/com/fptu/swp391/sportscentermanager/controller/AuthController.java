@@ -3,6 +3,7 @@ package com.fptu.swp391.sportscentermanager.controller;
 import com.fptu.swp391.sportscentermanager.dto.AuthRequest;
 import com.fptu.swp391.sportscentermanager.dto.AuthResponse;
 import com.fptu.swp391.sportscentermanager.dto.GoogleLoginRequest;
+import com.fptu.swp391.sportscentermanager.entity.Member;
 import com.fptu.swp391.sportscentermanager.entity.User;
 import com.fptu.swp391.sportscentermanager.repository.RoleRepository;
 import com.fptu.swp391.sportscentermanager.repository.UserRepository;

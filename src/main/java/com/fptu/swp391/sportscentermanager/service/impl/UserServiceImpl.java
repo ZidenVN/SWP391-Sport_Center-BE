@@ -1,5 +1,6 @@
 package com.fptu.swp391.sportscentermanager.service.impl;
 
+import com.fptu.swp391.sportscentermanager.entity.Member;
 import com.fptu.swp391.sportscentermanager.entity.Role;
 import com.fptu.swp391.sportscentermanager.entity.User;
 import com.fptu.swp391.sportscentermanager.repository.RoleRepository;
