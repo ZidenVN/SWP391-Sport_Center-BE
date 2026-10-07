@@ -49,7 +49,11 @@ public class DataInitializer implements CommandLineRunner {
             PermissionCode.CHECK_IN_MEMBER, PermissionCode.VIEW_ATTENDANCE,
             PermissionCode.CREATE_PAYMENT, PermissionCode.VIEW_PAYMENT,
             PermissionCode.VIEW_USER, PermissionCode.CREATE_USER, PermissionCode.UPDATE_USER,
-            PermissionCode.VIEW_OWN_SCHEDULE, PermissionCode.UPDATE_OWN_PROFILE
+            PermissionCode.VIEW_OWN_SCHEDULE, PermissionCode.UPDATE_OWN_PROFILE,
+            PermissionCode.SEARCH_MEMBER,
+            PermissionCode.MANAGE_SUBSCRIPTION,
+            PermissionCode.MANAGE_TICKET,
+            PermissionCode.REGISTER_CLASS
         ),
 
         "COACH", EnumSet.of(
