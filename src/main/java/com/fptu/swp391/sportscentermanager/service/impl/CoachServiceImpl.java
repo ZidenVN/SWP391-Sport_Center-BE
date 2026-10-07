@@ -117,6 +117,7 @@ public class CoachServiceImpl implements CoachService {
             .coachId(savedCoach.getUserId())
             .firstName(savedCoach.getFirstName())
             .lastName(savedCoach.getLastName())
+            .email(savedCoach.getEmail())
             .phone(savedCoach.getPhone())
             .speciality(savedCoach.getSpeciality())
             .build();
