@@ -37,8 +37,17 @@ public class UserServiceImpl implements UserService {
             throw new AppException(ErrorCode.ROLE_NOT_FOUND);
         }
 
-        // (Tùy chọn) Gán role mặc định là MEMBER
-        roleRepository.findById(4L).ifPresent(user::setRole); // Giả sử ID 4 là MEMBER
+        Member member = Member.builder()
+            .firstName(user.getFirstName())
+            .lastName(user.getLastName())
+            .gender(user.getGender())
+            .email(user.getEmail())
+            .phone(user.getPhone())
+            .passwordHash(passwordEncoder.encode(user.getPasswordHash()))
+            .status("ACTIVE")
+            .role(memberRole)
+            .trainingGoal("Chưa cập nhật")
+            .build();
 
         userRepository.save(user);
         return "Đăng ký tài khoản thành công!";
