@@ -3,6 +3,7 @@ package com.fptu.swp391.sportscentermanager.controller;
 import com.fptu.swp391.sportscentermanager.dto.CoachRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.CoachResponseDTO;
 import com.fptu.swp391.sportscentermanager.service.CoachService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,7 +19,7 @@ public class CoachController {
 
     @PreAuthorize("hasAuthority('CREATE_USER')")
     @PostMapping
-    public ResponseEntity<CoachResponseDTO> createCoach(@RequestBody CoachRequestDTO requestDTO) {
+    public ResponseEntity<CoachResponseDTO> createCoach(@Valid @RequestBody CoachRequestDTO requestDTO) {
         return ResponseEntity.ok(coachService.createCoach(requestDTO));
     }
 
@@ -30,7 +31,7 @@ public class CoachController {
 
     @PreAuthorize("hasAuthority('MANAGE_USER')")
     @PutMapping("/{id}")
-    public ResponseEntity<CoachResponseDTO> updateCoach(@PathVariable Long id, @RequestBody CoachRequestDTO requestDTO) {
+    public ResponseEntity<CoachResponseDTO> updateCoach(@PathVariable Long id, @Valid @RequestBody CoachRequestDTO requestDTO) {
         return ResponseEntity.ok(coachService.updateCoach(id, requestDTO));
     }
 

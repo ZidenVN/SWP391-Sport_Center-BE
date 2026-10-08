@@ -2,6 +2,7 @@ package com.fptu.swp391.sportscentermanager.controller;
 
 import com.fptu.swp391.sportscentermanager.entity.MembershipPackage;
 import com.fptu.swp391.sportscentermanager.service.MembershipPackageService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,13 +28,13 @@ public class MembershipPackageController {
 
     @PreAuthorize("hasAuthority('MANAGE_PACKAGE')")
     @PostMapping
-    public ResponseEntity<MembershipPackage> createPackage(@RequestBody MembershipPackage membershipPackage) {
+    public ResponseEntity<MembershipPackage> createPackage(@Valid @RequestBody MembershipPackage membershipPackage) {
         return ResponseEntity.ok(packageService.createPackage(membershipPackage));
     }
 
     @PreAuthorize("hasAuthority('MANAGE_PACKAGE')")
     @PutMapping("/{id}")
-    public ResponseEntity<MembershipPackage> updatePackage(@PathVariable Long id, @RequestBody MembershipPackage membershipPackage) {
+    public ResponseEntity<MembershipPackage> updatePackage(@PathVariable Long id, @Valid @RequestBody MembershipPackage membershipPackage) {
         return ResponseEntity.ok(packageService.updatePackage(id, membershipPackage));
     }
 

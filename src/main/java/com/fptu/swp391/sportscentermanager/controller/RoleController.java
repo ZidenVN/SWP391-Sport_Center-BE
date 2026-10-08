@@ -3,6 +3,7 @@ package com.fptu.swp391.sportscentermanager.controller;
 import com.fptu.swp391.sportscentermanager.dto.RoleRequest;
 import com.fptu.swp391.sportscentermanager.entity.Role;
 import com.fptu.swp391.sportscentermanager.service.RoleService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,7 +24,7 @@ public class RoleController {
 
     @PreAuthorize("hasAuthority('MANAGE_ROLE')")
     @PutMapping("/{id}/permissions")
-    public ResponseEntity<Role> updateRolePermissions(@PathVariable Long id, @RequestBody List<Long> permissionIds) {
+    public ResponseEntity<Role> updateRolePermissions(@PathVariable Long id, @Valid @RequestBody List<Long> permissionIds) {
         Role updatedRole = roleService.updateRolePermissions(id, permissionIds);
         return ResponseEntity.ok(updatedRole);
     }
