@@ -3,6 +3,7 @@ package com.fptu.swp391.sportscentermanager.controller;
 import com.fptu.swp391.sportscentermanager.dto.SportClassRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.SportClassResponseDTO;
 import com.fptu.swp391.sportscentermanager.service.SportClassService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,7 +19,7 @@ public class SportClassController {
 
     @PreAuthorize("hasAuthority('MANAGE_CLASS')")
     @PostMapping
-    public ResponseEntity<SportClassResponseDTO> createClass(@RequestBody SportClassRequestDTO requestDTO){
+    public ResponseEntity<SportClassResponseDTO> createClass(@Valid @RequestBody SportClassRequestDTO requestDTO){
         return   ResponseEntity.ok(sportClassService.createClass(requestDTO));
     }
 
@@ -43,7 +44,7 @@ public class SportClassController {
 
     @PreAuthorize("hasAuthority('MANAGE_CLASS')")
     @PutMapping("/{id}")
-    public ResponseEntity<SportClassResponseDTO> updateClass(@PathVariable Long id, @RequestBody SportClassRequestDTO requestDTO){
+    public ResponseEntity<SportClassResponseDTO> updateClass(@PathVariable Long id, @Valid @RequestBody SportClassRequestDTO requestDTO){
         return ResponseEntity.ok(sportClassService.updateClass(id, requestDTO));
     }
 
