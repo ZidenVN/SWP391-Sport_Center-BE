@@ -4,6 +4,7 @@ import com.fptu.swp391.sportscentermanager.dto.SubjectRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.SubjectResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.Subject;
 import com.fptu.swp391.sportscentermanager.service.SubjectService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -31,13 +32,13 @@ SubjectController {
 
     @PreAuthorize("hasAuthority('MANAGE_SUBJECT')")
     @PostMapping
-    public ResponseEntity<SubjectResponseDTO> createSubject(@RequestBody SubjectRequestDTO subjectRequestDTO) {
+    public ResponseEntity<SubjectResponseDTO> createSubject(@Valid @RequestBody SubjectRequestDTO subjectRequestDTO) {
         return  ResponseEntity.ok(subjectService.createSubject(subjectRequestDTO));
     }
 
     @PreAuthorize("hasAuthority('MANAGER_SUBJECT')")
     @PutMapping("/{id}")
-    public ResponseEntity<SubjectResponseDTO> updateSubject(@PathVariable Long id, @RequestBody SubjectRequestDTO subjectRequestDTO) {
+    public ResponseEntity<SubjectResponseDTO> updateSubject(@PathVariable Long id, @Valid @RequestBody SubjectRequestDTO subjectRequestDTO) {
         return ResponseEntity.ok(subjectService.updateSubject(id, subjectRequestDTO));
     }
 
