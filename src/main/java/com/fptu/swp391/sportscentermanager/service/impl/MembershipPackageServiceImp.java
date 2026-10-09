@@ -28,6 +28,9 @@ public class MembershipPackageServiceImp implements MembershipPackageService {
 
     @Override
     public MembershipPackage createPackage(MembershipPackage newPackage) {
+        if (newPackage.getStatus() == null || newPackage.getStatus().isBlank()) {
+            newPackage.setStatus("ACTIVE");
+        }
         return packageRepository.save(newPackage);
     }
 
@@ -37,8 +40,11 @@ public class MembershipPackageServiceImp implements MembershipPackageService {
 
         existingPackage.setPackageName(packageDetails.getPackageName());
         existingPackage.setDurationDays(packageDetails.getDurationDays());
+        existingPackage.setDescription(packageDetails.getDescription());
         existingPackage.setPrice(packageDetails.getPrice());
-        existingPackage.setPrice(packageDetails.getPrice());
+        if (packageDetails.getStatus() != null && !packageDetails.getStatus().isBlank()) {
+            existingPackage.setStatus(packageDetails.getStatus());
+        }
         return packageRepository.save(existingPackage);
     }
 
