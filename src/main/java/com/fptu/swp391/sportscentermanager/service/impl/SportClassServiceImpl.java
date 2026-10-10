@@ -30,7 +30,7 @@ public class SportClassServiceImpl implements SportClassService {
 
     @Override
     public SportClassResponseDTO createClass(SportClassRequestDTO requestDTO) {
-       Room room = roomRepository.findById(requestDTO.getRoomId()).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
+        Room room = roomRepository.findById(requestDTO.getRoomId()).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
 
        Subject subject = subjectRepository.findById(requestDTO.getSubjectId()).orElseThrow(() -> new AppException(ErrorCode.SUBJECT_NOT_FOUND));
 

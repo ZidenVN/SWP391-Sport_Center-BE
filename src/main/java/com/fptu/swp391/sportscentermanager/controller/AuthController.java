@@ -3,6 +3,7 @@ package com.fptu.swp391.sportscentermanager.controller;
 import com.fptu.swp391.sportscentermanager.dto.AuthRequest;
 import com.fptu.swp391.sportscentermanager.dto.AuthResponse;
 import com.fptu.swp391.sportscentermanager.dto.GoogleLoginRequest;
+import com.fptu.swp391.sportscentermanager.dto.RegisterRequestDTO;
 import com.fptu.swp391.sportscentermanager.entity.Member;
 import com.fptu.swp391.sportscentermanager.entity.User;
 import com.fptu.swp391.sportscentermanager.repository.RoleRepository;
@@ -17,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,6 +38,7 @@ public class AuthController {
     private final RoleRepository roleRepository;
 
     private static final String GOOGLE_CLIENT_ID = "621896812018-6c6t3b5b1le9hpkljjd5m9e07mntt3vk.apps.googleusercontent.com";
+    private final PasswordEncoder passwordEncoder;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody AuthRequest request) {
@@ -50,10 +53,18 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody User user) {
+    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequestDTO requestDTO
+    ) {
         try {
-            String responseMessage = userService.registerUser(user);
-            return ResponseEntity.ok(responseMessage);
+           User user = new User();
+           user.setFirstName(requestDTO.getFirstName());
+           user.setLastName(requestDTO.getLastName());
+           user.setGender(requestDTO.getGender());
+           user.setEmail(requestDTO.getEmail());
+           user.setPhone(requestDTO.getPhone());
+           user.setPasswordHash(passwordEncoder.encode(requestDTO.getPassword()));
+           return  ResponseEntity.ok(userService.registerUser(user));
+
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
