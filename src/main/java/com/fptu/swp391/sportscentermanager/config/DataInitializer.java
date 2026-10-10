@@ -1,9 +1,6 @@
 package com.fptu.swp391.sportscentermanager.config;
 
-import com.fptu.swp391.sportscentermanager.entity.Permission;
-import com.fptu.swp391.sportscentermanager.entity.Role;
-import com.fptu.swp391.sportscentermanager.entity.RolePermission;
-import com.fptu.swp391.sportscentermanager.entity.User;
+import com.fptu.swp391.sportscentermanager.entity.*;
 import com.fptu.swp391.sportscentermanager.enums.PermissionCode;
 import com.fptu.swp391.sportscentermanager.repository.PermissionRepository;
 import com.fptu.swp391.sportscentermanager.repository.RolePermissionRepository;
@@ -78,6 +75,8 @@ public class DataInitializer implements CommandLineRunner {
         Map<String, Role> roles = seedRoles();
         seedRolePermissions(roles, permissions);
         seedDefaultManager(roles.get("CENTER_MANAGER"));
+        seedDefaultCoach(roles.get("COACH"));
+        seedDefaultReceptionist(roles.get("RECEPTIONIST"));
     }
 
     private Map<String, Permission> seedPermissions() {
@@ -144,7 +143,7 @@ public class DataInitializer implements CommandLineRunner {
             return;
         }
 
-        userRepository.save(User.builder()
+        userRepository.save(Manager.builder()
             .firstName("System")
             .lastName("Admin")
             .gender("MALE")
@@ -155,6 +154,41 @@ public class DataInitializer implements CommandLineRunner {
             .role(managerRole)
             .build());
         System.out.println("Đã tạo tài khoản Admin mặc định: " + managerEmail);
+    }
+
+    private void seedDefaultCoach(Role coachRole) {
+        String email = "coach@Sportcenter.com";
+        if (userRepository.existsByEmail(email)) return ;
+
+        userRepository.save(Coach.builder()
+            .firstName("Default")
+            .lastName("Coach")
+            .gender("MALE")
+            .email(email)
+            .phone("098789654")
+            .passwordHash(passwordEncoder.encode("123456"))
+            .status("ACTIVE")
+            .role(coachRole)
+            .speciality("General Fitness")
+            .build());
+        System.out.println("Đã tạo tài khoản HLV mặc định: " + email);
+    }
+
+    private void seedDefaultReceptionist(Role receptionistRole) {
+        String email = "receptionist@Sportcenter.com";
+        if (userRepository.existsByEmail(email)) return;
+
+        userRepository.save(Receptionist.builder()
+            .firstName("Default")
+            .lastName("Receptionist")
+            .gender("FEMALE")
+            .email(email)
+            .phone("0341234567")
+            .passwordHash(passwordEncoder.encode("123456"))
+            .status("ACTIVE")
+            .role(receptionistRole)
+            .build());
+        System.out.println("Đã tạo tài khoản Lễ tân mặc định: " + email);
     }
 
 }
