@@ -10,26 +10,26 @@ import lombok.Setter;
 @Getter
 @Setter
 public class RegisterRequestDTO {
-    @NotBlank(message = "Ho khong duoc de trong")
+    @NotBlank(message = "Họ của bạn không được để trống")
     private String firstName;
 
-    @NotBlank(message = "Ten khong duoc de trong")
+    @NotBlank(message = "Tên của bạn không được để trống")
     private String lastName;
 
-    @NotBlank(message = "Goi tinh khong duoc de trong")
-    @Pattern(regexp = "^(MALE|FEMALE|OTHER)$", message = "Gioi tinh khong hop le")
+    @NotBlank(message = "Giới tính không được để trống")
+    @Pattern(regexp = "^(MALE|FEMALE|OTHER)$", message = "Giới tính không hợp lệ")
     private String gender;
 
-    @NotBlank(message = "Email khong duoc de trong")
+    @NotBlank(message = "Email không được để trống")
     @Email(regexp = "^[a-zA-Z0-9_!#$%&'*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$",
-    message = "Email không đúng định dạng (Ví dụ đúng: ten@gmail.com)")
+    message = "Email không đúng định dạng (Ví dụ đúng: example@gmail.com)")
     private String email;
 
-    @NotBlank(message = "So dien thoai khong duoc de trong")
-    @Pattern(regexp = "^(0|\\+84)[0-9]{9}$", message = "So dien thoai khong hop le")
+    @NotBlank(message = "Số điện thoại không được để trống")
+    @Pattern(regexp = "^(0|\\+84)[0-9]{9}$", message = "Số điện thoại không hợp lệ")
     private String phone;
 
-    @NotBlank(message = "Mat khau khong duoc de trong")
-    @Size(min = 6, message = "Mat khau toi thieu phai 6 ki tu")
+    @NotBlank(message = "Mật khẩu không được để trống")
+    @Size(min = 6, message = "Mật khẩu tối thiểu là 6 ký tự")
     private String password;
 }
