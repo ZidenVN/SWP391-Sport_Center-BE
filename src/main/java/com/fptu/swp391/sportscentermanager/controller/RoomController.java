@@ -5,6 +5,7 @@ import com.fptu.swp391.sportscentermanager.dto.RoomResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.Room;
 import com.fptu.swp391.sportscentermanager.repository.RoomRepository;
 import com.fptu.swp391.sportscentermanager.service.RoomService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -31,13 +32,13 @@ public class RoomController {
 
     @PreAuthorize("hasAuthority('MANAGE_ROOM')")
     @PostMapping
-    public ResponseEntity<RoomResponseDTO> createRoom(@RequestBody RoomRequestDTO requestDTO) {
+    public ResponseEntity<RoomResponseDTO> createRoom(@Valid @RequestBody RoomRequestDTO requestDTO) {
         return ResponseEntity.ok(roomService.createRoom(requestDTO));
     }
 
     @PreAuthorize("hasAuthority('MANAGE_ROOM')")
     @PutMapping("/{id}")
-    public ResponseEntity<RoomResponseDTO> updateRoom(@PathVariable Long id, @RequestBody RoomRequestDTO roomRequestDTO) throws  Exception{
+    public ResponseEntity<RoomResponseDTO> updateRoom(@PathVariable Long id, @Valid @RequestBody RoomRequestDTO roomRequestDTO) throws  Exception{
         return ResponseEntity.ok(roomService.updateRoom(id, roomRequestDTO));
     }
 

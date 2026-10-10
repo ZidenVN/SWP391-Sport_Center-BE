@@ -1,10 +1,12 @@
 package com.fptu.swp391.sportscentermanager.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 public class GoogleLoginRequest {
+    @NotBlank
     private String token;
 }

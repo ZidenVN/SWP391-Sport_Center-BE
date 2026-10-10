@@ -38,7 +38,7 @@ public class AuthController {
     private static final String GOOGLE_CLIENT_ID = "621896812018-6c6t3b5b1le9hpkljjd5m9e07mntt3vk.apps.googleusercontent.com";
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody AuthRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody AuthRequest request) {
         try {
             Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
             String email = authentication.getName();
@@ -60,7 +60,7 @@ public class AuthController {
     }
 
     @PostMapping("/google")
-    public ResponseEntity<?> loginWithGoogle(@RequestBody GoogleLoginRequest request) {
+    public ResponseEntity<?> loginWithGoogle(@Valid @RequestBody GoogleLoginRequest request) {
         try {
             // decode để check Token
             com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier verifier =
