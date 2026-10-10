@@ -1,5 +1,6 @@
 package com.fptu.swp391.sportscentermanager.controller;
 
+import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
 import com.fptu.swp391.sportscentermanager.entity.User;
 import com.fptu.swp391.sportscentermanager.service.UserService;
 import jakarta.validation.Valid;
@@ -26,6 +27,7 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
+    @LogAudit(actionType = "UPDATE", targetEntity = "User")
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @Valid @RequestBody User userDetails) {
         return ResponseEntity.ok(userService.updateUser(id, userDetails));

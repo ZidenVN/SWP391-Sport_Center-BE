@@ -1,6 +1,7 @@
 package com.fptu.swp391.sportscentermanager.controller;
 
 
+import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
 import com.fptu.swp391.sportscentermanager.dto.MemberProfileResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.MemberProfileUpdateDTO;
 import com.fptu.swp391.sportscentermanager.security.CustomUserDetails;
@@ -26,7 +27,7 @@ public class MemberController {
         @AuthenticationPrincipal CustomUserDetails principal) {
         return ResponseEntity.ok(memberService.getProfile(principal.getUser().getUserId()));
     }
-
+    @LogAudit(actionType = "UPDATE_PROFILE", targetEntity = "Member")
     @PreAuthorize("hasRole('MEMBER') and hasAuthority('UPDATE_OWN_PROFILE')")
     @PutMapping("/me")
     public ResponseEntity<MemberProfileResponseDTO> updateMyProfile(

@@ -44,7 +44,7 @@ public class UserServiceImpl implements UserService {
             .gender(user.getGender())
             .email(user.getEmail())
             .phone(user.getPhone())
-            .passwordHash(passwordEncoder.encode(user.getPasswordHash()))
+            .passwordHash(user.getPasswordHash())
             .status("ACTIVE")
             .role(memberRole)
             .trainingGoal("Chưa cập nhật")

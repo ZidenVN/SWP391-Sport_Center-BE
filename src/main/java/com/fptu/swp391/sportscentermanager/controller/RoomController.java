@@ -1,5 +1,6 @@
 package com.fptu.swp391.sportscentermanager.controller;
 
+import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
 import com.fptu.swp391.sportscentermanager.dto.RoomRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.RoomResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.Room;
@@ -30,18 +31,21 @@ public class RoomController {
         return ResponseEntity.ok(roomService.getRoomById(id));
     }
 
+    @LogAudit(actionType = "CREATE", targetEntity = "Room")
     @PreAuthorize("hasAuthority('MANAGE_ROOM')")
     @PostMapping
     public ResponseEntity<RoomResponseDTO> createRoom(@Valid @RequestBody RoomRequestDTO requestDTO) {
         return ResponseEntity.ok(roomService.createRoom(requestDTO));
     }
 
+    @LogAudit(actionType = "UPDATE", targetEntity = "Room")
     @PreAuthorize("hasAuthority('MANAGE_ROOM')")
     @PutMapping("/{id}")
     public ResponseEntity<RoomResponseDTO> updateRoom(@PathVariable Long id, @Valid @RequestBody RoomRequestDTO roomRequestDTO) throws  Exception{
         return ResponseEntity.ok(roomService.updateRoom(id, roomRequestDTO));
     }
 
+    @LogAudit(actionType = "DELETE", targetEntity = "Room")
     @PreAuthorize("hasAuthority('MANAGE_ROOM')")
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteRoomById(@PathVariable Long id) {
