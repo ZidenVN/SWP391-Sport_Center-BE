@@ -87,6 +87,12 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             .orElseThrow(() -> new AppException(ErrorCode.NO_ACTIVE_SUBSCRIPTION));
     }
 
+    private Payment latestPayment(Subscription s) {
+        return paymentRepository
+            .findFirstBySubscription_SubscriptionIdOrderByPaymentDateDesc(s.getSubscriptionId())
+            .orElse(null);
+    }
+
     private SubscriptionResponseDTO toResponse(Subscription s, Payment p) {
         SubscriptionResponseDTO dto = new SubscriptionResponseDTO();
         dto.setSubscriptionId(s.getSubscriptionId());
