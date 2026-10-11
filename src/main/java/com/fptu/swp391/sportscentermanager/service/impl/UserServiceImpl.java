@@ -1,5 +1,6 @@
 package com.fptu.swp391.sportscentermanager.service.impl;
 
+import com.fptu.swp391.sportscentermanager.dto.RegisterRequestDTO;
 import com.fptu.swp391.sportscentermanager.entity.Member;
 import com.fptu.swp391.sportscentermanager.entity.Role;
 import com.fptu.swp391.sportscentermanager.entity.User;
@@ -24,12 +25,12 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public String registerUser(User user) {
+    public String registerUser(RegisterRequestDTO requestDTO) {
 
-        if (userRepository.existsByEmail(user.getEmail())) {
+        if (userRepository.existsByEmail(requestDTO.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_TAKEN);
         }
-        if (userRepository.existsByPhone(user.getPhone())) {
+        if (userRepository.existsByPhone(requestDTO.getPhone())) {
             throw new AppException(ErrorCode.PHONE_ALREADY_TAKEN);
         }
 
@@ -39,12 +40,12 @@ public class UserServiceImpl implements UserService {
         }
 
         Member member = Member.builder()
-            .firstName(user.getFirstName())
-            .lastName(user.getLastName())
-            .gender(user.getGender())
-            .email(user.getEmail())
-            .phone(user.getPhone())
-            .passwordHash(user.getPasswordHash())
+            .firstName(requestDTO.getFirstName())
+            .lastName(requestDTO.getLastName())
+            .gender(requestDTO.getGender())
+            .email(requestDTO.getEmail())
+            .phone(requestDTO.getPhone())
+            .passwordHash(passwordEncoder.encode(requestDTO.getPassword()))
             .status("ACTIVE")
             .role(memberRole)
             .trainingGoal("Chưa cập nhật")

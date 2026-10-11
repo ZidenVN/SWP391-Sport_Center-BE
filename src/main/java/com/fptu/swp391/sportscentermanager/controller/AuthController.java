@@ -65,7 +65,7 @@ public class AuthController {
            user.setEmail(requestDTO.getEmail());
            user.setPhone(requestDTO.getPhone());
            user.setPasswordHash(passwordEncoder.encode(requestDTO.getPassword()));
-           return  ResponseEntity.ok(userService.registerUser(user));
+           return  ResponseEntity.ok(userService.registerUser(requestDTO));
 
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

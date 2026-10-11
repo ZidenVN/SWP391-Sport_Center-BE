@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class AuditLog {
     @Id
-    @Column(name = "id")
+    @Column(name = "log_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long logId;
 
