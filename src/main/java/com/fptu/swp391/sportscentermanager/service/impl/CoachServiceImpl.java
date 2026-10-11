@@ -177,6 +177,7 @@ public class CoachServiceImpl implements CoachService {
                 .email(e.getMember().getEmail())
                 .phone(e.getMember().getPhone())
                 .gender(e.getMember().getGender())
+                .trainingGoal(e.getMember().getTrainingGoal())
                 .enrolledDate(e.getEnrollmentDate())
                 .enrollmentStatus(e.getStatus())
                 .build();

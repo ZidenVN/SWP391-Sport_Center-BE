@@ -37,4 +37,9 @@ public class MemberController {
     }
 
 
+    @PreAuthorize("hasAnyRole('COACH', 'CENTER_MANAGER', 'RECEPTIONIST')")
+    @GetMapping("/{memberId}")
+    public ResponseEntity<MemberProfileResponseDTO> getMemberProfileById(@PathVariable Long memberId) {
+        return ResponseEntity.ok(memberService.getProfile(memberId));
+    }
 }
