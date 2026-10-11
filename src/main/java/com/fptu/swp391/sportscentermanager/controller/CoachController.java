@@ -1,13 +1,18 @@
 package com.fptu.swp391.sportscentermanager.controller;
 
 import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
+import com.fptu.swp391.sportscentermanager.dto.ClassRosterResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.CoachRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.CoachResponseDTO;
+import com.fptu.swp391.sportscentermanager.dto.TeachingScheduleResponseDTO;
+import com.fptu.swp391.sportscentermanager.entity.Coach;
+import com.fptu.swp391.sportscentermanager.security.CustomUserDetails;
 import com.fptu.swp391.sportscentermanager.service.CoachService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,6 +22,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CoachController {
     private final CoachService coachService;
+
+    // API cho MANAGE CENTER
 
     @LogAudit(actionType = "CREATE", targetEntity = "Coach")
     @PreAuthorize("hasAuthority('CREATE_USER')")
@@ -45,5 +52,22 @@ public class CoachController {
         coachService.deleteCoach(id);
         return ResponseEntity.ok("Đã khóa tài khoản thành công!");
     }
+
+
+    // API cho COACH
+    @PreAuthorize("hasRole('COACH') and hasAuthority('VIEW_OWN_SCHEDULE')")
+    @GetMapping("/me/schedules")
+    public ResponseEntity<List<TeachingScheduleResponseDTO>> getMySchedules(@AuthenticationPrincipal CustomUserDetails principal) {
+        Long coachId = principal.getUser().getUserId();
+        return ResponseEntity.ok(coachService.getMyTeachingSchedule(coachId));
+    }
+
+    @PreAuthorize("hasRole('COACH') and hasAuthority('VIEW_CLASS')")
+    @GetMapping("/me/classes/{classId}/roster")
+    public ResponseEntity<List<ClassRosterResponseDTO>> getClassRoster(@AuthenticationPrincipal CustomUserDetails principal, @PathVariable Long classId) {
+        Long coachId = principal.getUser().getUserId();
+        return ResponseEntity.ok(coachService.getClassRoster(coachId, classId));
+    }
+
 
 }
