@@ -29,10 +29,14 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     public RoomResponseDTO createRoom(RoomRequestDTO requestDTO) {
+        String status = (requestDTO.getStatus() != null && !requestDTO.getStatus().isBlank())
+            ? requestDTO.getStatus().trim()
+            : "AVAILABLE";
+
         Room newRoom = Room.builder()
             .roomName(requestDTO.getRoomName())
             .capacity(requestDTO.getCapacity())
-            .status("ACTIVE")
+            .status(status)
             .build();
 
         Room savedRoom = roomRepository.save(newRoom);
@@ -49,10 +53,14 @@ public class RoomServiceImpl implements RoomService {
         Room existingRoom = getRoomById(id);
         existingRoom.setRoomName(requestDTO.getRoomName());
         existingRoom.setCapacity(requestDTO.getCapacity());
+        if (requestDTO.getStatus() != null && !requestDTO.getStatus().isBlank()) {
+            existingRoom.setStatus(requestDTO.getStatus().trim());
+        }
 
         Room updatedRoom = roomRepository.save(existingRoom);
-        return RoomResponseDTO.builder().
-            roomName(updatedRoom.getRoomName())
+        return RoomResponseDTO.builder()
+            .roomId(updatedRoom.getRoomId())
+            .roomName(updatedRoom.getRoomName())
             .capacity(updatedRoom.getCapacity())
             .status(updatedRoom.getStatus())
             .build();

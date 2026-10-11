@@ -15,4 +15,6 @@ public class RoomRequestDTO {
     @NotNull
     @Min(value = 1, message = "Sức chứa tối thiểu phải là 1")
     private Integer capacity;
+
+    private String status;
 }

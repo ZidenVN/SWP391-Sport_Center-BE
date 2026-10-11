@@ -1,14 +1,10 @@
 package com.fptu.swp391.sportscentermanager.controller;
 
 import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
-import com.fptu.swp391.sportscentermanager.dto.ClassRosterResponseDTO;
-import com.fptu.swp391.sportscentermanager.dto.CoachRequestDTO;
-import com.fptu.swp391.sportscentermanager.dto.CoachResponseDTO;
-import com.fptu.swp391.sportscentermanager.dto.TeachingScheduleResponseDTO;
+import com.fptu.swp391.sportscentermanager.dto.*;
 import com.fptu.swp391.sportscentermanager.entity.Coach;
 import com.fptu.swp391.sportscentermanager.security.CustomUserDetails;
 import com.fptu.swp391.sportscentermanager.service.CoachService;
-import com.fptu.swp391.sportscentermanager.dto.MemberProfileResponseDTO;
 import com.fptu.swp391.sportscentermanager.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -79,5 +75,20 @@ public class CoachController {
     @GetMapping("/members/{memberId}")
     public ResponseEntity<MemberProfileResponseDTO> getMemberProfileAndGoal(@PathVariable Long memberId) {
         return ResponseEntity.ok(memberService.getProfile(memberId));
+    }
+
+    @LogAudit(actionType = "MARK_ATTENDANCE", targetEntity = "ClassAttendance")
+    @PreAuthorize("hasRole('COACH') AND hasAuthority('MARK_ATTENDANCE')")
+    @PostMapping("/me/classes/{classId}/attendances")
+    public ResponseEntity<List<AttendanceResponseDTO>> takeAttendance(@AuthenticationPrincipal CustomUserDetails principal, @PathVariable Long classId, @Valid @RequestBody TakeAttendanceRequestDTO requestDTO) {
+Long coachId = principal.getUser().getUserId();
+return ResponseEntity.ok(coachService.takeAttendance(coachId, classId, requestDTO));
+    }
+
+    @PreAuthorize("hasRole('COACH') AND hasAuthority('VIEW_ATTENDANCE')")
+    @GetMapping("/me/classes/{classId}/attendances")
+    public ResponseEntity<List<AttendanceResponseDTO>> getClassAttendances(@AuthenticationPrincipal CustomUserDetails principal, @PathVariable Long classId) {
+        Long coachId = principal.getUser().getUserId();
+        return ResponseEntity.ok(coachService.getClassAttendance(coachId, classId));
     }
 }

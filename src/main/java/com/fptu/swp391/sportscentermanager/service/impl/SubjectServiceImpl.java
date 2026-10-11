@@ -56,6 +56,7 @@ public class SubjectServiceImpl implements SubjectService {
 
        Subject updatedSubject = subjectRepository.save(existingSubject);
        return SubjectResponseDTO.builder()
+           .subjectId(updatedSubject.getSubjectId())
            .subjectName(updatedSubject.getSubjectName())
            .description(updatedSubject.getDescription())
            .build();

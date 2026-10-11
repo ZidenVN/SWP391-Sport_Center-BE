@@ -1,9 +1,6 @@
 package com.fptu.swp391.sportscentermanager.service;
 
-import com.fptu.swp391.sportscentermanager.dto.ClassRosterResponseDTO;
-import com.fptu.swp391.sportscentermanager.dto.CoachRequestDTO;
-import com.fptu.swp391.sportscentermanager.dto.CoachResponseDTO;
-import com.fptu.swp391.sportscentermanager.dto.TeachingScheduleResponseDTO;
+import com.fptu.swp391.sportscentermanager.dto.*;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,4 +15,8 @@ public interface CoachService {
 
    List<TeachingScheduleResponseDTO> getMyTeachingSchedule(Long coachId);
    List<ClassRosterResponseDTO> getClassRoster(Long coachId, Long classId);
+
+   List<AttendanceResponseDTO> takeAttendance(Long coachId, Long classId, TakeAttendanceRequestDTO requestDTO);
+
+   List<AttendanceResponseDTO> getClassAttendance(Long coachId, Long classId);
 }

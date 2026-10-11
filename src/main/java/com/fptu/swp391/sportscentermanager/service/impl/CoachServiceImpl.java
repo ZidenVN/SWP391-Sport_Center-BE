@@ -1,21 +1,15 @@
 package com.fptu.swp391.sportscentermanager.service.impl;
 
-import com.fptu.swp391.sportscentermanager.dto.ClassRosterResponseDTO;
-import com.fptu.swp391.sportscentermanager.dto.CoachRequestDTO;
-import com.fptu.swp391.sportscentermanager.dto.CoachResponseDTO;
-import com.fptu.swp391.sportscentermanager.dto.TeachingScheduleResponseDTO;
-import com.fptu.swp391.sportscentermanager.entity.ClassEnrollment;
-import com.fptu.swp391.sportscentermanager.entity.Coach;
-import com.fptu.swp391.sportscentermanager.entity.Role;
-import com.fptu.swp391.sportscentermanager.entity.SportClass;
+import com.fptu.swp391.sportscentermanager.dto.*;
+import com.fptu.swp391.sportscentermanager.entity.*;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.*;
 import com.fptu.swp391.sportscentermanager.service.CoachService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.*;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,6 +23,8 @@ public class CoachServiceImpl implements CoachService {
     private final PasswordEncoder passwordEncoder;
     private final SportClassRepository sportClassRepository;
     private final ClassEnrollmentRepository classEnrollmentRepository;
+    private final ClassAttendanceRepository classAttendanceRepository;
+    private final MemberRepository memberRepository;
 
     @Override
     public CoachResponseDTO createCoach(CoachRequestDTO requestDTO) {
@@ -184,7 +180,106 @@ public class CoachServiceImpl implements CoachService {
             result.add(dto);
         }
         return result;
-        
+
+    }
+
+    @Override
+    public List<AttendanceResponseDTO> takeAttendance(Long coachId, Long classId, TakeAttendanceRequestDTO requestDTO) {
+        // check lop ton tai va co phai coach do phu trach khong
+        SportClass sportClass = sportClassRepository.findById(classId).orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
+
+        if (sportClass.getCoach() == null || !sportClass.getCoach().getUserId().equals(coachId)) {
+            throw new AppException(ErrorCode.CLASS_NOT_FOUND);
+        }
+
+        LocalDateTime attendanceDate = sportClass.getScheduleTime();
+
+        // lay danh sach id member da dang ki trong lop
+        List<ClassEnrollment> enrollments = classEnrollmentRepository.findBySportClass_ClassId(classId);
+        Set<Long> enrollmentIds = new HashSet<>();
+        for (ClassEnrollment e : enrollments) {
+            if (e.getMember() != null){
+                enrollmentIds.add(e.getMember().getUserId());
+            }
+        }
+
+        List<ClassAttendance> savedAttendance = new ArrayList<>();
+
+        for(AttendanceRecordDTO record : requestDTO.getRecords()){
+            Long memberId = record.getMemberId();
+            if (!enrollmentIds.contains(memberId)){
+                throw new AppException(ErrorCode.MEMBER_NOT_IN_CLASS);
+            }
+
+            Member member = memberRepository.findById(memberId).orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
+
+            Optional<ClassAttendance> existngOpt = classAttendanceRepository.findBySportClass_ClassIdAndMember_UserId(classId, memberId);
+
+            ClassAttendance attendance;
+            if (existngOpt.isPresent()) {
+                attendance = existngOpt.get();
+            } else {
+                attendance = ClassAttendance.builder()
+                    .sportClass(sportClass)
+                    .member(member)
+                    .attendanceDate(attendanceDate)
+                    .build();
+            }
+            attendance.setStatus(record.getStatus());            attendance.setNote(record.getNote());
+            attendance.setMarkedAt(LocalDateTime.now());
+
+            ClassAttendance saved = classAttendanceRepository.save(attendance);
+            savedAttendance.add(saved);
+        }
+
+        List<AttendanceResponseDTO> result = new ArrayList<>();
+        for(ClassAttendance a :  savedAttendance){
+            Member m =  a.getMember();
+            AttendanceResponseDTO dto = AttendanceResponseDTO.builder()
+                .attendanceId(a.getAttendanceId())
+                .memberId(m.getUserId())
+                .memberName(m.getFirstName() + " " + m.getLastName())
+                .phone(m.getPhone())
+                .attendanceDate(a.getAttendanceDate())
+                .status(a.getStatus())
+                .note(a.getNote())
+                .markedAt(a.getMarkedAt())
+                .build();
+            result.add(dto);
+        }
+        return result;
+
+    }
+
+    @Override
+    public List<AttendanceResponseDTO> getClassAttendance(Long coachId, Long classId) {
+        // kiem tra lop
+        SportClass sportClass = sportClassRepository.findById(classId).orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
+
+        if (sportClass.getCoach() == null || !sportClass.getCoach().getUserId().equals(coachId)) {
+            throw new AppException(ErrorCode.CLASS_NOT_FOUND);
+        }
+
+        // lay danh sach diem danh cua lop
+        List<ClassAttendance> attendances = classAttendanceRepository.findBySportClass_ClassId(classId);
+
+        // map sang responsedto
+        List<AttendanceResponseDTO> result = new ArrayList<>();
+        for(ClassAttendance a : attendances){
+            Member m =  a.getMember();
+            AttendanceResponseDTO dto = AttendanceResponseDTO.builder()
+                .attendanceId(a.getAttendanceId())
+                .memberId(m.getUserId())
+                .memberName(m.getFirstName() + " " + m.getLastName())
+                .phone(m.getPhone())
+                .attendanceDate(a.getAttendanceDate())
+                .status(a.getStatus())
+                .note(a.getNote())
+                .markedAt(a.getMarkedAt())
+                .build();
+            result.add(dto);
+        }
+        return result;
     }
 
 }

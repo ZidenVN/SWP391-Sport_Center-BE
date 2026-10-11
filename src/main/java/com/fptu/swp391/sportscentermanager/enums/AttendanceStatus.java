@@ -1,10 +1,14 @@
 package com.fptu.swp391.sportscentermanager.enums;
 
-import org.springframework.http.HttpStatus;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
+@Getter
+@RequiredArgsConstructor
 public enum AttendanceStatus {
-    PRESENT,
-    ABSENT,
-    LATE,
-    ON_LEAVE,
+    PRESENT("Có mặt"),
+    ABSENT("Vắng mặt"),
+    LATE("Đến muộn"),
+    ON_LEAVE("Nghỉ phép");
+    private final String description;
 }

@@ -39,7 +39,7 @@ SubjectController {
     }
 
     @LogAudit(actionType = "UPDATE", targetEntity = "Subject")
-    @PreAuthorize("hasAuthority('MANAGER_SUBJECT')")
+    @PreAuthorize("hasAuthority('MANAGE_SUBJECT')")
     @PutMapping("/{id}")
     public ResponseEntity<SubjectResponseDTO> updateSubject(@PathVariable Long id, @Valid @RequestBody SubjectRequestDTO subjectRequestDTO) {
         return ResponseEntity.ok(subjectService.updateSubject(id, subjectRequestDTO));

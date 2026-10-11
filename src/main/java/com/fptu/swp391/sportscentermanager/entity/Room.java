@@ -11,7 +11,7 @@ import org.hibernate.annotations.SQLRestriction;
 @AllArgsConstructor
 @Getter @Setter @Builder
 @SQLDelete(sql = "update rooms set status = 'INACTIVE' where room_id = ?")
-@SQLRestriction("status = 'ACTIVE'")
+@SQLRestriction("status != 'INACTIVE'")
 public class Room {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
