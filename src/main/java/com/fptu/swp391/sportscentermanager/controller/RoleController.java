@@ -1,5 +1,6 @@
 package com.fptu.swp391.sportscentermanager.controller;
 
+import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
 import com.fptu.swp391.sportscentermanager.dto.RoleRequest;
 import com.fptu.swp391.sportscentermanager.entity.Role;
 import com.fptu.swp391.sportscentermanager.service.RoleService;
@@ -22,6 +23,7 @@ public class RoleController {
         return ResponseEntity.ok(roleService.getAllRoles());
     }
 
+    @LogAudit(actionType = "UPDATE_PERMISSIONS", targetEntity = "Role")
     @PreAuthorize("hasAuthority('MANAGE_ROLE')")
     @PutMapping("/{id}/permissions")
     public ResponseEntity<Role> updateRolePermissions(@PathVariable Long id, @Valid @RequestBody List<Long> permissionIds) {

@@ -1,9 +1,11 @@
 package com.fptu.swp391.sportscentermanager.controller;
 
+import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
 import com.fptu.swp391.sportscentermanager.entity.MembershipPackage;
 import com.fptu.swp391.sportscentermanager.service.MembershipPackageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.checkerframework.checker.index.qual.LengthOf;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -26,18 +28,21 @@ public class MembershipPackageController {
         return ResponseEntity.ok(packageService.getPackageById(id));
     }
 
+    @LogAudit(actionType = "CREATE", targetEntity = "MembershipPackage")
     @PreAuthorize("hasAuthority('MANAGE_PACKAGE')")
     @PostMapping
     public ResponseEntity<MembershipPackage> createPackage(@Valid @RequestBody MembershipPackage membershipPackage) {
         return ResponseEntity.ok(packageService.createPackage(membershipPackage));
     }
 
+    @LogAudit(actionType = "UPDATE", targetEntity = "MembershipPackage")
     @PreAuthorize("hasAuthority('MANAGE_PACKAGE')")
     @PutMapping("/{id}")
     public ResponseEntity<MembershipPackage> updatePackage(@PathVariable Long id, @Valid @RequestBody MembershipPackage membershipPackage) {
         return ResponseEntity.ok(packageService.updatePackage(id, membershipPackage));
     }
 
+    @LogAudit(actionType = "DELETE", targetEntity = "MembershipPackage")
     @PreAuthorize("hasAuthority('MANAGE_PACKAGE')")
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deletePackage(@PathVariable Long id) {

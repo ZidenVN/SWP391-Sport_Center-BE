@@ -1,5 +1,6 @@
 package com.fptu.swp391.sportscentermanager.controller;
 
+import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
 import com.fptu.swp391.sportscentermanager.dto.AuthRequest;
 import com.fptu.swp391.sportscentermanager.dto.AuthResponse;
 import com.fptu.swp391.sportscentermanager.dto.GoogleLoginRequest;
@@ -52,6 +53,7 @@ public class AuthController {
         }
     }
 
+    @LogAudit(actionType = "REGISTER_ACCOUNT", targetEntity = "User")
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequestDTO requestDTO
     ) {
@@ -63,7 +65,7 @@ public class AuthController {
            user.setEmail(requestDTO.getEmail());
            user.setPhone(requestDTO.getPhone());
            user.setPasswordHash(passwordEncoder.encode(requestDTO.getPassword()));
-           return  ResponseEntity.ok(userService.registerUser(user));
+           return  ResponseEntity.ok(userService.registerUser(requestDTO));
 
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

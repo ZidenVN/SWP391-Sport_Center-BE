@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface SportClassRepository extends JpaRepository<SportClass, Long> {
@@ -16,4 +18,7 @@ public interface SportClassRepository extends JpaRepository<SportClass, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT c FROM SportClass c WHERE c.classId = :id")
     Optional<SportClass> findByIdForUpdate(@Param("id") Long id);
+    List<SportClass> findByCoach_UserIdOrderByScheduleTimeAsc(Long coachId);
+
+    List<SportClass> findByCoach_UserIdAndScheduleTimeBetweenOrderByScheduleTimeAsc(Long coachId, LocalDateTime start, LocalDateTime end);
 }
