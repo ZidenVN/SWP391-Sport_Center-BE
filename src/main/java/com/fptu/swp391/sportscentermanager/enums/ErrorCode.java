@@ -28,7 +28,10 @@ public enum ErrorCode {
     CLASS_FULL(HttpStatus.CONFLICT,"ERR_CLASS_001","Lớp học đã đủ số lượng!"),
     ALREADY_REGISTERED(HttpStatus.CONFLICT,"ERR_CLASS_002","Bạn đã đăng ký lớp học này rồi!"),
     CLASS_NOT_OPEN(HttpStatus.BAD_REQUEST,"ERR_CLASS_003","Lớp học không còn mở đăng ký!"),
-    ALREADY_CHECK_IN(HttpStatus.CONFLICT,"ERR_CHECKIN_001","Hội viên đã check-in rồi!")
+    ALREADY_CHECK_IN(HttpStatus.CONFLICT,"ERR_CHECKIN_001","Hội viên đã check-in rồi!"),
+    REGISTRATION_ALREADY_CANCELLED(HttpStatus.CONFLICT,"ERR_REGISTRATION_001","Đăng ký này đã được hủy trước đó!"),
+    CANCEL_NOT_ALLOWED(HttpStatus.BAD_REQUEST,"ERR_REGISTRATION_002","Lớp học đã bắt đầu, không thể hủy đăng ký!"),
+    PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND,"ERR_PAYMENT_404","Giao dịch thanh toán không tồn tại!")
     // TODO: thêm các code error nếu cần.
         ;
 

@@ -73,7 +73,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     public List<SubscriptionResponseDTO> getSubscriptions(Long memberId) {
         return subscriptionRepository.findByMember_UserIdOrderByEndDateDesc(memberId)
             .stream()
-            .map(s -> toResponse(s, null))
+            .map(s -> toResponse(s, latestPayment(s)))
             .toList();
     }
 
@@ -83,8 +83,15 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         return subscriptionRepository.findCurrent(memberId, LocalDateTime.now())
             .stream()
             .findFirst()
-            .map(s -> toResponse(s, null))
+            .map(s -> toResponse(s, latestPayment(s)))
             .orElseThrow(() -> new AppException(ErrorCode.NO_ACTIVE_SUBSCRIPTION));
+    }
+
+    // Lấy giao dịch gần nhất của gói để hiển thị amount / paymentMethod / paymentStatus
+    private Payment latestPayment(Subscription s) {
+        return paymentRepository
+            .findFirstBySubscription_SubscriptionIdOrderByPaymentDateDesc(s.getSubscriptionId())
+            .orElse(null);
     }
 
     private SubscriptionResponseDTO toResponse(Subscription s, Payment p) {

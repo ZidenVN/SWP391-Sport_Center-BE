@@ -1,0 +1,50 @@
+package com.fptu.swp391.sportscentermanager.repository;
+
+import com.fptu.swp391.sportscentermanager.entity.ClassRegistration;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+public interface ClassRegistrationRepository extends JpaRepository<ClassRegistration, Long> {
+
+    // Tìm dòng đăng ký của 1 member với 1 lớp (có thể đang REGISTERED hoặc đã CANCELLED)
+    Optional<ClassRegistration> findByMember_UserIdAndSportClass_ClassId(Long memberId, Long classId);
+
+    // Đếm số chỗ đang bị chiếm của lớp
+    long countBySportClass_ClassIdAndStatus(Long classId, String status);
+
+    // Lấy 1 đăng ký, chỉ khi nó thuộc về member này (tránh member A hủy lớp của member B)
+    Optional<ClassRegistration> findByRegistrationIdAndMember_UserId(Long registrationId, Long memberId);
+
+    // Lịch sử đăng ký: mới nhất trước.
+    // JOIN FETCH để lấy luôn lớp/phòng/môn/HLV trong 1 câu SQL (tránh N+1)
+    @Query("""
+            SELECT r FROM ClassRegistration r
+            JOIN FETCH r.sportClass c
+            LEFT JOIN FETCH c.room
+            LEFT JOIN FETCH c.subject
+            LEFT JOIN FETCH c.coach
+            WHERE r.member.userId = :memberId
+            ORDER BY r.registeredAt DESC
+            """)
+    List<ClassRegistration> findHistory(@Param("memberId") Long memberId);
+
+    // Lịch sắp tới: đang REGISTERED và lớp chưa diễn ra, gần nhất trước
+    @Query("""
+            SELECT r FROM ClassRegistration r
+            JOIN FETCH r.sportClass c
+            LEFT JOIN FETCH c.room
+            LEFT JOIN FETCH c.subject
+            LEFT JOIN FETCH c.coach
+            WHERE r.member.userId = :memberId
+              AND r.status = 'REGISTERED'
+              AND c.scheduleTime > :now
+            ORDER BY c.scheduleTime ASC
+            """)
+    List<ClassRegistration> findUpcoming(@Param("memberId") Long memberId,
+                                         @Param("now") LocalDateTime now);
+}
