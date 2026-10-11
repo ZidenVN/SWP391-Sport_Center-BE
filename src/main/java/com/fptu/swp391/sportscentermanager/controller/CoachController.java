@@ -8,6 +8,8 @@ import com.fptu.swp391.sportscentermanager.dto.TeachingScheduleResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.Coach;
 import com.fptu.swp391.sportscentermanager.security.CustomUserDetails;
 import com.fptu.swp391.sportscentermanager.service.CoachService;
+import com.fptu.swp391.sportscentermanager.dto.MemberProfileResponseDTO;
+import com.fptu.swp391.sportscentermanager.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +24,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CoachController {
     private final CoachService coachService;
+    private final MemberService memberService;
 
     // API cho MANAGE CENTER
 
@@ -69,5 +72,12 @@ public class CoachController {
         return ResponseEntity.ok(coachService.getClassRoster(coachId, classId));
     }
 
-
+    /**
+     * Coach xem chi tiết hồ sơ và mục tiêu tập luyện (goals) của học viên
+     */
+    @PreAuthorize("hasRole('COACH')")
+    @GetMapping("/members/{memberId}")
+    public ResponseEntity<MemberProfileResponseDTO> getMemberProfileAndGoal(@PathVariable Long memberId) {
+        return ResponseEntity.ok(memberService.getProfile(memberId));
+    }
 }
