@@ -1,5 +1,6 @@
 package com.fptu.swp391.sportscentermanager.controller;
 
+import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
 import com.fptu.swp391.sportscentermanager.dto.SubjectRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.SubjectResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.Subject;
@@ -30,18 +31,21 @@ SubjectController {
         return ResponseEntity.ok(subjectService.getSubjectById(id));
     }
 
+    @LogAudit(actionType = "CREATE", targetEntity = "Subject")
     @PreAuthorize("hasAuthority('MANAGE_SUBJECT')")
     @PostMapping
     public ResponseEntity<SubjectResponseDTO> createSubject(@Valid @RequestBody SubjectRequestDTO subjectRequestDTO) {
         return  ResponseEntity.ok(subjectService.createSubject(subjectRequestDTO));
     }
 
+    @LogAudit(actionType = "UPDATE", targetEntity = "Subject")
     @PreAuthorize("hasAuthority('MANAGER_SUBJECT')")
     @PutMapping("/{id}")
     public ResponseEntity<SubjectResponseDTO> updateSubject(@PathVariable Long id, @Valid @RequestBody SubjectRequestDTO subjectRequestDTO) {
         return ResponseEntity.ok(subjectService.updateSubject(id, subjectRequestDTO));
     }
 
+    @LogAudit(actionType = "DELETE", targetEntity = "Subject")
     @PreAuthorize("hasAuthority('MANAGE_SUBJECT')")
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteSubject(@PathVariable Long id) {

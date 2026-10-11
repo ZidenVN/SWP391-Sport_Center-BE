@@ -1,5 +1,6 @@
 package com.fptu.swp391.sportscentermanager.controller;
 
+import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
 import com.fptu.swp391.sportscentermanager.dto.SportClassRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.SportClassResponseDTO;
 import com.fptu.swp391.sportscentermanager.service.SportClassService;
@@ -17,6 +18,7 @@ import java.util.List;
 public class SportClassController {
     private final SportClassService sportClassService;
 
+    @LogAudit(actionType = "CREATE", targetEntity = "SportClass")
     @PreAuthorize("hasAuthority('MANAGE_CLASS')")
     @PostMapping
     public ResponseEntity<SportClassResponseDTO> createClass(@Valid @RequestBody SportClassRequestDTO requestDTO){
@@ -35,19 +37,21 @@ public class SportClassController {
         return ResponseEntity.ok(sportClassService.getSportClassById(id));
     }
 
-
+    @LogAudit(actionType = "ASSIGN_COACH", targetEntity = "SportClass")
     @PreAuthorize("hasAuthority('MANAGE_CLASS')")
     @PutMapping("/{classId}/coach/{coachId}")
     public ResponseEntity<SportClassResponseDTO> assignCoachToClass(@PathVariable Long classId, @PathVariable Long coachId){
         return ResponseEntity.ok(sportClassService.assignCoachToClass(classId, coachId));
     }
 
+    @LogAudit(actionType = "UPDATE", targetEntity = "SportClass")
     @PreAuthorize("hasAuthority('MANAGE_CLASS')")
     @PutMapping("/{id}")
     public ResponseEntity<SportClassResponseDTO> updateClass(@PathVariable Long id, @Valid @RequestBody SportClassRequestDTO requestDTO){
         return ResponseEntity.ok(sportClassService.updateClass(id, requestDTO));
     }
 
+    @LogAudit(actionType = "DELETE", targetEntity = "SportClass")
     @PreAuthorize("hasAuthority('MANAGE_CLASS')")
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteClass(@PathVariable Long id){
