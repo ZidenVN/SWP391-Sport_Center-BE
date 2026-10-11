@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 public class AuditLog {
     @Id
     @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long logId;
 
     @Column(name = "action_type", nullable = false)
