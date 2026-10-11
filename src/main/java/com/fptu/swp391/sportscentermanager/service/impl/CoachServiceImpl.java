@@ -1,14 +1,16 @@
 package com.fptu.swp391.sportscentermanager.service.impl;
 
+import com.fptu.swp391.sportscentermanager.dto.ClassRosterResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.CoachRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.CoachResponseDTO;
+import com.fptu.swp391.sportscentermanager.dto.TeachingScheduleResponseDTO;
+import com.fptu.swp391.sportscentermanager.entity.ClassEnrollment;
 import com.fptu.swp391.sportscentermanager.entity.Coach;
 import com.fptu.swp391.sportscentermanager.entity.Role;
+import com.fptu.swp391.sportscentermanager.entity.SportClass;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
-import com.fptu.swp391.sportscentermanager.repository.CoachRepository;
-import com.fptu.swp391.sportscentermanager.repository.RoleRepository;
-import com.fptu.swp391.sportscentermanager.repository.UserRepository;
+import com.fptu.swp391.sportscentermanager.repository.*;
 import com.fptu.swp391.sportscentermanager.service.CoachService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -25,6 +27,8 @@ public class CoachServiceImpl implements CoachService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SportClassRepository sportClassRepository;
+    private final ClassEnrollmentRepository classEnrollmentRepository;
 
     @Override
     public CoachResponseDTO createCoach(CoachRequestDTO requestDTO) {
@@ -128,6 +132,58 @@ public class CoachServiceImpl implements CoachService {
         Coach coach = coachRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
         coach.setStatus("INACTIVE");
         coachRepository.save(coach);
+    }
+
+    @Override
+    public List<TeachingScheduleResponseDTO> getMyTeachingSchedule(Long coachId) {
+        List<SportClass> classes = sportClassRepository.findByCoach_UserIdOrderByScheduleTimeAsc(coachId);
+        List<TeachingScheduleResponseDTO> result = new ArrayList<>();
+
+        for (SportClass c : classes) {
+            long enrolledCnt = classEnrollmentRepository.countBySportClass_ClassIdAndStatus(c.getClassId(), "ENROLLED");
+            String subjectName = (c.getSubject() != null) ? c.getSubject().getSubjectName() : "Chua co mon nao";
+            String roomName = (c.getRoom() != null) ? c.getRoom().getRoomName() : "Chua co phong";
+
+            TeachingScheduleResponseDTO dto = TeachingScheduleResponseDTO.builder()
+                .classId(c.getClassId())
+                .subjectName(subjectName)
+                .roomName(roomName)
+                .scheduleTime(c.getScheduleTime())
+                .maxCapacity(c.getMaxCapacity())
+                .currentEnrolled(enrolledCnt)
+                .status(c.getStatus())
+                .build();
+            result.add(dto);
+        }
+        return result;
+    }
+
+    @Override
+    public List<ClassRosterResponseDTO> getClassRoster(Long coachId, Long classId) {
+        SportClass sportClass = sportClassRepository.findById(classId)
+                .orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
+
+        if (sportClass.getCoach() == null || !sportClass.getCoach().getUserId().equals(coachId)) {
+            throw new AppException(ErrorCode.CLASS_NOT_FOUND);
+        }
+
+        List<ClassEnrollment> enrollments = classEnrollmentRepository.findBySportClass_ClassId(classId);
+        List<ClassRosterResponseDTO> result = new ArrayList<>();
+        for (ClassEnrollment e : enrollments) {
+            ClassRosterResponseDTO dto = ClassRosterResponseDTO.builder()
+                .memberId(e.getMember().getUserId())
+                .firstName(e.getMember().getFirstName())
+                .lastName(e.getMember().getLastName())
+                .email(e.getMember().getEmail())
+                .phone(e.getMember().getPhone())
+                .gender(e.getMember().getGender())
+                .enrolledDate(e.getEnrollmentDate())
+                .enrollmentStatus(e.getStatus())
+                .build();
+            result.add(dto);
+        }
+        return result;
+        
     }
 
 }
