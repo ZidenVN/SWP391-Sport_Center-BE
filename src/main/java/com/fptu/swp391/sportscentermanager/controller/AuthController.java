@@ -5,12 +5,16 @@ import com.fptu.swp391.sportscentermanager.dto.AuthRequest;
 import com.fptu.swp391.sportscentermanager.dto.AuthResponse;
 import com.fptu.swp391.sportscentermanager.dto.GoogleLoginRequest;
 import com.fptu.swp391.sportscentermanager.dto.RegisterRequestDTO;
+import com.fptu.swp391.sportscentermanager.dto.SubscriptionResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.Member;
 import com.fptu.swp391.sportscentermanager.entity.User;
 import com.fptu.swp391.sportscentermanager.repository.RoleRepository;
+import com.fptu.swp391.sportscentermanager.repository.SubscriptionRepository;
 import com.fptu.swp391.sportscentermanager.repository.UserRepository;
+import com.fptu.swp391.sportscentermanager.security.CustomUserDetails;
 import com.fptu.swp391.sportscentermanager.security.JwtUtils;
 import com.fptu.swp391.sportscentermanager.service.UserService;
+import java.time.LocalDateTime;
 import com.google.api.client.auth.openidconnect.IdTokenVerifier;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import jakarta.validation.Valid;
@@ -37,6 +41,7 @@ public class AuthController {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final SubscriptionRepository subscriptionRepository;
 
     private static final String GOOGLE_CLIENT_ID = "621896812018-6c6t3b5b1le9hpkljjd5m9e07mntt3vk.apps.googleusercontent.com";
     private final PasswordEncoder passwordEncoder;
@@ -45,9 +50,25 @@ public class AuthController {
     public ResponseEntity<?> login(@Valid @RequestBody AuthRequest request) {
         try {
             Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
-            String email = authentication.getName();
-            String token = jwtUtils.generateToken(email);
-            return ResponseEntity.ok(new AuthResponse(token));
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            User user = userDetails.getUser();
+
+            String token = jwtUtils.generateToken(user.getEmail());
+            String roleName = (user.getRole() != null) ? user.getRole().getRoleName() : "USER";
+            String fullName = user.getFirstName() + " " + user.getLastName();
+
+            SubscriptionResponseDTO currentPackage = getActiveSubscription(user.getUserId());
+            String packageName = (currentPackage != null) ? currentPackage.getPackageName() : null;
+
+            return ResponseEntity.ok(AuthResponse.builder()
+                .token(token)
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .fullName(fullName)
+                .role(roleName)
+                .packageName(packageName)
+                .currentPackage(currentPackage)
+                .build());
         } catch (Exception e) {
             return ResponseEntity.status(401).body("Sai Email hoặc Password!");
         }
@@ -110,13 +131,46 @@ public class AuthController {
                     userRepository.save(memberUser);
                 }
 
+                User user = userRepository.findByEmail(email).orElse(null);
                 String jwtToken = jwtUtils.generateToken(email);
-                return ResponseEntity.ok(new AuthResponse(jwtToken));
+                String roleName = (user != null && user.getRole() != null) ? user.getRole().getRoleName() : "MEMBER";
+                String firstNameVal = user != null ? user.getFirstName() : (firstName != null ? firstName : "User");
+                String lastNameVal = user != null ? user.getLastName() : (lastName != null ? lastName : "Google");
+                String fullNameVal = firstNameVal + " " + lastNameVal;
+
+                SubscriptionResponseDTO currentPackage = (user != null) ? getActiveSubscription(user.getUserId()) : null;
+                String packageName = (currentPackage != null) ? currentPackage.getPackageName() : null;
+
+                return ResponseEntity.ok(AuthResponse.builder()
+                    .token(jwtToken)
+                    .firstName(firstNameVal)
+                    .lastName(lastNameVal)
+                    .fullName(fullNameVal)
+                    .role(roleName)
+                    .packageName(packageName)
+                    .currentPackage(currentPackage)
+                    .build());
             } else {
                 return ResponseEntity.status(401).body("Token Google không hợp lệ");
             }
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Lỗi xác thực Google: " + e.getMessage());
         }
+    }
+
+    private SubscriptionResponseDTO getActiveSubscription(Long userId) {
+        if (userId == null) return null;
+        return subscriptionRepository.findCurrent(userId, LocalDateTime.now())
+            .stream()
+            .findFirst()
+            .map(s -> SubscriptionResponseDTO.builder()
+                .subscriptionId(s.getSubscriptionId())
+                .packageId(s.getMembershipPackage() != null ? s.getMembershipPackage().getPackageId() : null)
+                .packageName(s.getMembershipPackage() != null ? s.getMembershipPackage().getPackageName() : null)
+                .startDate(s.getStartDate())
+                .endDate(s.getEndDate())
+                .status(s.getStatus())
+                .build())
+            .orElse(null);
     }
 }
