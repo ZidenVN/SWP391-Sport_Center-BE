@@ -5,6 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,4 +34,54 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findDetailById(@Param("paymentId") Long paymentId);
     // Lấy giao dịch gần nhất của một gói đăng ký
     Optional<Payment> findFirstBySubscription_SubscriptionIdOrderByPaymentDateDesc(Long subscriptionId);
+
+    @Query("""
+        select coalesce(sum(p.amount), 0) from Payment p
+        where p.status in ('COMPLETED', 'SUCCESS') and p.paymentDate between :start and :end
+    """)
+    BigDecimal sumReveneBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    @Query("""
+        select count(p) from Payment p
+        where p.status in ('COMPLETED', 'SUCCESS') and p.paymentDate between :start and :end
+    """)
+    long cntSuccessfulPaymentsBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    @Query(value = """
+        SELECT DATE_FORMAT(payment_date, '%Y-%m-%d') AS dayLabel,
+               COALESCE(SUM(amount), 0) AS dailyRevenue
+        FROM payments
+        WHERE status IN ('COMPLETED', 'SUCCESS')
+          AND payment_date BETWEEN :start AND :end
+        GROUP BY DATE_FORMAT(payment_date, '%Y-%m-%d')
+        ORDER BY dayLabel ASC
+    """, nativeQuery = true)
+    List<Object[]> getRevenueByDay(@Param("start") LocalDateTime start,
+                                   @Param("end") LocalDateTime end);
+
+    @Query("""
+        SELECT pkg.packageName,
+               COALESCE(SUM(p.amount), 0),
+               COUNT(p.paymentId)
+        FROM Payment p
+        JOIN p.subscription sub
+        JOIN sub.membershipPackage pkg
+        WHERE p.status in ('COMPLETED', 'SUCCESS')
+          AND p.paymentDate BETWEEN :start AND :end
+        GROUP BY pkg.packageName
+    """)
+    List<Object[]> getRevenueByPackage(@Param("start") LocalDateTime start,
+                                       @Param("end") LocalDateTime end);
+
+    @Query("""
+        SELECT p.paymentMethod,
+               COALESCE(SUM(p.amount), 0),
+               COUNT(p.paymentId)
+        FROM Payment p
+        WHERE p.status in ('COMPLETED', 'SUCCESS')
+          AND p.paymentDate BETWEEN :start AND :end
+        GROUP BY p.paymentMethod
+    """)
+    List<Object[]> getRevenueByPaymentMethod(@Param("start") LocalDateTime start,
+                                             @Param("end") LocalDateTime end);
 }
