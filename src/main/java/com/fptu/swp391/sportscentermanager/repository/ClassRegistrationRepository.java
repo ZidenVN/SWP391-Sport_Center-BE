@@ -47,4 +47,27 @@ public interface ClassRegistrationRepository extends JpaRepository<ClassRegistra
             """)
     List<ClassRegistration> findUpcoming(@Param("memberId") Long memberId,
                                          @Param("now") LocalDateTime now);
+
+
+    @Query("""
+        select count(r) from ClassRegistration r
+        where r.status = :status and r.registeredAt between :start and :end
+    """)
+    long countByStatusBetween(@Param("status") String status, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    @Query("""
+        SELECT c.classId,
+               sub.subjectName,
+               CONCAT(coach.lastName, ' ', coach.firstName),
+               room.roomName,
+               c.maxCapacity,
+               COUNT(CASE WHEN r.status = 'REGISTERED' THEN 1 END) AS registeredCount
+        FROM SportClass c
+        JOIN c.subject sub
+        LEFT JOIN c.coach coach
+        LEFT JOIN c.room room
+        LEFT JOIN ClassRegistration r ON r.sportClass.classId = c.classId
+        GROUP BY c.classId, sub.subjectName, coach.lastName, coach.firstName, room.roomName, c.maxCapacity
+    """)
+    List<Object[]> getClassOccupancyStats();
 }
