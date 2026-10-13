@@ -1,12 +1,19 @@
 package com.fptu.swp391.sportscentermanager.dto;
 
-public class AuthResponse {
-   private String token;
-   public AuthResponse (String token) {
-       this.token = token;
-   }
+import lombok.*;
 
-   public String getToken() {
-       return token;
-   }
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class AuthResponse {
+    private String token;
+    private String firstName;
+    private String lastName;
+    private String fullName;
+    private String role;
+    private String packageName;
+    private SubscriptionResponseDTO currentPackage;
 }
+
