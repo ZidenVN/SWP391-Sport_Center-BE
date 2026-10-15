@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class MemberController {
     //Controller gọi service
     private final MemberService memberService;
+    private final com.fptu.swp391.sportscentermanager.service.WorkoutPlanService workoutPlanService;
 
     //TODO: PreAuthorize có tác dụng gì? ND phải cung cấp trong ("") là gì?
     @PreAuthorize("hasRole('MEMBER') and hasAuthority('VIEW_OWN_PROFILE')")
@@ -36,6 +37,13 @@ public class MemberController {
         return ResponseEntity.ok(memberService.updateProfile(principal.getUser().getUserId(), dto));
     }
 
+    @PreAuthorize("hasRole('MEMBER')")
+    @GetMapping("/me/workout-plans")
+    public ResponseEntity<java.util.List<com.fptu.swp391.sportscentermanager.dto.WorkoutPlanResponseDTO>> getMyWorkoutPlans(
+        @AuthenticationPrincipal CustomUserDetails principal) {
+        Long memberId = principal.getUser().getUserId();
+        return ResponseEntity.ok(workoutPlanService.getPlansByMember(memberId));
+    }
 
     @PreAuthorize("hasAnyRole('COACH', 'CENTER_MANAGER', 'RECEPTIONIST')")
     @GetMapping("/{memberId}")

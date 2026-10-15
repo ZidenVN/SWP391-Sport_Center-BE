@@ -6,6 +6,7 @@ import com.fptu.swp391.sportscentermanager.entity.Coach;
 import com.fptu.swp391.sportscentermanager.security.CustomUserDetails;
 import com.fptu.swp391.sportscentermanager.service.CoachService;
 import com.fptu.swp391.sportscentermanager.service.MemberService;
+import com.fptu.swp391.sportscentermanager.service.WorkoutPlanService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,7 @@ import java.util.List;
 public class CoachController {
     private final CoachService coachService;
     private final MemberService memberService;
+    private final WorkoutPlanService workoutPlanService;
 
     // API cho MANAGE CENTER
 
@@ -91,4 +93,36 @@ return ResponseEntity.ok(coachService.takeAttendance(coachId, classId, requestDT
         Long coachId = principal.getUser().getUserId();
         return ResponseEntity.ok(coachService.getClassAttendance(coachId, classId));
     }
+
+    // coach giao bài tập luyện cho cá nhân hoặc cho lớp
+    @LogAudit(actionType = "ASSIGN_WORKOUT_PLAN", targetEntity = "WorkoutPlan")
+    @PreAuthorize("hasRole('COACH')")
+    @PostMapping("/me/workout-plans")
+    public ResponseEntity<WorkoutPlanResponseDTO> createAndAssignWorkoutPlan(@AuthenticationPrincipal CustomUserDetails principal, @Valid @RequestBody WorkoutPlanRequestDTO requestDTO) {
+        Long coachId = principal.getUser().getUserId();
+        return ResponseEntity.ok(workoutPlanService.createAndAssignWorkoutPlan(coachId, requestDTO));
+    }
+
+    // Xem tat ca giao an ma Coach tao ra
+    @PreAuthorize("hasRole('COACH')")
+    @GetMapping("/me/workout-plans")
+    public ResponseEntity<List<WorkoutPlanResponseDTO>> getMyWorkoutPlans(@AuthenticationPrincipal CustomUserDetails principal) {
+        Long coachId = principal.getUser().getUserId();
+        return ResponseEntity.ok(workoutPlanService.getPlansByCoach(coachId));
+    }
+
+    // Xem giao an cua mot hoc vien cu the
+    @PreAuthorize("hasRole('COACH')")
+    @GetMapping("/members/{memberId}/workout-plans")
+    public ResponseEntity<List<WorkoutPlanResponseDTO>> getMemberWorkoutPlans(@PathVariable Long memberId) {
+        return ResponseEntity.ok(workoutPlanService.getPlansByMember(memberId));
+    }
+
+    // xem giao an hien tai da gan cho mot lop cu the nao
+    @PreAuthorize("hasRole('COACH') OR hasRole('MEMBER')")
+    @GetMapping("/classes/{classId}/workout-plans")
+    public ResponseEntity<List<WorkoutPlanResponseDTO>> getClassWorkoutPlans(@PathVariable Long classId) {
+        return ResponseEntity.ok(workoutPlanService.getPlansByClass(classId));
+    }
+
 }
