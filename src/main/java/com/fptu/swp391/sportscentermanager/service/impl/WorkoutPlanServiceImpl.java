@@ -169,4 +169,17 @@ public class WorkoutPlanServiceImpl implements WorkoutPlanService {
         }
         return result;
     }
+
+    @Override
+    @Transactional
+    public void updateMemberPlanStatus(Long coachId, Long memberPlanId, String status) {
+        MemberPlan memberPlan = memberPlanRepository.findById(memberPlanId).orElseThrow(() -> new AppException(ErrorCode.RESOUCE_NOT_FOUND));
+        // kiem tra giao an nay co dung do HLV nay giao khong
+        if (!memberPlan.getWorkoutPlan().getCoach().getUserId().equals(coachId)) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+
+        memberPlan.setStatus(status.toUpperCase());
+        memberPlanRepository.save(memberPlan);
+    }
 }
