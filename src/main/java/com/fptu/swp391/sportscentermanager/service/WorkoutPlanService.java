@@ -13,4 +13,6 @@ public interface WorkoutPlanService {
     List<WorkoutPlanResponseDTO> getPlansByMember(Long memberId);
 
     List<WorkoutPlanResponseDTO> getPlansByClass(Long classId);
+
+    void updateMemberPlanStatus(Long coachId, Long memberPlanId, String status);
 }

@@ -146,5 +146,28 @@ return ResponseEntity.ok(coachService.takeAttendance(coachId, classId, requestDT
         return ResponseEntity.ok(workoutResultService.getResultsByMember(memberId));
     }
 
+    @LogAudit(actionType = "UPDATE_WORKOUT_RESULT", targetEntity = "WorkoutResult")
+    @PreAuthorize("hasRole('COACH')")
+    @PutMapping("/workout-results/{resultId}")
+    public ResponseEntity<WorkoutResultResponseDTO> updateWorkoutResult(@PathVariable Long resultId, @Valid @RequestBody WorkoutResultRequestDTO requestDTO) {
+        return ResponseEntity.ok(workoutResultService.updateWorkoutResult(resultId, requestDTO));
+    }
 
+    @LogAudit(actionType = "UPDATE_PLAN_STATUS", targetEntity = "MemberPlan")
+    @PreAuthorize("hasRole('COACH')")
+    @PatchMapping("/member-plans/{memberPlanId}/status")
+    public ResponseEntity<String> updatePlanStatus(
+        @AuthenticationPrincipal CustomUserDetails principal,
+        @PathVariable Long memberPlanId,
+        @RequestParam String status){
+        Long coachId = principal.getUser().getUserId();
+        workoutPlanService.updateMemberPlanStatus(coachId, memberPlanId, status);
+        return ResponseEntity.ok("Cập nhật trạng thái tiến độ giáo án thành công: " + status.toUpperCase());
+    }
+
+    @PreAuthorize("hasRole('COACH')")
+    @GetMapping("/members/{memberId}/progress")
+    public ResponseEntity<MemberProgressResponseDTO> getMyProgress(@PathVariable Long memberId) {
+       return ResponseEntity.ok(workoutResultService.getMemberProgress(memberId));
+    }
 }

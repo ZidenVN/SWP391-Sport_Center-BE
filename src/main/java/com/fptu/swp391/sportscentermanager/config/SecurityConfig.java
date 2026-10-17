@@ -44,10 +44,13 @@ public class SecurityConfig {
                 auth.requestMatchers(
                         "/api/v1/auth/**",
                         "/api/v1/payments/vnpay/callback",
-                        "/error", "/v3/api-docs/**",
+                        "/error",
+                        "/v3/api-docs",
+                        "/v3/api-docs/**",
                         "/v3/api-docs.yaml",
                         "/swagger-ui/**",
-                        "/swagger-ui.html"
+                        "/swagger-ui.html",
+                        "/webjars/**"
                     ).permitAll()
                     .anyRequest().authenticated()
             ).addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

@@ -4,6 +4,7 @@ package com.fptu.swp391.sportscentermanager.controller;
 import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
 import com.fptu.swp391.sportscentermanager.dto.MemberProfileResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.MemberProfileUpdateDTO;
+import com.fptu.swp391.sportscentermanager.dto.MemberProgressResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.WorkoutResultResponseDTO;
 import com.fptu.swp391.sportscentermanager.security.CustomUserDetails;
 import com.fptu.swp391.sportscentermanager.service.MemberService;
@@ -55,9 +56,16 @@ public class MemberController {
     }
 
     @PreAuthorize("hasRole('MEMBER')")
-    @GetMapping("/me/workout-result")
+    @GetMapping("/me/workout-results")
     public ResponseEntity<java.util.List<WorkoutResultResponseDTO>> getMyWorkoutResults(@AuthenticationPrincipal CustomUserDetails principal) {
         Long memberId = principal.getUser().getUserId();
         return ResponseEntity.ok(workoutResultService.getResultsByMember(memberId));
+    }
+
+    @PreAuthorize("hasRole('MEMBER')")
+    @GetMapping("/me/progress")
+    public ResponseEntity<MemberProgressResponseDTO>  getMyProgress(@AuthenticationPrincipal CustomUserDetails principal) {
+        Long memberId = principal.getUser().getUserId();
+        return ResponseEntity.ok(workoutResultService.getMemberProgress(memberId));
     }
 }
