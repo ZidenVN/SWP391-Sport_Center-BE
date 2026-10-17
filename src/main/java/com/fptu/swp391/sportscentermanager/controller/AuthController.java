@@ -8,6 +8,7 @@ import com.fptu.swp391.sportscentermanager.dto.RegisterRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.SubscriptionResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.Member;
 import com.fptu.swp391.sportscentermanager.entity.User;
+import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import com.fptu.swp391.sportscentermanager.repository.RoleRepository;
 import com.fptu.swp391.sportscentermanager.repository.SubscriptionRepository;
 import com.fptu.swp391.sportscentermanager.repository.UserRepository;
@@ -124,7 +125,7 @@ public class AuthController {
                         .gender("UNKNOWN")
                         .phone("GG_" + System.currentTimeMillis())
                         .passwordHash("LOGIN_BY_GOOGLE")
-                        .status("ACTIVE")
+                        .status(UserStatus.ACTIVE)
                         .role(memberRole)
                         .trainingGoal("Chưa cập nhật")
                         .build();

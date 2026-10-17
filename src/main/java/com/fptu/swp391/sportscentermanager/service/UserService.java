@@ -1,18 +1,21 @@
 package com.fptu.swp391.sportscentermanager.service;
 
 import com.fptu.swp391.sportscentermanager.dto.RegisterRequestDTO;
+import com.fptu.swp391.sportscentermanager.dto.UserResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.User;
-import org.springframework.security.core.userdetails.UserDetails;
+import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 
 import java.util.List;
 
 public interface UserService {
     String registerUser(RegisterRequestDTO requestDTO);
 
-    List<User> getAllUsers();
-    User getUserById(Long id);
-    User updateUser(Long id, User userdetails);
+    List<UserResponseDTO> getAllUsers();
+    UserResponseDTO getUserById(Long id);
+    UserResponseDTO updateUser(Long id, UserResponseDTO requestDTO);
+
+    UserResponseDTO updateUserStatus(Long id, UserStatus newStatus);
     void toggleUserStatus(Long id);
-    User assignRoleToUser(Long userId, Long roleId);
+    UserResponseDTO assignRoleToUser(Long userId, Long roleId);
 
 }

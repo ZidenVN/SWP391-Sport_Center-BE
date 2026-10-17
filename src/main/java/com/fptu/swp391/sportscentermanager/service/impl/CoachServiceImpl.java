@@ -3,6 +3,7 @@ package com.fptu.swp391.sportscentermanager.service.impl;
 import com.fptu.swp391.sportscentermanager.dto.*;
 import com.fptu.swp391.sportscentermanager.entity.*;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
+import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.*;
 import com.fptu.swp391.sportscentermanager.service.CoachService;
@@ -13,6 +14,7 @@ import java.util.*;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,13 +28,52 @@ public class CoachServiceImpl implements CoachService {
     private final ClassAttendanceRepository classAttendanceRepository;
     private final MemberRepository memberRepository;
 
+    private SportClass getOwnedClassOrThrow(Long coachId, Long classId) {
+        SportClass sportClass = sportClassRepository.findById(classId).orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
+        if (sportClass.getCoach() == null || !sportClass.getCoach().getUserId().equals(coachId)) {
+            throw new AppException(ErrorCode.CLASS_NOT_FOUND);
+        }
+        return sportClass;
+    }
+
+
+    private CoachResponseDTO toCoachResponse(Coach c) {
+        return CoachResponseDTO.builder()
+            .coachId(c.getUserId())
+            .firstName(c.getFirstName())
+            .lastName(c.getLastName())
+            .gender(c.getGender())
+            .email(c.getEmail())
+            .phone(c.getPhone())
+            .speciality(c.getSpeciality())
+            .build();
+    }
+
+    private AttendanceResponseDTO toAttendanceResponse(ClassAttendance a) {
+        Member m = a.getMember();
+        return AttendanceResponseDTO.builder()
+            .attendanceId(a.getAttendanceId())
+            .memberId(m.getUserId())
+            .memberName(m.getFirstName() + " " + m.getLastName())
+            .phone(m.getPhone())
+            .attendanceDate(a.getAttendanceDate())
+            .status(a.getStatus())
+            .note(a.getNote())
+            .markedAt(a.getMarkedAt())
+            .build();
+    }
+
     @Override
+    @Transactional
     public CoachResponseDTO createCoach(CoachRequestDTO requestDTO) {
         if (userRepository.existsByEmail(requestDTO.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_TAKEN);
         }
 
         Role coachRole = roleRepository.findByRoleName("COACH");
+        if (coachRole == null) {
+            throw new AppException(ErrorCode.ROLE_NOT_FOUND);
+        }
 
         Coach newCoach = Coach.builder()
             .firstName(requestDTO.getFirstName())
@@ -41,62 +82,37 @@ public class CoachServiceImpl implements CoachService {
             .phone(requestDTO.getPhone())
             .email(requestDTO.getEmail())
             .passwordHash(passwordEncoder.encode(requestDTO.getPassword()))
-            .status("ACTIVE")
+            .status(UserStatus.ACTIVE)
             .role(coachRole)
             .speciality(requestDTO.getSpecialty())
             .build();
 
         Coach savedCoach = coachRepository.save(newCoach);
-        return CoachResponseDTO.builder()
-            .coachId(savedCoach.getUserId())
-            .firstName(savedCoach.getFirstName())
-            .lastName(savedCoach.getLastName())
-            .email(savedCoach.getEmail())
-            .phone(savedCoach.getPhone())
-            .speciality(savedCoach.getSpeciality())
-            .build();
+        return toCoachResponse(savedCoach);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<CoachResponseDTO> getAllCoaches() {
-        List<Coach> coachList = coachRepository.findAll();
-        List<CoachResponseDTO> result = new ArrayList<>();
-
-        for (Coach c : coachList) {
-            CoachResponseDTO dto = CoachResponseDTO.builder()
-                .coachId(c.getUserId())
-                .firstName(c.getFirstName())
-                .lastName(c.getLastName())
-                .phone(c.getPhone())
-                .email(c.getEmail())
-                .speciality(c.getSpeciality())
-                .build();
-            result.add(dto);
-        }
-        return result;
+       return coachRepository.findAll().stream().map(this::toCoachResponse).toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public CoachResponseDTO getCoachById(Long id) {
         Coach c = coachRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
-        if ("INACTIVE".equals(c.getStatus())) {
+        if (UserStatus.INACTIVE == c.getStatus()) {
             throw new AppException(ErrorCode.COACH_NOT_FOUND);
         }
-        return CoachResponseDTO.builder()
-            .coachId(c.getUserId())
-            .firstName(c.getFirstName())
-            .lastName(c.getLastName())
-            .phone(c.getPhone())
-            .email(c.getEmail())
-            .speciality(c.getSpeciality())
-            .build();
+        return toCoachResponse(c);
     }
 
     @Override
+    @Transactional
     public CoachResponseDTO updateCoach(Long id, CoachRequestDTO requestDTO) {
         Coach coach = coachRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
 
-        if (!coach.getEmail().equals(requestDTO.getEmail()) && userRepository.existsByEmail(requestDTO.getEmail())) {
+        if (!requestDTO.getEmail().equalsIgnoreCase(coach.getEmail()) && userRepository.existsByEmail(requestDTO.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_TAKEN);
         }
 
@@ -107,38 +123,38 @@ public class CoachServiceImpl implements CoachService {
         coach.setEmail(requestDTO.getEmail());
         coach.setSpeciality(requestDTO.getSpecialty());
 
-        if (requestDTO.getPassword() != null && !requestDTO.getPassword().isBlank()){
+        if (requestDTO.getPassword() != null && !requestDTO.getPassword().isBlank()) {
             coach.setPasswordHash(passwordEncoder.encode(requestDTO.getPassword()));
         }
 
         Coach savedCoach = coachRepository.save(coach);
 
-        return CoachResponseDTO.builder()
-            .coachId(savedCoach.getUserId())
-            .firstName(savedCoach.getFirstName())
-            .lastName(savedCoach.getLastName())
-            .email(savedCoach.getEmail())
-            .phone(savedCoach.getPhone())
-            .speciality(savedCoach.getSpeciality())
-            .build();
+       return toCoachResponse(savedCoach);
     }
 
     @Override
-    public void deleteCoach(Long id) {
+    @Transactional
+    public void toggleCoachStatus(Long id) {
         Coach coach = coachRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
-        coach.setStatus("INACTIVE");
+
+        if (UserStatus.ACTIVE == coach.getStatus()) {
+            coach.setStatus(UserStatus.INACTIVE);
+        } else {
+            coach.setStatus(UserStatus.ACTIVE);
+        }
         coachRepository.save(coach);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TeachingScheduleResponseDTO> getMyTeachingSchedule(Long coachId) {
         List<SportClass> classes = sportClassRepository.findByCoach_UserIdOrderByScheduleTimeAsc(coachId);
         List<TeachingScheduleResponseDTO> result = new ArrayList<>();
 
         for (SportClass c : classes) {
             long enrolledCnt = classEnrollmentRepository.countBySportClass_ClassIdAndStatus(c.getClassId(), "ENROLLED");
-            String subjectName = (c.getSubject() != null) ? c.getSubject().getSubjectName() : "Chua co mon nao";
-            String roomName = (c.getRoom() != null) ? c.getRoom().getRoomName() : "Chua co phong";
+            String subjectName = (c.getSubject() != null) ? c.getSubject().getSubjectName() : "Chưa có môn nào";
+            String roomName = (c.getRoom() != null) ? c.getRoom().getRoomName() : "Chưa có phòng";
 
             TeachingScheduleResponseDTO dto = TeachingScheduleResponseDTO.builder()
                 .classId(c.getClassId())
@@ -155,13 +171,9 @@ public class CoachServiceImpl implements CoachService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ClassRosterResponseDTO> getClassRoster(Long coachId, Long classId) {
-        SportClass sportClass = sportClassRepository.findById(classId)
-                .orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
-
-        if (sportClass.getCoach() == null || !sportClass.getCoach().getUserId().equals(coachId)) {
-            throw new AppException(ErrorCode.CLASS_NOT_FOUND);
-        }
+        getOwnedClassOrThrow(coachId, classId);
 
         List<ClassEnrollment> enrollments = classEnrollmentRepository.findBySportClass_ClassId(classId);
         List<ClassRosterResponseDTO> result = new ArrayList<>();
@@ -184,102 +196,57 @@ public class CoachServiceImpl implements CoachService {
     }
 
     @Override
+    @Transactional
     public List<AttendanceResponseDTO> takeAttendance(Long coachId, Long classId, TakeAttendanceRequestDTO requestDTO) {
         // check lop ton tai va co phai coach do phu trach khong
-        SportClass sportClass = sportClassRepository.findById(classId).orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
-
-        if (sportClass.getCoach() == null || !sportClass.getCoach().getUserId().equals(coachId)) {
-            throw new AppException(ErrorCode.CLASS_NOT_FOUND);
+        SportClass sportClass = getOwnedClassOrThrow(coachId, classId);
+        if (requestDTO.getRecords() == null || requestDTO.getRecords().isEmpty()) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
-        LocalDateTime attendanceDate = sportClass.getScheduleTime();
-
-        // lay danh sach id member da dang ki trong lop
-        List<ClassEnrollment> enrollments = classEnrollmentRepository.findBySportClass_ClassId(classId);
-        Set<Long> enrollmentIds = new HashSet<>();
-        for (ClassEnrollment e : enrollments) {
-            if (e.getMember() != null){
-                enrollmentIds.add(e.getMember().getUserId());
+        Map<Long, Member> enrolledMembers = new HashMap<>();
+        for (ClassEnrollment e : classEnrollmentRepository.findBySportClass_ClassId(classId)) {
+            if (e.getMember() != null) {
+                enrolledMembers.put(e.getMember().getUserId(), e.getMember());
             }
         }
 
-        List<ClassAttendance> savedAttendance = new ArrayList<>();
 
-        for(AttendanceRecordDTO record : requestDTO.getRecords()){
+        Map<Long, ClassAttendance> existing = new HashMap<>();
+        for (ClassAttendance a : classAttendanceRepository.findBySportClass_ClassId(classId)) {
+            existing.put(a.getMember().getUserId(), a);
+        }
+
+        Set<Long> seen = new HashSet<>();
+        List<ClassAttendance> toSave = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+        for (AttendanceRecordDTO record : requestDTO.getRecords()) {
             Long memberId = record.getMemberId();
-            if (!enrollmentIds.contains(memberId)){
+            Member member = enrolledMembers.get(memberId);
+            if (member == null)
                 throw new AppException(ErrorCode.MEMBER_NOT_IN_CLASS);
-            }
+            if (!seen.add(memberId))
+                throw new AppException(ErrorCode.DUPLICATE_ATTENDANCE);
 
-            Member member = memberRepository.findById(memberId).orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
-
-            Optional<ClassAttendance> existngOpt = classAttendanceRepository.findBySportClass_ClassIdAndMember_UserId(classId, memberId);
-
-            ClassAttendance attendance;
-            if (existngOpt.isPresent()) {
-                attendance = existngOpt.get();
-            } else {
-                attendance = ClassAttendance.builder()
-                    .sportClass(sportClass)
-                    .member(member)
-                    .attendanceDate(attendanceDate)
-                    .build();
-            }
-            attendance.setStatus(record.getStatus());            attendance.setNote(record.getNote());
-            attendance.setMarkedAt(LocalDateTime.now());
-
-            ClassAttendance saved = classAttendanceRepository.save(attendance);
-            savedAttendance.add(saved);
+            ClassAttendance attendance = existing.getOrDefault(memberId, ClassAttendance.builder()
+                .sportClass(sportClass)
+                .member(member)
+                .attendanceDate(sportClass.getScheduleTime())
+                .build());
+            attendance.setStatus(record.getStatus());
+            attendance.setNote(record.getNote());
+            attendance.setMarkedAt(now);
+            toSave.add(attendance);
         }
-
-        List<AttendanceResponseDTO> result = new ArrayList<>();
-        for(ClassAttendance a :  savedAttendance){
-            Member m =  a.getMember();
-            AttendanceResponseDTO dto = AttendanceResponseDTO.builder()
-                .attendanceId(a.getAttendanceId())
-                .memberId(m.getUserId())
-                .memberName(m.getFirstName() + " " + m.getLastName())
-                .phone(m.getPhone())
-                .attendanceDate(a.getAttendanceDate())
-                .status(a.getStatus())
-                .note(a.getNote())
-                .markedAt(a.getMarkedAt())
-                .build();
-            result.add(dto);
-        }
-        return result;
-
+        return classAttendanceRepository.saveAll(toSave).stream().map(this::toAttendanceResponse).toList();
     }
 
+
     @Override
+    @Transactional(readOnly = true)
     public List<AttendanceResponseDTO> getClassAttendance(Long coachId, Long classId) {
-        // kiem tra lop
-        SportClass sportClass = sportClassRepository.findById(classId).orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
-
-        if (sportClass.getCoach() == null || !sportClass.getCoach().getUserId().equals(coachId)) {
-            throw new AppException(ErrorCode.CLASS_NOT_FOUND);
-        }
-
-        // lay danh sach diem danh cua lop
-        List<ClassAttendance> attendances = classAttendanceRepository.findBySportClass_ClassId(classId);
-
-        // map sang responsedto
-        List<AttendanceResponseDTO> result = new ArrayList<>();
-        for(ClassAttendance a : attendances){
-            Member m =  a.getMember();
-            AttendanceResponseDTO dto = AttendanceResponseDTO.builder()
-                .attendanceId(a.getAttendanceId())
-                .memberId(m.getUserId())
-                .memberName(m.getFirstName() + " " + m.getLastName())
-                .phone(m.getPhone())
-                .attendanceDate(a.getAttendanceDate())
-                .status(a.getStatus())
-                .note(a.getNote())
-                .markedAt(a.getMarkedAt())
-                .build();
-            result.add(dto);
-        }
-        return result;
+       getOwnedClassOrThrow(coachId, classId);
+       return classAttendanceRepository.findBySportClass_ClassId(classId).stream().map(this::toAttendanceResponse).toList();
     }
 
 }

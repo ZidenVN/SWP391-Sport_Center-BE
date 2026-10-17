@@ -11,7 +11,7 @@ public interface CoachService {
    List<CoachResponseDTO> getAllCoaches();
    CoachResponseDTO getCoachById(Long id);
    CoachResponseDTO updateCoach(Long id, CoachRequestDTO requestDTO);
-   void deleteCoach(Long id);
+   void toggleCoachStatus(Long id);
 
    List<TeachingScheduleResponseDTO> getMyTeachingSchedule(Long coachId);
    List<ClassRosterResponseDTO> getClassRoster(Long coachId, Long classId);

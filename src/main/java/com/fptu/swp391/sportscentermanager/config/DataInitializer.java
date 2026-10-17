@@ -2,6 +2,7 @@ package com.fptu.swp391.sportscentermanager.config;
 
 import com.fptu.swp391.sportscentermanager.entity.*;
 import com.fptu.swp391.sportscentermanager.enums.PermissionCode;
+import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import com.fptu.swp391.sportscentermanager.repository.PermissionRepository;
 import com.fptu.swp391.sportscentermanager.repository.RolePermissionRepository;
 import com.fptu.swp391.sportscentermanager.repository.RoleRepository;
@@ -150,7 +151,7 @@ public class DataInitializer implements CommandLineRunner {
             .email(managerEmail)
             .phone("0989999999")
             .passwordHash(passwordEncoder.encode(managerPassword))
-            .status("ACTIVE")
+            .status(UserStatus.ACTIVE)
             .role(managerRole)
             .build());
         System.out.println("Đã tạo tài khoản Admin mặc định: " + managerEmail);
@@ -167,7 +168,7 @@ public class DataInitializer implements CommandLineRunner {
             .email(email)
             .phone("098789654")
             .passwordHash(passwordEncoder.encode("123456"))
-            .status("ACTIVE")
+            .status(UserStatus.ACTIVE)
             .role(coachRole)
             .speciality("General Fitness")
             .build());
@@ -185,7 +186,7 @@ public class DataInitializer implements CommandLineRunner {
             .email(email)
             .phone("0341234567")
             .passwordHash(passwordEncoder.encode("123456"))
-            .status("ACTIVE")
+            .status(UserStatus.ACTIVE)
             .role(receptionistRole)
             .build());
         System.out.println("Đã tạo tài khoản Lễ tân mặc định: " + email);

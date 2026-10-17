@@ -1,6 +1,7 @@
 package com.fptu.swp391.sportscentermanager.security;
 
 import com.fptu.swp391.sportscentermanager.entity.User;
+import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -50,7 +51,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked(){
-        return "ACTIVE".equalsIgnoreCase(user.getStatus());
+        return user.getStatus() == UserStatus.ACTIVE;
     }
 
     @Override

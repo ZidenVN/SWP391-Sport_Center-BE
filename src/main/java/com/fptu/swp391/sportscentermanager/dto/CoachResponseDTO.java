@@ -15,5 +15,6 @@ public class CoachResponseDTO {
     private String lastName;
     private String email;
     private String phone;
+    private String gender;
     private String speciality;
 }
