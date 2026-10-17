@@ -42,16 +42,13 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth ->
                 auth.requestMatchers(
-                        "/api/v1/auth/**",
-                        "/api/v1/payments/vnpay/callback",
-                        "/error",
-                        "/v3/api-docs",
-                        "/v3/api-docs/**",
-                        "/v3/api-docs.yaml",
-                        "/swagger-ui/**",
-                        "/swagger-ui.html",
-                        "/webjars/**"
-                    ).permitAll()
+                    "/api/v1/auth/**",
+                    "/api/v1/payments/vnpay/callback",
+                    "/error",
+                    "/v3/api-docs/**",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html"
+                ).permitAll()
                     .anyRequest().authenticated()
             ).addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
