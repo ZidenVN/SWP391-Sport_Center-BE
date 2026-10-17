@@ -4,8 +4,10 @@ package com.fptu.swp391.sportscentermanager.controller;
 import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
 import com.fptu.swp391.sportscentermanager.dto.MemberProfileResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.MemberProfileUpdateDTO;
+import com.fptu.swp391.sportscentermanager.dto.WorkoutResultResponseDTO;
 import com.fptu.swp391.sportscentermanager.security.CustomUserDetails;
 import com.fptu.swp391.sportscentermanager.service.MemberService;
+import com.fptu.swp391.sportscentermanager.service.WorkoutResultService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,7 @@ public class MemberController {
     //Controller gọi service
     private final MemberService memberService;
     private final com.fptu.swp391.sportscentermanager.service.WorkoutPlanService workoutPlanService;
+    private final WorkoutResultService workoutResultService;
 
     //TODO: PreAuthorize có tác dụng gì? ND phải cung cấp trong ("") là gì?
     @PreAuthorize("hasRole('MEMBER') and hasAuthority('VIEW_OWN_PROFILE')")
@@ -49,5 +52,12 @@ public class MemberController {
     @GetMapping("/{memberId}")
     public ResponseEntity<MemberProfileResponseDTO> getMemberProfileById(@PathVariable Long memberId) {
         return ResponseEntity.ok(memberService.getProfile(memberId));
+    }
+
+    @PreAuthorize("hasRole('MEMBER')")
+    @GetMapping("/me/workout-result")
+    public ResponseEntity<java.util.List<WorkoutResultResponseDTO>> getMyWorkoutResults(@AuthenticationPrincipal CustomUserDetails principal) {
+        Long memberId = principal.getUser().getUserId();
+        return ResponseEntity.ok(workoutResultService.getResultsByMember(memberId));
     }
 }

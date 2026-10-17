@@ -6,6 +6,7 @@ import com.fptu.swp391.sportscentermanager.security.CustomUserDetails;
 import com.fptu.swp391.sportscentermanager.service.CoachService;
 import com.fptu.swp391.sportscentermanager.service.MemberService;
 import com.fptu.swp391.sportscentermanager.service.WorkoutPlanService;
+import com.fptu.swp391.sportscentermanager.service.WorkoutResultService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,7 @@ public class CoachController {
     private final CoachService coachService;
     private final MemberService memberService;
     private final WorkoutPlanService workoutPlanService;
+    private final WorkoutResultService workoutResultService;
 
     // API cho MANAGE CENTER
 
@@ -129,5 +131,20 @@ return ResponseEntity.ok(coachService.takeAttendance(coachId, classId, requestDT
     public ResponseEntity<List<WorkoutPlanResponseDTO>> getClassWorkoutPlans(@PathVariable Long classId) {
         return ResponseEntity.ok(workoutPlanService.getPlansByClass(classId));
     }
+
+    @LogAudit(actionType = "RECORD_WORKOUT_RESULT", targetEntity = "WorkoutResult")
+    @PreAuthorize("hasRole('COACH')")
+    @PostMapping("/members/{memberId}/workout-results")
+    public ResponseEntity<WorkoutResultResponseDTO> recordWorkoutResult(@PathVariable Long memberId, @Valid @RequestBody WorkoutResultRequestDTO requestDTO) {
+        requestDTO.setMemberId(memberId);
+        return ResponseEntity.ok(workoutResultService.recordWorkoutResult(requestDTO));
+    }
+
+    @PreAuthorize("hasRole('COACH')")
+    @GetMapping("/members/{memberId}/workout-results")
+    public ResponseEntity<List<WorkoutResultResponseDTO>> getMemberWorkoutResult(@PathVariable Long memberId) {
+        return ResponseEntity.ok(workoutResultService.getResultsByMember(memberId));
+    }
+
 
 }
