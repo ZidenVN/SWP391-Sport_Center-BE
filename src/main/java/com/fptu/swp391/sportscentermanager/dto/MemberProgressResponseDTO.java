@@ -1,14 +1,14 @@
 package com.fptu.swp391.sportscentermanager.dto;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 
 @Getter
 @Setter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class MemberProgressResponseDTO {
     private Long memberId;
     private String memberName;
