@@ -1,9 +1,11 @@
 package com.fptu.swp391.sportscentermanager.service.impl;
 
 import com.fptu.swp391.sportscentermanager.dto.RegisterRequestDTO;
+import com.fptu.swp391.sportscentermanager.dto.UserResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.Member;
 import com.fptu.swp391.sportscentermanager.entity.Role;
 import com.fptu.swp391.sportscentermanager.entity.User;
+import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import com.fptu.swp391.sportscentermanager.repository.RoleRepository;
 import com.fptu.swp391.sportscentermanager.repository.UserRepository;
 import com.fptu.swp391.sportscentermanager.service.UserService;
@@ -11,9 +13,11 @@ import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -23,6 +27,24 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+
+    private UserResponseDTO toResponse(User user) {
+        return UserResponseDTO.builder()
+            .id(user.getUserId())
+            .firstName(user.getFirstName())
+            .lastName(user.getLastName())
+            .gender(user.getGender())
+            .email(user.getEmail())
+            .phone(user.getPhone())
+            .status(user.getStatus() != null ? user.getStatus().name() : null)
+            .roleId(user.getRole() != null ? user.getRole().getRoleId() : null)
+            .roleName(user.getRole() != null ? user.getRole().getRoleName() : null)
+            .build();
+    }
+
+    private User findUserOrThrow(Long id) {
+        return userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+    }
 
     @Override
     public String registerUser(RegisterRequestDTO requestDTO) {
@@ -34,7 +56,7 @@ public class UserServiceImpl implements UserService {
             throw new AppException(ErrorCode.PHONE_ALREADY_TAKEN);
         }
 
-        Role memberRole = roleRepository.findByRoleName("MEMBER");   // thay cho findById(4L)
+        Role memberRole = roleRepository.findByRoleName("MEMBER");
         if (memberRole == null) {
             throw new AppException(ErrorCode.ROLE_NOT_FOUND);
         }
@@ -46,7 +68,7 @@ public class UserServiceImpl implements UserService {
             .email(requestDTO.getEmail())
             .phone(requestDTO.getPhone())
             .passwordHash(passwordEncoder.encode(requestDTO.getPassword()))
-            .status("ACTIVE")
+            .status(UserStatus.ACTIVE)
             .role(memberRole)
             .trainingGoal("Chưa cập nhật")
             .build();
@@ -55,50 +77,70 @@ public class UserServiceImpl implements UserService {
         return "Đăng ký tài khoản thành công!";
     }
 
+    // CRUD
+
     @Override
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    public List<UserResponseDTO> getAllUsers() {
+        List<User> users = userRepository.findAll();
+        List<UserResponseDTO> result = new ArrayList<>();
+        for (User u : users) {
+            result.add(toResponse(u));
+        }
+        return result;
     }
 
     @Override
-    public User getUserById(Long id) {
-        return userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+    public UserResponseDTO getUserById(Long id) {
+        return toResponse(findUserOrThrow(id));
     }
 
     @Override
     @Transactional
-    public User updateUser(Long id, User userdetails) {
-        User existingUser = getUserById(id);
+    public UserResponseDTO updateUser(Long id, UserResponseDTO requestDTO) {
+       User user = findUserOrThrow(id);
 
-        existingUser.setFirstName(userdetails.getFirstName());
-        existingUser.setLastName(userdetails.getLastName());
-        existingUser.setEmail(userdetails.getEmail());
-        existingUser.setGender(userdetails.getGender());
-        existingUser.setPhone(userdetails.getPhone());
+       if (requestDTO.getEmail() != null && !requestDTO.getEmail().equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmail(requestDTO.getEmail())) {
+           throw new AppException(ErrorCode.EMAIL_ALREADY_TAKEN);
+       }
 
-        return existingUser;
+       if (requestDTO.getFirstName() != null)
+           user.setFirstName(requestDTO.getFirstName());
+       if (requestDTO.getLastName() != null)
+           user.setLastName(requestDTO.getLastName());
+       if (requestDTO.getGender() != null)
+           user.setGender(requestDTO.getGender());
+       if (requestDTO.getEmail() != null)
+           user.setEmail(requestDTO.getEmail());
+       if (requestDTO.getPhone() != null)
+           user.setPhone(requestDTO.getPhone());
+
+       userRepository.save(user);
+       return toResponse(user);
     }
 
     @Override
+    @Transactional
+    public UserResponseDTO updateUserStatus(Long id, UserStatus newStatus){
+        User user = findUserOrThrow(id);
+        user.setStatus(newStatus);
+        userRepository.save(user);
+        return toResponse(user);
+    }
+
+    @Override
+    @Transactional
     public void toggleUserStatus(Long id) {
-        User user = getUserById(id);
-        if ("ACTIVE".equalsIgnoreCase(user.getStatus())) {
-            user.setStatus("INACTIVE");
-        } else {
-            user.setStatus("ACTIVE");
-        }
+        User user = findUserOrThrow(id);
+        user.setStatus(user.getStatus() == UserStatus.ACTIVE ? UserStatus.INACTIVE : UserStatus.ACTIVE);
         userRepository.save(user);
     }
 
     @Override
     @Transactional
-    public User assignRoleToUser(Long userId, Long roleId) {
-        User user = getUserById(userId);
-        Role role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
-
-        user.setRole(role);
-        // Nhờ @Transactional, Hibernate sẽ tự động lưu cập nhật.
-        return user;
+    public UserResponseDTO assignRoleToUser(Long userId, Long roleId) {
+       User user = findUserOrThrow(userId);
+       Role role = roleRepository.findById(roleId).orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+       user.setRole(role);
+       return toResponse(user);
     }
 }

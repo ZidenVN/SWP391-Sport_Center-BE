@@ -6,6 +6,7 @@ import com.fptu.swp391.sportscentermanager.dto.WalkInMemberResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.Member;
 import com.fptu.swp391.sportscentermanager.entity.Role;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
+import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.MemberRepository;
 import com.fptu.swp391.sportscentermanager.repository.RoleRepository;
@@ -74,7 +75,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
             .email(dto.getEmail())
             .phone(dto.getPhone())
             .passwordHash(passwordEncoder.encode(rawPassword))
-            .status("ACTIVE")
+            .status(UserStatus.ACTIVE)
             .role(memberRole)
             .trainingGoal(goal)
             .build());
@@ -101,7 +102,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
             .gender(m.getGender())
             .email(m.getEmail())
             .phone(m.getPhone())
-            .status(m.getStatus())
+            .status(m.getStatus().name())
             .trainingGoal(m.getTrainingGoal())
             .build();
     }

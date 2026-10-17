@@ -2,7 +2,6 @@ package com.fptu.swp391.sportscentermanager.controller;
 
 import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
 import com.fptu.swp391.sportscentermanager.dto.*;
-import com.fptu.swp391.sportscentermanager.entity.Coach;
 import com.fptu.swp391.sportscentermanager.security.CustomUserDetails;
 import com.fptu.swp391.sportscentermanager.service.CoachService;
 import com.fptu.swp391.sportscentermanager.service.MemberService;
@@ -26,6 +25,12 @@ public class CoachController {
 
     // API cho MANAGE CENTER
 
+    @PreAuthorize("hasAuthority('VIEW_USER')")
+    @GetMapping("/{id}")
+    public ResponseEntity<CoachResponseDTO> getCoachById(@PathVariable Long id) {
+        return ResponseEntity.ok(coachService.getCoachById(id));
+    }
+
     @LogAudit(actionType = "CREATE", targetEntity = "Coach")
     @PreAuthorize("hasAuthority('CREATE_USER')")
     @PostMapping
@@ -40,17 +45,17 @@ public class CoachController {
     }
 
     @LogAudit(actionType = "UPDATE", targetEntity = "Coach")
-    @PreAuthorize("hasAuthority('MANAGE_USER')")
+    @PreAuthorize("hasAuthority('UPDATE_USER') OR hasRole('CENTER_MANAGER') ")
     @PutMapping("/{id}")
     public ResponseEntity<CoachResponseDTO> updateCoach(@PathVariable Long id, @Valid @RequestBody CoachRequestDTO requestDTO) {
         return ResponseEntity.ok(coachService.updateCoach(id, requestDTO));
     }
 
     @LogAudit(actionType = "DELETE", targetEntity = "Coach")
-    @PreAuthorize("hasAuthority('MANAGE_USER')")
+    @PreAuthorize("hasAuthority('DEACTIVATE_USER') OR hasRole('CENTER_MANAGER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteCoach(@PathVariable Long id) {
-        coachService.deleteCoach(id);
+        coachService.toggleCoachStatus(id);
         return ResponseEntity.ok("Đã khóa tài khoản thành công!");
     }
 

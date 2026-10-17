@@ -1,5 +1,7 @@
 package com.fptu.swp391.sportscentermanager.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -35,12 +37,12 @@ public class User {
     @Column(name = "phone", nullable = false, unique = true)
     private String phone;
 
-
-
+    @JsonIgnore
     @Column(name = "password_hash", nullable = false, columnDefinition = "varchar(255)")
     private String passwordHash;
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private UserStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id")

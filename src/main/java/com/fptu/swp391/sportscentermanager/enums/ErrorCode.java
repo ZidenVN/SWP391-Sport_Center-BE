@@ -32,7 +32,10 @@ public enum ErrorCode {
     MEMBER_NOT_IN_CLASS(HttpStatus.BAD_REQUEST, "ERR_ATTENDANCE_001", "Học viên không thuộc danh sách lớp học này!"),
     REGISTRATION_ALREADY_CANCELLED(HttpStatus.CONFLICT,"ERR_REGISTRATION_001","Đăng ký này đã được hủy trước đó!"),
     CANCEL_NOT_ALLOWED(HttpStatus.BAD_REQUEST,"ERR_REGISTRATION_002","Lớp học đã bắt đầu, không thể hủy đăng ký!"),
-    PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND,"ERR_PAYMENT_404","Giao dịch thanh toán không tồn tại!")
+    PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_PAYMENT_404", "Giao dịch thanh toán không tồn tại!"),
+
+    INVALID_REQUEST(HttpStatus.BAD_REQUEST, "ERR_REQUEST_001", "Yêu cầu không hợp lệ!"),
+    DUPLICATE_ATTENDANCE(HttpStatus.BAD_REQUEST, "ERR_ATTENDANCE_002", "Học viên bị trùng trong danh sách điểm danh!")
     // TODO: thêm các code error nếu cần.
         ;
 
