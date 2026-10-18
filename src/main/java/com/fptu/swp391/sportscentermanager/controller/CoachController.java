@@ -2,11 +2,9 @@ package com.fptu.swp391.sportscentermanager.controller;
 
 import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
 import com.fptu.swp391.sportscentermanager.dto.*;
+import com.fptu.swp391.sportscentermanager.repository.NotificationRepository;
 import com.fptu.swp391.sportscentermanager.security.CustomUserDetails;
-import com.fptu.swp391.sportscentermanager.service.CoachService;
-import com.fptu.swp391.sportscentermanager.service.MemberService;
-import com.fptu.swp391.sportscentermanager.service.WorkoutPlanService;
-import com.fptu.swp391.sportscentermanager.service.WorkoutResultService;
+import com.fptu.swp391.sportscentermanager.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +22,8 @@ public class CoachController {
     private final MemberService memberService;
     private final WorkoutPlanService workoutPlanService;
     private final WorkoutResultService workoutResultService;
+    private final NotificationService notificationService;
+    private final NotificationRepository notificationRepository;
 
     // API cho MANAGE CENTER
 
@@ -170,4 +170,30 @@ return ResponseEntity.ok(coachService.takeAttendance(coachId, classId, requestDT
     public ResponseEntity<MemberProgressResponseDTO> getMyProgress(@PathVariable Long memberId) {
        return ResponseEntity.ok(workoutResultService.getMemberProgress(memberId));
     }
+
+    // COACH gui thong bao / bai tap cho ca lop
+    @LogAudit(actionType = "SEND_NOTIFICATION_CLASS", targetEntity = "Notification")
+    @PreAuthorize("hasRole('COACH')")
+    @PostMapping("/classes/{classId}/notifications")
+    public ResponseEntity<NotificationResponseDTO> sendClassNotification(@AuthenticationPrincipal CustomUserDetails principal, @PathVariable Long classId, @Valid @RequestBody NotificationRequestDTO requestDTO) {
+        Long coachId = principal.getUser().getUserId();
+        return ResponseEntity.ok(notificationService.sendNotificationToClass(coachId, classId, requestDTO));
+    }
+
+    // COACH gui thong bao / bai tap cho ca nhan
+    @LogAudit(actionType = "SEND_NOTIFICATION_CLASS", targetEntity = "Notification")
+    @PreAuthorize("hasRole('COACH')")
+    @PostMapping("/members/{memberId}/notifications")
+    public ResponseEntity<NotificationResponseDTO> sendMemberNotification(@AuthenticationPrincipal CustomUserDetails principal, @PathVariable Long memberId, @Valid @RequestBody NotificationRequestDTO requestDTO) {
+        Long coachId = principal.getUser().getUserId();
+        return ResponseEntity.ok(notificationService.sendNotificationToMember(coachId, memberId, requestDTO));
+    }
+
+    // COACH xem danh sach thong bao da gui cua lop
+    @PreAuthorize("hasRole('COACH')")
+    @GetMapping("/classes/{classId}/notifications")
+    public ResponseEntity<List<NotificationResponseDTO>> getClassNotifications(@PathVariable Long classId) {
+        return ResponseEntity.ok(notificationService.getClassNotifications(classId));
+    }
+
 }
