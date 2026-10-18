@@ -2,12 +2,10 @@ package com.fptu.swp391.sportscentermanager.controller;
 
 
 import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
-import com.fptu.swp391.sportscentermanager.dto.MemberProfileResponseDTO;
-import com.fptu.swp391.sportscentermanager.dto.MemberProfileUpdateDTO;
-import com.fptu.swp391.sportscentermanager.dto.MemberProgressResponseDTO;
-import com.fptu.swp391.sportscentermanager.dto.WorkoutResultResponseDTO;
+import com.fptu.swp391.sportscentermanager.dto.*;
 import com.fptu.swp391.sportscentermanager.security.CustomUserDetails;
 import com.fptu.swp391.sportscentermanager.service.MemberService;
+import com.fptu.swp391.sportscentermanager.service.NotificationService;
 import com.fptu.swp391.sportscentermanager.service.WorkoutResultService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +22,7 @@ public class MemberController {
     private final MemberService memberService;
     private final com.fptu.swp391.sportscentermanager.service.WorkoutPlanService workoutPlanService;
     private final WorkoutResultService workoutResultService;
+    private final NotificationService notificationService;
 
     //TODO: PreAuthorize có tác dụng gì? ND phải cung cấp trong ("") là gì?
     @PreAuthorize("hasRole('MEMBER') and hasAuthority('VIEW_OWN_PROFILE')")
@@ -67,5 +66,12 @@ public class MemberController {
     public ResponseEntity<MemberProgressResponseDTO>  getMyProgress(@AuthenticationPrincipal CustomUserDetails principal) {
         Long memberId = principal.getUser().getUserId();
         return ResponseEntity.ok(workoutResultService.getMemberProgress(memberId));
+    }
+
+    @PreAuthorize("hasRole('MEMBER')")
+    @GetMapping("/me/notifications")
+    public ResponseEntity<java.util.List<NotificationResponseDTO>> getNotifications(@AuthenticationPrincipal CustomUserDetails principal) {
+        Long memberId = principal.getUser().getUserId();
+        return ResponseEntity.ok(notificationService.getMyNotifications(memberId));
     }
 }
