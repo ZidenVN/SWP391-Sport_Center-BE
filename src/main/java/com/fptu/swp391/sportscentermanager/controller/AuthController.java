@@ -20,6 +20,7 @@ import com.google.api.client.auth.openidconnect.IdTokenVerifier;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -44,7 +45,10 @@ public class AuthController {
     private final RoleRepository roleRepository;
     private final SubscriptionRepository subscriptionRepository;
 
-    private static final String GOOGLE_CLIENT_ID = "621896812018-6c6t3b5b1le9hpkljjd5m9e07mntt3vk.apps.googleusercontent.com";
+
+    @Value("${google.client-id}")
+    private String googleClientId;
+
     private final PasswordEncoder passwordEncoder;
 
     @PostMapping("/login")
@@ -100,7 +104,7 @@ public class AuthController {
             // decode để check Token
             com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier verifier =
                 new com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier.Builder(new com.google.api.client.http.javanet.NetHttpTransport(), new com.google.api.client.json.gson.GsonFactory())
-                    .setAudience(java.util.Collections.singletonList(GOOGLE_CLIENT_ID)).build();
+                    .setAudience(java.util.Collections.singletonList(googleClientId)).build();
             com.google.api.client.googleapis.auth.oauth2.GoogleIdToken idToken = verifier.verify(request.getToken());
 
             // Token đúng. lấy email và tên từ goole

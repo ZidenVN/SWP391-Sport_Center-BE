@@ -4,6 +4,7 @@ package com.fptu.swp391.sportscentermanager.security;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
@@ -11,10 +12,14 @@ import java.util.Date;
 
 @Component
 public class JwtUtils {
-    private static final String SECRET = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
+    @Value("${jwt.secret}")
+    private String secret;
+
+    @Value("${jwt.expiration-ms}")
+    private long expirationMs;
 
     private Key getSigningKey() {
-        byte[] bytesKey = Decoders.BASE64.decode(SECRET);
+        byte[] bytesKey = Decoders.BASE64.decode(secret);
         return Keys.hmacShaKeyFor(bytesKey);
     }
 
@@ -22,7 +27,7 @@ public class JwtUtils {
         return Jwts.builder()
             .setSubject(email)
             .setIssuedAt(new Date(System.currentTimeMillis()))
-            .setExpiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24))
+            .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
             .signWith(getSigningKey(), SignatureAlgorithm.HS256)
             .compact();
     }

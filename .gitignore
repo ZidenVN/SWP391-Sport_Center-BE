@@ -44,3 +44,6 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
+
+### Local secrets ###
+application-local.properties
