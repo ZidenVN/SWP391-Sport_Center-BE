@@ -1,0 +1,14 @@
+name: Local
+values:
+  - key: base_url
+    value: 'http://localhost:8080'
+  - key: email
+    value: ''
+  - key: password
+    value: ''
+  - key: memberPassword
+    value: ''
+  - key: googleIdToken
+    value: ''
+  - key: token
+    value: ''

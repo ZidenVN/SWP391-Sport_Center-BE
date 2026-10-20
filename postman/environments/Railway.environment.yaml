@@ -1,0 +1,14 @@
+name: Railway
+values:
+  - key: base_url
+    value: ''
+  - key: email
+    value: ''
+  - key: password
+    value: ''
+  - key: memberPassword
+    value: ''
+  - key: googleIdToken
+    value: ''
+  - key: token
+    value: ''
