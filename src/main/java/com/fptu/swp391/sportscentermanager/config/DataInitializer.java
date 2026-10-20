@@ -28,8 +28,12 @@ public class DataInitializer implements CommandLineRunner {
     @Value("${app.init.manager.email:admin@sportcenter.com}")
     private String managerEmail;
 
-    @Value("${app.init.manager.password:toilaadmin}")
+    // Không đặt mật khẩu mặc định trong code: để trống thì bỏ qua bước tạo tài khoản
+    @Value("${app.init.manager.password:}")
     private String managerPassword;
+
+    @Value("${app.init.default-staff.password:}")
+    private String defaultStaffPassword;
 
     private static final Map<String, String> ROLES = new LinkedHashMap<>();
     static {
@@ -161,13 +165,18 @@ public class DataInitializer implements CommandLineRunner {
         String email = "coach@Sportcenter.com";
         if (userRepository.existsByEmail(email)) return ;
 
+        if (defaultStaffPassword.isBlank()) {
+            System.out.println("Chưa cấu hình mật khẩu, bỏ qua tạo tài khoản HLV mặc định");
+            return;
+        }
+
         userRepository.save(Coach.builder()
             .firstName("Default")
             .lastName("Coach")
             .gender("MALE")
             .email(email)
             .phone("098789654")
-            .passwordHash(passwordEncoder.encode("123456"))
+            .passwordHash(passwordEncoder.encode(defaultStaffPassword))
             .status(UserStatus.ACTIVE)
             .role(coachRole)
             .speciality("General Fitness")
@@ -179,13 +188,18 @@ public class DataInitializer implements CommandLineRunner {
         String email = "receptionist@Sportcenter.com";
         if (userRepository.existsByEmail(email)) return;
 
+        if (defaultStaffPassword.isBlank()) {
+            System.out.println("Chưa cấu hình mật khẩu, bỏ qua tạo tài khoản Lễ tân mặc định");
+            return;
+        }
+
         userRepository.save(Receptionist.builder()
             .firstName("Default")
             .lastName("Receptionist")
             .gender("FEMALE")
             .email(email)
             .phone("0341234567")
-            .passwordHash(passwordEncoder.encode("123456"))
+            .passwordHash(passwordEncoder.encode(defaultStaffPassword))
             .status(UserStatus.ACTIVE)
             .role(receptionistRole)
             .build());
