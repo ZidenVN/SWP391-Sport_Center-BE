@@ -1,13 +1,13 @@
 $kind: http-request
-name: http://localhost:8080/api/v1/auth/login
+name: Login
 description: ""
-url: http://localhost:8080/api/v1/auth/login
+url: "{{base_url}}/api/v1/auth/login"
 method: POST
 body:
   type: json
   content: |-
     {
-        "email": "admin@sportcenter.com", 
-        "password": "toilaadmin"
+        "email": "{{email}}",
+        "password": "{{password}}"
     }
 order: 3864129966030842
