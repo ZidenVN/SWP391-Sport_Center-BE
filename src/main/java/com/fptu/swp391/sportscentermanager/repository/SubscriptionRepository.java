@@ -29,4 +29,6 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
     List<Subscription> findCurrent(@Param("memberId") Long memberId,
                                    @Param("now") LocalDateTime now);
 
+    List<Subscription> findByMember_UserIdAndStatus(Long memberId, String status);
+
 }

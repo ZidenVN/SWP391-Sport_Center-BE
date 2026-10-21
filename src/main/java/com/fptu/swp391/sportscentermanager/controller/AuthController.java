@@ -16,6 +16,9 @@ import com.fptu.swp391.sportscentermanager.security.CustomUserDetails;
 import com.fptu.swp391.sportscentermanager.security.JwtUtils;
 import com.fptu.swp391.sportscentermanager.service.UserService;
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+
 import com.google.api.client.auth.openidconnect.IdTokenVerifier;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import jakarta.validation.Valid;
@@ -25,6 +28,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -44,6 +49,7 @@ public class AuthController {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final UserDetailsService userDetailsService;
 
 
     @Value("${google.client-id}")
@@ -71,6 +77,7 @@ public class AuthController {
                 .lastName(user.getLastName())
                 .fullName(fullName)
                 .role(roleName)
+                    .permissions(extractPermissions(userDetails.getAuthorities()))
                 .packageName(packageName)
                 .currentPackage(currentPackage)
                 .build());
@@ -152,6 +159,7 @@ public class AuthController {
                     .lastName(lastNameVal)
                     .fullName(fullNameVal)
                     .role(roleName)
+                        .permissions(extractPermissions(userDetailsService.loadUserByUsername(email).getAuthorities()))
                     .packageName(packageName)
                     .currentPackage(currentPackage)
                     .build());
@@ -161,6 +169,10 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Lỗi xác thực Google: " + e.getMessage());
         }
+    }
+
+    private List<String> extractPermissions(Collection<? extends GrantedAuthority> authorities) {
+        return authorities.stream().map(GrantedAuthority::getAuthority).filter(a -> !a.startsWith("ROLE_")).toList();
     }
 
     private SubscriptionResponseDTO getActiveSubscription(Long userId) {

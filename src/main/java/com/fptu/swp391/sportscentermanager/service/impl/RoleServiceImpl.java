@@ -1,5 +1,6 @@
 package com.fptu.swp391.sportscentermanager.service.impl;
 
+import com.fptu.swp391.sportscentermanager.dto.PermissionResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.RoleRequest;
 import com.fptu.swp391.sportscentermanager.entity.Permission;
 import com.fptu.swp391.sportscentermanager.entity.Role;
@@ -52,5 +53,14 @@ public class RoleServiceImpl implements RoleService {
             }
         }
         return role;
+    }
+
+    @Override
+    public List<PermissionResponseDTO> getPermissionsOfRole(Long roleId) {
+        if (!roleRepository.existsById(roleId)) {
+            throw new AppException(ErrorCode.ROLE_NOT_FOUND);
+        }
+
+        return rolePermissionRepository.findAllByRole_RoleId(roleId).stream().map(rp -> PermissionResponseDTO.builder().permissionId(rp.getPermission().getPermissionId()).permissionName(rp.getPermission().getPermissionName()).description(rp.getPermission().getDescription()).build()).toList();
     }
 }

@@ -2,6 +2,8 @@ package com.fptu.swp391.sportscentermanager.dto;
 
 import lombok.*;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -13,6 +15,7 @@ public class AuthResponse {
     private String lastName;
     private String fullName;
     private String role;
+    private List<String> permissions;
     private String packageName;
     private SubscriptionResponseDTO currentPackage;
 }
