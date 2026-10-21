@@ -37,7 +37,6 @@ public class VNPayServiceImpl implements VNPayService {
     private final PaymentRepository paymentRepository;
 
 
-
     @Override
     @Transactional
     public VNPayPaymentResponseDTO createPaymentUrl(Long memberId, Long packageId, HttpServletRequest request) {
@@ -46,12 +45,21 @@ public class VNPayServiceImpl implements VNPayService {
 
         LocalDateTime now = LocalDateTime.now();
 
-        // tao subscription o trang thai PENDING_PAYMENT
-        LocalDateTime startDate = subscriptionRepository
-            .findFirstByMember_UserIdAndStatusOrderByEndDateDesc(memberId, "ACTIVE")
-            .map(Subscription::getEndDate)
-            .filter(d -> d.isAfter(now))
-            .orElse(now);
+        // Không cho tạo nhiều giao dịch chờ thanh toán cùng lúc
+        for (Subscription pending : subscriptionRepository.findByMember_UserIdAndStatus(memberId, "PENDING")) {
+            Payment pendingPayment = paymentRepository.findFirstBySubscription_SubscriptionIdOrderByPaymentDateDesc(pending.getSubscriptionId()).orElse(null);
+            boolean stillValid = pendingPayment != null && pendingPayment.getPaymentDate().isAfter(now.minusMinutes(15));
+            if (stillValid) {
+                throw new AppException(ErrorCode.PAYMENT_PENDING_EXISTS);
+            }
+
+            pending.setStatus("CANCELLED");
+            if (pendingPayment != null)
+                pendingPayment.setStatus("CANCELLED");
+        }
+
+
+        LocalDateTime startDate = calculateStartDate(memberId, now);
         LocalDateTime endDate = startDate.plusDays(pkg.getDurationDays());
 
         Subscription subscription = subscriptionRepository.save(Subscription.builder().member(member).membershipPackage(pkg).startDate(startDate).endDate(endDate).status("PENDING").build());
@@ -85,20 +93,20 @@ public class VNPayServiceImpl implements VNPayService {
         Collections.sort(fieldNames);
         StringBuilder hashData = new StringBuilder();
         StringBuilder query = new StringBuilder();
-        try{
+        try {
             for (Iterator<String> itr = fieldNames.iterator(); itr.hasNext(); ) {
                 String fieldName = itr.next();
                 String fieldValue = vnpParams.get(fieldName);
                 if (fieldValue != null && !fieldValue.isEmpty()) {
                     hashData.append(fieldName).append("=").append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
                     query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII.toString())).append('=').append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
-                    if (itr.hasNext()){
+                    if (itr.hasNext()) {
                         hashData.append('&');
                         query.append('&');
                     }
                 }
             }
-        } catch (UnsupportedEncodingException e){
+        } catch (UnsupportedEncodingException e) {
             throw new RuntimeException("Lỗi encode VNPay query: " + e.getMessage());
         }
 
@@ -118,7 +126,7 @@ public class VNPayServiceImpl implements VNPayService {
     @Transactional
     public VNPayCallBackResponseDTO processCallBack(HttpServletRequest request) {
         Map<String, String> fields = new HashMap<>();
-        for(Enumeration<String> params = request.getParameterNames();params.hasMoreElements();){
+        for (Enumeration<String> params = request.getParameterNames(); params.hasMoreElements(); ) {
             String fieldName = params.nextElement();
             String fieldValue = request.getParameter(fieldName);
             if (fieldValue != null && !fieldValue.isEmpty()) {
@@ -129,16 +137,16 @@ public class VNPayServiceImpl implements VNPayService {
         fields.remove("vnp_SecureHashType");
         fields.remove("vnp_SecureHash");
         String signValue;
-        try{
+        try {
             signValue = VNPayConfig.hashAllFields(fields, vnPayConfig.getVnpHashSecret());
-        } catch (UnsupportedEncodingException e){
+        } catch (UnsupportedEncodingException e) {
             return VNPayCallBackResponseDTO.builder()
                 .success(false)
                 .message("Lỗi đối soát chữ ký VNPay")
                 .build();
         }
 
-        if(!signValue.equalsIgnoreCase(vnpSecureHash)){
+        if (!signValue.equalsIgnoreCase(vnpSecureHash)) {
             return VNPayCallBackResponseDTO.builder()
                 .success(false)
                 .message("Chữ ký VNPay không hợp lệ")
@@ -168,13 +176,16 @@ public class VNPayServiceImpl implements VNPayService {
         String responseCode = request.getParameter("vnp_ResponseCode");
         String transactionNo = request.getParameter("vnp_TransactionNo");
 
-        if("00".equals(responseCode)){
+        if ("00".equals(responseCode)) {
             payment.setStatus("COMPLETED");
             payment.setPaymentDate(LocalDateTime.now());
             paymentRepository.save(payment);
 
 
             Subscription subscription = payment.getSubscription();
+            LocalDateTime startDate = calculateStartDate(subscription.getMember().getUserId(), LocalDateTime.now());
+            subscription.setStartDate(startDate);
+            subscription.setEndDate(startDate.plusDays(subscription.getMembershipPackage().getDurationDays()));
             subscription.setStatus("ACTIVE");
             subscriptionRepository.save(subscription);
 
@@ -201,5 +212,9 @@ public class VNPayServiceImpl implements VNPayService {
                 .responseCode(responseCode)
                 .build();
         }
+    }
+
+    private LocalDateTime calculateStartDate(Long memberId, LocalDateTime now) {
+        return subscriptionRepository.findFirstByMember_UserIdAndStatusOrderByEndDateDesc(memberId, "ACTIVE").map(Subscription::getEndDate).filter(d -> d.isAfter(now)).orElse(now);
     }
 }
