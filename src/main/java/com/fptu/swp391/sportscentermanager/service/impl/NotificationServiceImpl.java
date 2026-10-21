@@ -27,7 +27,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationAccountRepository notificationAccountRepository;
     private final SportClassRepository sportClassRepository;
     private final MemberRepository memberRepository;
-    private final ClassEnrollmentRepository classEnrollmentRepository;
+    private final ClassRegistrationRepository classRegistrationRepository;
 
     @Override
     public NotificationResponseDTO sendNotificationToClass(Long coachId, Long classId, NotificationRequestDTO requestDTO) {
@@ -105,8 +105,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .build());
         }
 
-        List<ClassEnrollment> enrollments = classEnrollmentRepository.findByMember_UserId(memberId);
-        List<Long> classIds = enrollments.stream().map(e -> e.getSportClass().getClassId()).toList();
+        List<Long> classIds = classRegistrationRepository.findActiveClassIdsByMember(memberId);
         if (!classIds.isEmpty()){
             List<NotificationClass> classNotes = notificationClassRepository.findBySportClass_ClassIdIn(classIds);
             for (NotificationClass nc : classNotes) {
