@@ -23,51 +23,68 @@ public interface ClassRegistrationRepository extends JpaRepository<ClassRegistra
     // Lịch sử đăng ký: mới nhất trước.
     // JOIN FETCH để lấy luôn lớp/phòng/môn/HLV trong 1 câu SQL (tránh N+1)
     @Query("""
-            SELECT r FROM ClassRegistration r
-            JOIN FETCH r.sportClass c
-            LEFT JOIN FETCH c.room
-            LEFT JOIN FETCH c.subject
-            LEFT JOIN FETCH c.coach
-            WHERE r.member.userId = :memberId
-            ORDER BY r.registeredAt DESC
-            """)
+        SELECT r FROM ClassRegistration r
+        JOIN FETCH r.sportClass c
+        LEFT JOIN FETCH c.room
+        LEFT JOIN FETCH c.subject
+        LEFT JOIN FETCH c.coach
+        WHERE r.member.userId = :memberId
+        ORDER BY r.registeredAt DESC
+        """)
     List<ClassRegistration> findHistory(@Param("memberId") Long memberId);
 
     // Lịch sắp tới: đang REGISTERED và lớp chưa diễn ra, gần nhất trước
     @Query("""
-            SELECT r FROM ClassRegistration r
-            JOIN FETCH r.sportClass c
-            LEFT JOIN FETCH c.room
-            LEFT JOIN FETCH c.subject
-            LEFT JOIN FETCH c.coach
-            WHERE r.member.userId = :memberId
-              AND r.status = 'REGISTERED'
-              AND c.scheduleTime > :now
-            ORDER BY c.scheduleTime ASC
-            """)
+        SELECT r FROM ClassRegistration r
+        JOIN FETCH r.sportClass c
+        LEFT JOIN FETCH c.room
+        LEFT JOIN FETCH c.subject
+        LEFT JOIN FETCH c.coach
+        WHERE r.member.userId = :memberId
+          AND r.status = 'REGISTERED'
+          AND c.scheduleTime > :now
+        ORDER BY c.scheduleTime ASC
+        """)
     List<ClassRegistration> findUpcoming(@Param("memberId") Long memberId,
                                          @Param("now") LocalDateTime now);
 
 
     @Query("""
-        select count(r) from ClassRegistration r
-        where r.status = :status and r.registeredAt between :start and :end
-    """)
+            select count(r) from ClassRegistration r
+            where r.status = :status and r.registeredAt between :start and :end
+        """)
     long countByStatusBetween(@Param("status") String status, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     @Query("""
-        SELECT c.classId,
-               sub.subjectName,
-               CONCAT(coach.lastName, ' ', coach.firstName),
-               room.roomName,
-               c.maxCapacity,
-               COUNT(CASE WHEN r.status = 'REGISTERED' THEN 1 END) AS registeredCount
-        FROM SportClass c
-        JOIN c.subject sub
-        LEFT JOIN c.coach coach
-        LEFT JOIN c.room room
-        LEFT JOIN ClassRegistration r ON r.sportClass.classId = c.classId
-        GROUP BY c.classId, sub.subjectName, coach.lastName, coach.firstName, room.roomName, c.maxCapacity
-    """)
+            SELECT c.classId,
+                   sub.subjectName,
+                   CONCAT(coach.lastName, ' ', coach.firstName),
+                   room.roomName,
+                   c.maxCapacity,
+                   COUNT(CASE WHEN r.status = 'REGISTERED' THEN 1 END) AS registeredCount
+            FROM SportClass c
+            JOIN c.subject sub
+            LEFT JOIN c.coach coach
+            LEFT JOIN c.room room
+            LEFT JOIN ClassRegistration r ON r.sportClass.classId = c.classId
+            GROUP BY c.classId, sub.subjectName, coach.lastName, coach.firstName, room.roomName, c.maxCapacity
+        """)
     List<Object[]> getClassOccupancyStats();
+
+    // Danh sách học viên đang đăng ký của 1 lớp (roster + điểm danh). JOIN FETCH để tránh N+1
+    @Query("""
+        SELECT r FROM ClassRegistration r
+        JOIN FETCH r.member
+        WHERE r.sportClass.classId = :classId
+          AND r.status = 'REGISTERED'
+        ORDER BY r.registeredAt ASC
+        """)
+    List<ClassRegistration> findActiveByClassId(@Param("classId") Long classId);
+
+    @Query("""
+        SELECT r.sportClass.classId FROM ClassRegistration r
+        WHERE r.member.userId = :memberId
+        AND r.status = 'REGISTERED'
+        """)
+    List<Long> findActiveClassIdsByMember(@Param("memberId") Long memberId);
 }

@@ -32,9 +32,9 @@ public class CoachServiceImpl implements CoachService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final SportClassRepository sportClassRepository;
-    private final ClassEnrollmentRepository classEnrollmentRepository;
     private final ClassAttendanceRepository classAttendanceRepository;
     private final MemberRepository memberRepository;
+    private final ClassRegistrationRepository classRegistrationRepository;
 
     private SportClass getOwnedClassOrThrow(Long coachId, Long classId) {
         SportClass sportClass = sportClassRepository.findById(classId).orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
@@ -102,7 +102,7 @@ public class CoachServiceImpl implements CoachService {
     @Override
     @Transactional(readOnly = true)
     public List<CoachResponseDTO> getAllCoaches() {
-       return coachRepository.findAll().stream().map(this::toCoachResponse).toList();
+        return coachRepository.findAll().stream().map(this::toCoachResponse).toList();
     }
 
     @Override
@@ -137,7 +137,7 @@ public class CoachServiceImpl implements CoachService {
 
         Coach savedCoach = coachRepository.save(coach);
 
-       return toCoachResponse(savedCoach);
+        return toCoachResponse(savedCoach);
     }
 
     @Override
@@ -160,7 +160,7 @@ public class CoachServiceImpl implements CoachService {
         List<TeachingScheduleResponseDTO> result = new ArrayList<>();
 
         for (SportClass c : classes) {
-            long enrolledCnt = classEnrollmentRepository.countBySportClass_ClassIdAndStatus(c.getClassId(), "ENROLLED");
+            long enrolledCnt = classRegistrationRepository.countBySportClass_ClassIdAndStatus(c.getClassId(), "REGISTERED");
             String subjectName = (c.getSubject() != null) ? c.getSubject().getSubjectName() : "Chưa có môn nào";
             String roomName = (c.getRoom() != null) ? c.getRoom().getRoomName() : "Chưa có phòng";
 
@@ -183,19 +183,19 @@ public class CoachServiceImpl implements CoachService {
     public List<ClassRosterResponseDTO> getClassRoster(Long coachId, Long classId) {
         getOwnedClassOrThrow(coachId, classId);
 
-        List<ClassEnrollment> enrollments = classEnrollmentRepository.findBySportClass_ClassId(classId);
         List<ClassRosterResponseDTO> result = new ArrayList<>();
-        for (ClassEnrollment e : enrollments) {
+        for (ClassRegistration r : classRegistrationRepository.findActiveByClassId(classId)) {
+            Member m = r.getMember();
             ClassRosterResponseDTO dto = ClassRosterResponseDTO.builder()
-                .memberId(e.getMember().getUserId())
-                .firstName(e.getMember().getFirstName())
-                .lastName(e.getMember().getLastName())
-                .email(e.getMember().getEmail())
-                .phone(e.getMember().getPhone())
-                .gender(e.getMember().getGender())
-                .trainingGoal(e.getMember().getTrainingGoal())
-                .enrolledDate(e.getEnrollmentDate())
-                .enrollmentStatus(e.getStatus())
+                .memberId(m.getUserId())
+                .firstName(m.getFirstName())
+                .lastName(m.getLastName())
+                .email(m.getEmail())
+                .phone(m.getPhone())
+                .gender(m.getGender())
+                .trainingGoal(m.getTrainingGoal())
+                .enrolledDate(r.getRegisteredAt())
+                .enrollmentStatus(r.getStatus())
                 .build();
             result.add(dto);
         }
@@ -213,10 +213,8 @@ public class CoachServiceImpl implements CoachService {
         }
 
         Map<Long, Member> enrolledMembers = new HashMap<>();
-        for (ClassEnrollment e : classEnrollmentRepository.findBySportClass_ClassId(classId)) {
-            if (e.getMember() != null) {
-                enrolledMembers.put(e.getMember().getUserId(), e.getMember());
-            }
+        for (ClassRegistration r : classRegistrationRepository.findActiveByClassId(classId)) {
+            enrolledMembers.put(r.getMember().getUserId(), r.getMember());
         }
 
 
@@ -253,8 +251,8 @@ public class CoachServiceImpl implements CoachService {
     @Override
     @Transactional(readOnly = true)
     public List<AttendanceResponseDTO> getClassAttendance(Long coachId, Long classId) {
-       getOwnedClassOrThrow(coachId, classId);
-       return classAttendanceRepository.findBySportClass_ClassId(classId).stream().map(this::toAttendanceResponse).toList();
+        getOwnedClassOrThrow(coachId, classId);
+        return classAttendanceRepository.findBySportClass_ClassId(classId).stream().map(this::toAttendanceResponse).toList();
     }
 
 
