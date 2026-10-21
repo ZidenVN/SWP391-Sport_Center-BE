@@ -147,6 +147,24 @@ public class VNPayServiceImpl implements VNPayService {
         Long paymentId = Long.parseLong(request.getParameter("vnp_TxnRef"));
         Payment payment = paymentRepository.findById(paymentId).orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
 
+        if (!"PENDING".equals(payment.getStatus())) {
+            return VNPayCallBackResponseDTO.builder()
+                .success("COMPLETED".equals(payment.getStatus()))
+                .message("Giao dịch đã được xử lý trước đó")
+                .paymentId(paymentId)
+                .build();
+        }
+
+        long vnpAmount = Long.parseLong(request.getParameter("vnp_Amount"));
+        long expectedAmount = payment.getAmount().multiply(BigDecimal.valueOf(100)).longValue();
+        if (vnpAmount != expectedAmount) {
+            return VNPayCallBackResponseDTO.builder()
+                .success(false)
+                .message("Số tiền thanh toán không hợp lệ")
+                .paymentId(paymentId)
+                .build();
+        }
+
         String responseCode = request.getParameter("vnp_ResponseCode");
         String transactionNo = request.getParameter("vnp_TransactionNo");
 
