@@ -7,6 +7,7 @@ import com.fptu.swp391.sportscentermanager.entity.Room;
 import com.fptu.swp391.sportscentermanager.entity.SportClass;
 import com.fptu.swp391.sportscentermanager.entity.Subject;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
+import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.CoachRepository;
 import com.fptu.swp391.sportscentermanager.repository.RoomRepository;
@@ -91,6 +92,10 @@ public class SportClassServiceImpl implements SportClassService {
         SportClass sportClass = sportClassRepository.findById(classId).orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
 
         Coach coach = coachRepository.findById(coachId).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
+
+        if (coach.getStatus() != UserStatus.ACTIVE){
+            throw new AppException(ErrorCode.COACH_INACTIVE);
+        }
 
         sportClass.setCoach(coach);
         SportClass savedClass = sportClassRepository.save(sportClass);

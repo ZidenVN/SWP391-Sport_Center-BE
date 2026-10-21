@@ -37,7 +37,8 @@ public enum ErrorCode {
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "ERR_REQUEST_001", "Yêu cầu không hợp lệ!"),
     DUPLICATE_ATTENDANCE(HttpStatus.BAD_REQUEST, "ERR_ATTENDANCE_002", "Học viên bị trùng trong danh sách điểm danh!"),
     RESOUCE_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_RESOURCE_404", "Tài nguyên yêu cầu không tồn tại"),
-    ROLE_NOT_MATCH_USER_TYPE(HttpStatus.BAD_REQUEST, "ERR_ROLE_400", "Role không phù hợp với loại tài khoản!")
+    ROLE_NOT_MATCH_USER_TYPE(HttpStatus.BAD_REQUEST, "ERR_ROLE_400", "Role không phù hợp với loại tài khoản!"),
+    COACH_INACTIVE(HttpStatus.BAD_REQUEST, "ERR_COACH_400", "Huấn luyện viên đang bị khóa, không thể phân công!")
     ;
 
     private final HttpStatus httpStatus;
