@@ -44,7 +44,7 @@ public class UserController {
         return ResponseEntity.ok("Đã cập nhật trạng thái user thành công!");
     }
 
-    @PreAuthorize("hasAuthority('UPDATE_USER') OR hasRole('CENTER_MANAGER')")  // chỉ cho phép người có quyền UPDATE_USER hoặc MANAGER_ROLE mới gọi được API
+    @PreAuthorize("hasRole('CENTER_MANAGER')")  // chỉ cho phép ROLE CENTER_MANAGER mới gọi được API
     @PatchMapping("/{userId}/role/{roleId}")
     public ResponseEntity<UserResponseDTO> assignRoleToUser(@PathVariable Long userId, @PathVariable Long roleId) {
         return ResponseEntity.ok(userService.assignRoleToUser(userId, roleId));

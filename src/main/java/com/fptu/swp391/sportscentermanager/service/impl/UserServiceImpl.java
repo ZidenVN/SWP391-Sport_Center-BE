@@ -2,9 +2,7 @@ package com.fptu.swp391.sportscentermanager.service.impl;
 
 import com.fptu.swp391.sportscentermanager.dto.RegisterRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.UserResponseDTO;
-import com.fptu.swp391.sportscentermanager.entity.Member;
-import com.fptu.swp391.sportscentermanager.entity.Role;
-import com.fptu.swp391.sportscentermanager.entity.User;
+import com.fptu.swp391.sportscentermanager.entity.*;
 import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import com.fptu.swp391.sportscentermanager.repository.RoleRepository;
 import com.fptu.swp391.sportscentermanager.repository.UserRepository;
@@ -140,7 +138,19 @@ public class UserServiceImpl implements UserService {
     public UserResponseDTO assignRoleToUser(Long userId, Long roleId) {
        User user = findUserOrThrow(userId);
        Role role = roleRepository.findById(roleId).orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+       if (!role.getRoleName().equals(expectedRoleName(user))){
+           throw new AppException(ErrorCode.ROLE_NOT_MATCH_USER_TYPE);
+       }
+
        user.setRole(role);
        return toResponse(user);
+    }
+
+    private String expectedRoleName(User user){
+        if (user instanceof Manager) return "CENTER_MANAGER";
+        if (user instanceof Coach) return "COACH";
+        if (user instanceof Receptionist) return "RECEPTIONIST";
+        if (user instanceof Member) return "MEMBER";
+        return null;
     }
 }
