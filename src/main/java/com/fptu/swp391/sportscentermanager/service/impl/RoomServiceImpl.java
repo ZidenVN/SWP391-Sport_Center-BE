@@ -6,6 +6,7 @@ import com.fptu.swp391.sportscentermanager.entity.Room;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.RoomRepository;
+import com.fptu.swp391.sportscentermanager.repository.SportClassRepository;
 import com.fptu.swp391.sportscentermanager.service.RoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RoomServiceImpl implements RoomService {
     private final RoomRepository roomRepository;
+    private final SportClassRepository sportClassRepository;
 
     @Override
     public List<Room> getAllRooms() {
@@ -51,6 +53,10 @@ public class RoomServiceImpl implements RoomService {
     @Override
     public RoomResponseDTO updateRoom(Long id, RoomRequestDTO requestDTO) {
         Room existingRoom = getRoomById(id);
+        if (sportClassRepository.existsByRoom_RoomIdAndMaxCapacityGreaterThan(id, requestDTO.getCapacity())) {
+            throw new AppException(ErrorCode.ROOM_CAPACITY_BELOW_CLASS);
+        }
+
         existingRoom.setRoomName(requestDTO.getRoomName());
         existingRoom.setCapacity(requestDTO.getCapacity());
         if (requestDTO.getStatus() != null && !requestDTO.getStatus().isBlank()) {

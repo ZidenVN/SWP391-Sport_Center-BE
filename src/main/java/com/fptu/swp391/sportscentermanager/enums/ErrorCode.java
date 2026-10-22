@@ -30,8 +30,14 @@ public enum ErrorCode {
     CLASS_NOT_OPEN(HttpStatus.BAD_REQUEST,"ERR_CLASS_003","Lớp học không còn mở đăng ký!"),
     INVALID_CLASS_TIME(HttpStatus.BAD_REQUEST, "ERR_CLASS_004", "Giờ kết thúc phải sau giờ bắt đầu"),
     ROOM_SCHEDULE_CONFLICT(HttpStatus.CONFLICT, "ERR_CLASS_005", "Phòng đã có lớp khác trong khung giờ này!"),
-    COACH_SCHEDULE_CONFLICT(HttpStatus.CONFLICT, "ERR_CLASS_006", "Huấn luyện viên đã có lớp khác trong khung giờ này"),
+    COACH_SCHEDULE_CONFLICT(HttpStatus.CONFLICT, "ERR_CLASS_006", "Huấn luyện viên đã có lớp khác trong khung giờ này!"),
     MEMBER_SCHEDULE_CONFLICT(HttpStatus.CONFLICT, "ERR_REGISTRATION_003", "Bạn đã đăng ký một lớp học khác trùng giờ này!"),
+    ROOM_UNAVAILABLE(HttpStatus.BAD_REQUEST, "ERR_ROOM_001", "Phòng đang bảo trì, không thể xếp lớp!"),
+    ROOM_CAPACITY_BELOW_CLASS(HttpStatus.BAD_REQUEST, "ERR_ROOM_002", "Phòng đang có lớp cần nhiều chỗ hơn sức chứa mới!"),
+    CLASS_CAPACITY_EXCEEDS_ROOM(HttpStatus.BAD_REQUEST, "ERR_CLASS_007", "Sức chứa lớp vượt quá sức chứa của phòng!"),
+    CAPACITY_BELOW_REGISTERED(HttpStatus.BAD_REQUEST, "ERR_CLASS_008", "Sức chứa mới nhỏ hơn số học viên đã đăng ký!"),
+
+
     ALREADY_CHECK_IN(HttpStatus.CONFLICT,"ERR_CHECKIN_001","Hội viên đã check-in rồi!"),
     MEMBER_NOT_IN_CLASS(HttpStatus.BAD_REQUEST, "ERR_ATTENDANCE_001", "Học viên không thuộc danh sách lớp học này!"),
     REGISTRATION_ALREADY_CANCELLED(HttpStatus.CONFLICT,"ERR_REGISTRATION_001","Đăng ký này đã được hủy trước đó!"),
