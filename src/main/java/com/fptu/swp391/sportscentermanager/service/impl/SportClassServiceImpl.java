@@ -18,6 +18,7 @@ import com.fptu.swp391.sportscentermanager.service.SportClassService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,11 +42,13 @@ public class SportClassServiceImpl implements SportClassService {
            coach = coachRepository.findById(requestDTO.getCoachId()).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
        }
 
-        SportClass newClass = SportClass.builder().maxCapacity(requestDTO.getMaxCapacity()).scheduleTime(requestDTO.getScheduleTime()).status("OPENING").room(room).subject(subject).coach(coach).build();
+       validateClassTime(requestDTO.getStartTime(), requestDTO.getEndTime());
+
+        SportClass newClass = SportClass.builder().maxCapacity(requestDTO.getMaxCapacity()).startTime(requestDTO.getStartTime()).endTime(requestDTO.getEndTime()).status("OPENING").room(room).subject(subject).coach(coach).build();
 
         SportClass savedClass = sportClassRepository.save(newClass);
 
-        return SportClassResponseDTO.builder().classId(savedClass.getClassId()).maxCapacity(savedClass.getMaxCapacity()).scheduleTime(savedClass.getScheduleTime()).status(savedClass.getStatus()).roomName(savedClass.getRoom().getRoomName()).subjectName(savedClass.getSubject().getSubjectName()).coachName(savedClass.getCoach() != null ? savedClass.getCoach().getFirstName() + " " + savedClass.getCoach().getLastName() : "Chưa có HLV").build();
+        return SportClassResponseDTO.builder().classId(savedClass.getClassId()).maxCapacity(savedClass.getMaxCapacity()).startTime(savedClass.getStartTime()).endTime(savedClass.getEndTime()).status(savedClass.getStatus()).roomName(savedClass.getRoom().getRoomName()).subjectName(savedClass.getSubject().getSubjectName()).coachName(savedClass.getCoach() != null ? savedClass.getCoach().getFirstName() + " " + savedClass.getCoach().getLastName() : "Chưa có HLV").build();
     }
 
     @Override
@@ -59,7 +62,8 @@ public class SportClassServiceImpl implements SportClassService {
         return SportClassResponseDTO.builder()
             .classId(c.getClassId())
             .maxCapacity(c.getMaxCapacity())
-            .scheduleTime(c.getScheduleTime())
+            .startTime(c.getStartTime())
+            .endTime(c.getEndTime())
             .status(c.getStatus())
             .roomName(c.getRoom().getRoomName())
             .subjectName(c.getSubject().getSubjectName())
@@ -77,7 +81,8 @@ public class SportClassServiceImpl implements SportClassService {
             SportClassResponseDTO dto = SportClassResponseDTO.builder()
                 .classId(c.getClassId())
                 .maxCapacity(c.getMaxCapacity())
-                .scheduleTime(c.getScheduleTime())
+                .startTime(c.getStartTime())
+                .endTime(c.getEndTime())
                 .status(c.getStatus())
                 .roomName(c.getRoom().getRoomName())
                 .subjectName(c.getSubject().getSubjectName())
@@ -103,7 +108,8 @@ public class SportClassServiceImpl implements SportClassService {
         return SportClassResponseDTO.builder()
             .classId(savedClass.getClassId())
             .maxCapacity(savedClass.getMaxCapacity())
-            .scheduleTime(savedClass.getScheduleTime())
+            .startTime(savedClass.getStartTime())
+            .endTime(savedClass.getEndTime())
             .status(savedClass.getStatus())
             .roomName(savedClass.getRoom().getRoomName())
             .subjectName(savedClass.getSubject().getSubjectName())
@@ -115,8 +121,11 @@ public class SportClassServiceImpl implements SportClassService {
     public SportClassResponseDTO updateClass(Long id, SportClassRequestDTO requestDTO) {
         SportClass sportClass = sportClassRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
 
+        validateClassTime(requestDTO.getStartTime(), requestDTO.getEndTime());
+
         sportClass.setMaxCapacity(requestDTO.getMaxCapacity());
-        sportClass.setScheduleTime(requestDTO.getScheduleTime());
+        sportClass.setStartTime(requestDTO.getStartTime());
+        sportClass.setEndTime(requestDTO.getEndTime());
 
         if (!sportClass.getRoom().getRoomId().equals(requestDTO.getRoomId())){
             Room newRoom = roomRepository.findById(requestDTO.getRoomId()).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
@@ -145,5 +154,11 @@ public class SportClassServiceImpl implements SportClassService {
         SportClass sportClass = getClassById(id);
         sportClass.setStatus("INACTIVE");
         sportClassRepository.delete(sportClass);
+    }
+
+    private void validateClassTime(LocalDateTime startTime, LocalDateTime endTime) {
+        if(!endTime.isAfter(startTime)){
+            throw new AppException(ErrorCode.INVALID_CLASS_TIME);
+        }
     }
 }

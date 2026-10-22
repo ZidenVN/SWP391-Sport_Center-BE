@@ -13,7 +13,8 @@ public class TeachingScheduleResponseDTO {
     private Long classId;
     private String subjectName;
     private String roomName;
-    private LocalDateTime scheduleTime;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
     private Integer maxCapacity;
     private Long currentEnrolled;
     private String status;

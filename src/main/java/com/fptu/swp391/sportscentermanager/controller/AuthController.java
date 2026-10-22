@@ -23,6 +23,7 @@ import com.google.api.client.auth.openidconnect.IdTokenVerifier;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -38,6 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.swing.text.html.Option;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -82,6 +84,7 @@ public class AuthController {
                 .currentPackage(currentPackage)
                 .build());
         } catch (Exception e) {
+            log.warn("Login thất bại {}: {}", request.getEmail(), e.getMessage());
             return ResponseEntity.status(401).body("Sai Email hoặc Password!");
         }
     }

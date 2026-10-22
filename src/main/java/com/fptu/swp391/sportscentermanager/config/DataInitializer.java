@@ -25,15 +25,18 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${app.init.manager.email:admin@sportcenter.com}")
+    @Value("${app.init.manager.email:manager@sportcenter.com}")
     private String managerEmail;
 
     // Không đặt mật khẩu mặc định trong code: để trống thì bỏ qua bước tạo tài khoản
     @Value("${app.init.manager.password:}")
     private String managerPassword;
 
-    @Value("${app.init.default-staff.password:}")
-    private String defaultStaffPassword;
+    @Value("${app.init.coach.password:}")
+    private String coachPassword;
+
+    @Value("${app.init.receptionist.password:}")
+    private String receptionistPassword;
 
     private static final Map<String, String> ROLES = new LinkedHashMap<>();
     static {
@@ -149,8 +152,8 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         userRepository.save(Manager.builder()
-            .firstName("System")
-            .lastName("Admin")
+            .firstName("Center")
+            .lastName("Manager")
             .gender("MALE")
             .email(managerEmail)
             .phone("0989999999")
@@ -158,14 +161,14 @@ public class DataInitializer implements CommandLineRunner {
             .status(UserStatus.ACTIVE)
             .role(managerRole)
             .build());
-        System.out.println("Đã tạo tài khoản Admin mặc định: " + managerEmail);
+        System.out.println("Đã tạo tài khoản Center Manager mặc định: " + managerEmail);
     }
 
     private void seedDefaultCoach(Role coachRole) {
         String email = "coach@Sportcenter.com";
         if (userRepository.existsByEmail(email)) return ;
 
-        if (defaultStaffPassword.isBlank()) {
+        if (coachPassword.isBlank()) {
             System.out.println("Chưa cấu hình mật khẩu, bỏ qua tạo tài khoản HLV mặc định");
             return;
         }
@@ -176,7 +179,7 @@ public class DataInitializer implements CommandLineRunner {
             .gender("MALE")
             .email(email)
             .phone("098789654")
-            .passwordHash(passwordEncoder.encode(defaultStaffPassword))
+            .passwordHash(passwordEncoder.encode(coachPassword))
             .status(UserStatus.ACTIVE)
             .role(coachRole)
             .speciality("General Fitness")
@@ -188,7 +191,7 @@ public class DataInitializer implements CommandLineRunner {
         String email = "receptionist@Sportcenter.com";
         if (userRepository.existsByEmail(email)) return;
 
-        if (defaultStaffPassword.isBlank()) {
+        if (receptionistPassword.isBlank()) {
             System.out.println("Chưa cấu hình mật khẩu, bỏ qua tạo tài khoản Lễ tân mặc định");
             return;
         }
@@ -199,7 +202,7 @@ public class DataInitializer implements CommandLineRunner {
             .gender("FEMALE")
             .email(email)
             .phone("0341234567")
-            .passwordHash(passwordEncoder.encode(defaultStaffPassword))
+            .passwordHash(passwordEncoder.encode(receptionistPassword))
             .status(UserStatus.ACTIVE)
             .role(receptionistRole)
             .build());

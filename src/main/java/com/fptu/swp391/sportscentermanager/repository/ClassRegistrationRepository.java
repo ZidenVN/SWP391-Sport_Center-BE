@@ -42,8 +42,8 @@ public interface ClassRegistrationRepository extends JpaRepository<ClassRegistra
         LEFT JOIN FETCH c.coach
         WHERE r.member.userId = :memberId
           AND r.status = 'REGISTERED'
-          AND c.scheduleTime > :now
-        ORDER BY c.scheduleTime ASC
+          AND c.startTime > :now
+        ORDER BY c.startTime ASC
         """)
     List<ClassRegistration> findUpcoming(@Param("memberId") Long memberId,
                                          @Param("now") LocalDateTime now);

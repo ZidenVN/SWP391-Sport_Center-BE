@@ -9,7 +9,8 @@ import java.time.LocalDateTime;
 public class SportClassResponseDTO {
     private Long classId;
     private Integer maxCapacity;
-    private LocalDateTime scheduleTime;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
     private String status;
     private String coachName;
     private String roomName;
