@@ -26,8 +26,8 @@ public class CoachRequestDTO {
     @Email(message = "Email không đúng định dạng")
     private String email;
 
-    @NotBlank(message = "Password không được để trống")
-    @Size(min = 6, max = 64)
+    // bắt buộc khi tạo (kiểm tra trong createCoach); khi sửa bỏ trống = giữ mật khẩu cũ
+    @Size(min = 6, max = 64, message = "Mật khẩu từ 6 đến 64 ký tự")
     private String password;
 
     private String specialty;

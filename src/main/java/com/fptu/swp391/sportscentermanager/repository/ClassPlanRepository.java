@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface ClassPlanRepository extends JpaRepository<ClassPlan,Long> {
     List<ClassPlan> findBySportClass_ClassId(Long coachId);
+
+    List<ClassPlan> findByWorkoutPlan_Coach_UserId(Long coachId);
 }

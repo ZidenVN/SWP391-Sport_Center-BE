@@ -32,6 +32,8 @@ public class ClassAttendance {
     @Column(name = "attendance_date", nullable = false)
     private LocalDateTime attendanceDate;
 
+    // lưu tên (PRESENT...) thay vì số thứ tự: cột là NVARCHAR, lưu ordinal thì đọc lại bị lỗi
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, columnDefinition = "NVARCHAR(20)")
     private AttendanceStatus status;
 

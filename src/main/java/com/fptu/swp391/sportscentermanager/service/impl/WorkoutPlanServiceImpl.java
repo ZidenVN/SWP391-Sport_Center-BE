@@ -13,7 +13,9 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional
@@ -98,18 +100,44 @@ public class WorkoutPlanServiceImpl implements WorkoutPlanService {
     @Override
     public List<WorkoutPlanResponseDTO> getPlansByCoach(Long coachId) {
         List<WorkoutPlan> plans = workoutPlanRepository.findByCoach_UserIdOrderByCreatedAtDesc(coachId);
+        // mỗi giáo án được giao cho 1 học viên (MemberPlan) hoặc 1 lớp (ClassPlan) -> lấy thông tin đối tượng được giao
+        Map<Long, MemberPlan> memberPlans = new HashMap<>();
+        memberPlanRepository.findByWorkoutPlan_Coach_UserId(coachId)
+            .forEach(mp -> memberPlans.putIfAbsent(mp.getWorkoutPlan().getPlanId(), mp));
+        Map<Long, ClassPlan> classPlans = new HashMap<>();
+        classPlanRepository.findByWorkoutPlan_Coach_UserId(coachId)
+            .forEach(cp -> classPlans.putIfAbsent(cp.getWorkoutPlan().getPlanId(), cp));
+
         List<WorkoutPlanResponseDTO> dtos = new ArrayList<>();
         for (WorkoutPlan p : plans) {
             Coach c = p.getCoach();
-            dtos.add(WorkoutPlanResponseDTO.builder()
+            WorkoutPlanResponseDTO.WorkoutPlanResponseDTOBuilder dto = WorkoutPlanResponseDTO.builder()
                     .planId(p.getPlanId())
                     .planName(p.getPlanName())
                     .exerciseDetails(p.getExerciseDetails())
                     .duration(p.getDuration())
                     .coachId(coachId)
                     .coachName(c != null ? c.getFirstName() + " " + c.getLastName() : "")
-                    .createdAt(p.getCreatedAt())
-                .build());
+                    .createdAt(p.getCreatedAt());
+            MemberPlan mp = memberPlans.get(p.getPlanId());
+            ClassPlan cp = classPlans.get(p.getPlanId());
+            if (mp != null) {
+                Member m = mp.getMember();
+                dto.targetType("INDIVIDUAL")
+                    .targetId(m != null ? m.getUserId() : null)
+                    .targetName(m != null ? m.getFirstName() + " " + m.getLastName() : "")
+                    .assignedDate(mp.getAssignedDate())
+                    .dueDate(mp.getDueDate() != null ? mp.getDueDate().toLocalDate() : null)
+                    .status(mp.getStatus());
+            } else if (cp != null) {
+                SportClass sc = cp.getSportClass();
+                dto.targetType("CLASS")
+                    .targetId(sc != null ? sc.getClassId() : null)
+                    .targetName(sc != null && sc.getSubject() != null ? sc.getSubject().getSubjectName() : (sc != null ? "Lớp " + sc.getClassId() : ""))
+                    .assignedDate(cp.getAssignedDate() != null ? cp.getAssignedDate().toLocalDate() : null)
+                    .status("ACTIVE");
+            }
+            dtos.add(dto.build());
         }
         return dtos;
     }

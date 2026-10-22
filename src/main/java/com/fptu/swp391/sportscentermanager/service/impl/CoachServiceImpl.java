@@ -74,6 +74,9 @@ public class CoachServiceImpl implements CoachService {
     @Override
     @Transactional
     public CoachResponseDTO createCoach(CoachRequestDTO requestDTO) {
+        if (requestDTO.getPassword() == null || requestDTO.getPassword().isBlank()) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
         if (userRepository.existsByEmail(requestDTO.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_TAKEN);
         }
