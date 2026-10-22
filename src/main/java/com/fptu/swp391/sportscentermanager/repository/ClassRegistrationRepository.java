@@ -43,8 +43,8 @@ public interface ClassRegistrationRepository extends JpaRepository<ClassRegistra
         LEFT JOIN FETCH c.coach
         WHERE r.member.userId = :memberId
           AND r.status = 'REGISTERED'
-          AND c.scheduleTime > :now
-        ORDER BY c.scheduleTime ASC
+          AND c.startTime > :now
+        ORDER BY c.startTime ASC
         """)
     List<ClassRegistration> findUpcoming(@Param("memberId") Long memberId,
                                          @Param("now") LocalDateTime now);
@@ -99,6 +99,14 @@ public interface ClassRegistrationRepository extends JpaRepository<ClassRegistra
         ORDER BY r.registeredAt ASC
         """)
     List<ClassRegistration> findActiveByClassId(@Param("classId") Long classId);
+
+    @Query("""
+        SELECT COUNT(r) > 0 FROM ClassRegistration r
+        WHERE r.member.userId = :memberId
+          AND r.sportClass.coach.userId = :coachId
+          AND r.status = 'REGISTERED'
+        """)
+    boolean existsActiveByCoachAndMember(@Param("coachId") Long coachId, @Param("memberId") Long memberId);
 
     @Query("""
         SELECT r.sportClass.classId FROM ClassRegistration r

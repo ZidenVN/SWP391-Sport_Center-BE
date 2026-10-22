@@ -161,7 +161,7 @@ public class CoachServiceImpl implements CoachService {
     @Override
     @Transactional(readOnly = true)
     public List<TeachingScheduleResponseDTO> getMyTeachingSchedule(Long coachId) {
-        List<SportClass> classes = sportClassRepository.findByCoach_UserIdOrderByScheduleTimeAsc(coachId);
+        List<SportClass> classes = sportClassRepository.findByCoach_UserIdOrderByStartTimeAsc(coachId);
         List<TeachingScheduleResponseDTO> result = new ArrayList<>();
 
         for (SportClass c : classes) {
@@ -173,7 +173,8 @@ public class CoachServiceImpl implements CoachService {
                 .classId(c.getClassId())
                 .subjectName(subjectName)
                 .roomName(roomName)
-                .scheduleTime(c.getScheduleTime())
+                .startTime(c.getStartTime())
+                .endTime(c.getEndTime())
                 .maxCapacity(c.getMaxCapacity())
                 .currentEnrolled(enrolledCnt)
                 .status(c.getStatus())
@@ -242,7 +243,7 @@ public class CoachServiceImpl implements CoachService {
             ClassAttendance attendance = existing.getOrDefault(memberId, ClassAttendance.builder()
                 .sportClass(sportClass)
                 .member(member)
-                .attendanceDate(sportClass.getScheduleTime())
+                .attendanceDate(sportClass.getStartTime())
                 .build());
             attendance.setStatus(record.getStatus());
             attendance.setNote(record.getNote());

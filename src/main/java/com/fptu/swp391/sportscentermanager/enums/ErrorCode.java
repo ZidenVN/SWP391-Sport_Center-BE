@@ -28,6 +28,7 @@ public enum ErrorCode {
     CLASS_FULL(HttpStatus.CONFLICT,"ERR_CLASS_001","Lớp học đã đủ số lượng!"),
     ALREADY_REGISTERED(HttpStatus.CONFLICT,"ERR_CLASS_002","Bạn đã đăng ký lớp học này rồi!"),
     CLASS_NOT_OPEN(HttpStatus.BAD_REQUEST,"ERR_CLASS_003","Lớp học không còn mở đăng ký!"),
+    INVALID_CLASS_TIME(HttpStatus.BAD_REQUEST, "ERR_CLASS_004", "Giờ kết thúc phải sau giờ bắt đầu"),
     ALREADY_CHECK_IN(HttpStatus.CONFLICT,"ERR_CHECKIN_001","Hội viên đã check-in rồi!"),
     MEMBER_NOT_IN_CLASS(HttpStatus.BAD_REQUEST, "ERR_ATTENDANCE_001", "Học viên không thuộc danh sách lớp học này!"),
     REGISTRATION_ALREADY_CANCELLED(HttpStatus.CONFLICT,"ERR_REGISTRATION_001","Đăng ký này đã được hủy trước đó!"),
@@ -52,6 +53,7 @@ public enum ErrorCode {
     INVOICE_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "ERR_INVOICE_001", "Chỉ xuất hóa đơn cho giao dịch đã thanh toán!"),
     RECEPTIONIST_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_RECEPTIONIST_404", "Lễ tân không tồn tại!"),
     COACH_HAS_UPCOMING_CLASSES(HttpStatus.CONFLICT, "ERR_COACH_409", "Huấn luyện viên đang có lớp sắp dạy, hãy đổi HLV cho các lớp đó trước khi khóa!")
+    ACCESS_DENIED(HttpStatus.FORBIDDEN, "ERR_AUTH_403", "Bạn không có quyền truy cập dữ liệu này!")
 
 
 

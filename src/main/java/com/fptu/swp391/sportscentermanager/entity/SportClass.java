@@ -6,6 +6,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.springframework.stereotype.Component;
 
 @Entity
 @Table(name = "classes")
@@ -22,8 +23,12 @@ public class SportClass {
     private Long classId;
 
     private Integer maxCapacity;
-    private LocalDateTime scheduleTime;
-    // OPENING | CANCELLED | COMPLETED | INACTIVE (xem enums.ClassStatus)
+
+    @Column(name = "start_time", nullable = false)
+    private LocalDateTime startTime;
+
+    @Column(name = "end_time", nullable = false)
+    private LocalDateTime endTime;
     private String status;
 
     @ManyToOne(fetch = FetchType.LAZY)

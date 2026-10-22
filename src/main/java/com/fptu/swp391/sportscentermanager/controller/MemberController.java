@@ -3,6 +3,8 @@ package com.fptu.swp391.sportscentermanager.controller;
 
 import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
 import com.fptu.swp391.sportscentermanager.dto.*;
+import com.fptu.swp391.sportscentermanager.entity.Coach;
+import com.fptu.swp391.sportscentermanager.security.CoachAccessGuard;
 import com.fptu.swp391.sportscentermanager.security.CustomUserDetails;
 import com.fptu.swp391.sportscentermanager.service.MemberService;
 import com.fptu.swp391.sportscentermanager.service.NotificationService;
@@ -23,6 +25,7 @@ public class MemberController {
     private final com.fptu.swp391.sportscentermanager.service.WorkoutPlanService workoutPlanService;
     private final WorkoutResultService workoutResultService;
     private final NotificationService notificationService;
+    private final CoachAccessGuard coachAccessGuard;
 
     //TODO: PreAuthorize có tác dụng gì? ND phải cung cấp trong ("") là gì?
     @PreAuthorize("hasRole('MEMBER') and hasAuthority('VIEW_OWN_PROFILE')")
@@ -50,7 +53,11 @@ public class MemberController {
 
     @PreAuthorize("hasAnyRole('COACH', 'CENTER_MANAGER', 'RECEPTIONIST')")
     @GetMapping("/{memberId}")
-    public ResponseEntity<MemberProfileResponseDTO> getMemberProfileById(@PathVariable Long memberId) {
+    public ResponseEntity<MemberProfileResponseDTO> getMemberProfileById(@PathVariable Long memberId, @AuthenticationPrincipal CustomUserDetails principal) {
+        // Manager/Lễ tân xem mọi member; Coach chỉ xem học viên của mình
+        if (principal.getUser() instanceof Coach) {
+            coachAccessGuard.requireTeachesMember(principal.getUser().getUserId(), memberId);
+        }
         return ResponseEntity.ok(memberService.getProfile(memberId));
     }
 

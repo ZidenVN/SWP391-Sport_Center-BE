@@ -45,8 +45,8 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
 
         // 1. Lớp phải còn mở và chưa diễn ra
         if (!"OPENING".equals(sportClass.getStatus())
-            || sportClass.getScheduleTime() == null
-            || !sportClass.getScheduleTime().isAfter(now)) {
+            || sportClass.getStartTime() == null
+            || !sportClass.getStartTime().isAfter(now)) {
             throw new AppException(ErrorCode.CLASS_NOT_OPEN);
         }
 
@@ -55,7 +55,7 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
             .stream().findFirst()
             .orElseThrow(() -> new AppException(ErrorCode.NO_ACTIVE_SUBSCRIPTION));
         // Gói phải còn hạn tới thời điểm lớp diễn ra
-        if (sportClass.getScheduleTime().isAfter(current.getEndDate())) {
+        if (sportClass.getStartTime().isAfter(current.getEndDate())) {
             throw new AppException(ErrorCode.SUBSCRIPTION_EXPIRED);
         }
 
@@ -94,7 +94,7 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
             throw new AppException(ErrorCode.REGISTRATION_ALREADY_CANCELLED);
         }
         // Lớp đã bắt đầu thì không hủy được nữa
-        LocalDateTime start = registration.getSportClass().getScheduleTime();
+        LocalDateTime start = registration.getSportClass().getStartTime();
         if (start == null || !start.isAfter(LocalDateTime.now())) {
             throw new AppException(ErrorCode.CANCEL_NOT_ALLOWED);
         }
@@ -135,7 +135,8 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
             .roomName(c.getRoom() != null ? c.getRoom().getRoomName() : null)
             .coachName(c.getCoach() != null
                 ? c.getCoach().getFirstName() + " " + c.getCoach().getLastName() : "Chưa có HLV")
-            .scheduleTime(c.getScheduleTime())
+            .startTime(c.getStartTime())
+            .endTime(c.getEndTime())
             .status(r.getStatus())
             .registeredAt(r.getRegisteredAt())
             .cancelledAt(r.getCancelledAt())

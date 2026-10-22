@@ -20,7 +20,7 @@ public interface SportClassRepository extends JpaRepository<SportClass, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT c FROM SportClass c WHERE c.classId = :id")
     Optional<SportClass> findByIdForUpdate(@Param("id") Long id);
-    List<SportClass> findByCoach_UserIdOrderByScheduleTimeAsc(Long coachId);
+    List<SportClass> findByCoach_UserIdOrderByStartTimeAsc(Long coachId);
 
     List<SportClass> findByCoach_UserIdAndScheduleTimeBetweenOrderByScheduleTimeAsc(Long coachId, LocalDateTime start, LocalDateTime end);
 
@@ -70,4 +70,5 @@ public interface SportClassRepository extends JpaRepository<SportClass, Long> {
 
     // BE-27: HLV còn lớp sắp dạy thì không cho khóa
     boolean existsByCoach_UserIdAndStatusAndScheduleTimeAfter(Long coachId, String status, LocalDateTime time);
+    List<SportClass> findByCoach_UserIdAndStartTimeBetweenOrderByStartTimeAsc(Long coachId, LocalDateTime start, LocalDateTime end);
 }

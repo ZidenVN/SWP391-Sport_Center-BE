@@ -28,7 +28,8 @@ GOOGLE_CLIENT_ID=
 # Để trống = không tạo. Manager: admin@sportcenter.com
 # Coach / Lễ tân: coach@Sportcenter.com, receptionist@Sportcenter.com (dùng chung mật khẩu)
 APP_INIT_MANAGER_PASSWORD=
-APP_INIT_DEFAULT_STAFF_PASSWORD=
+APP_INIT_COACH_PASSWORD=
+APP_INIT_RECEPTIONIST_PASSWORD=
 
 # -- Không bắt buộc khi chạy local (đã có giá trị mặc định trong application.properties)
 # CORS_ALLOWED_ORIGINS=http://localhost:*,http://127.0.0.1:*

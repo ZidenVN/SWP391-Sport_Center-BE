@@ -14,9 +14,13 @@ public class SportClassRequestDTO {
     @Min(1)
     private Integer maxCapacity;
 
-    @NotNull
+    @NotNull(message = "Giờ bắt đầu không được để trống")
     @Future(message = "Thời gian học phải ở trong tương lai")
-    private LocalDateTime scheduleTime;
+    private LocalDateTime startTime;
+
+    @NotNull(message = "Giờ kết thúc không được để trống")
+    @Future(message = "Giờ kết thúc phải ở trong tương lai")
+    private LocalDateTime endTime;
 
     @NotNull
     private Long coachId;

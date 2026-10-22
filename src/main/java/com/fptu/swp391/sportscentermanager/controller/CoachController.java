@@ -2,7 +2,8 @@ package com.fptu.swp391.sportscentermanager.controller;
 
 import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
 import com.fptu.swp391.sportscentermanager.dto.*;
-import com.fptu.swp391.sportscentermanager.repository.NotificationRepository;
+import com.fptu.swp391.sportscentermanager.entity.Coach;
+import com.fptu.swp391.sportscentermanager.security.CoachAccessGuard;
 import com.fptu.swp391.sportscentermanager.security.CustomUserDetails;
 import com.fptu.swp391.sportscentermanager.service.*;
 import jakarta.validation.Valid;
@@ -23,7 +24,7 @@ public class CoachController {
     private final WorkoutPlanService workoutPlanService;
     private final WorkoutResultService workoutResultService;
     private final NotificationService notificationService;
-    private final NotificationRepository notificationRepository;
+    private final CoachAccessGuard coachAccessGuard;
 
     // API cho MANAGE CENTER
 
@@ -82,7 +83,8 @@ public class CoachController {
      */
     @PreAuthorize("hasRole('COACH')")
     @GetMapping("/members/{memberId}")
-    public ResponseEntity<MemberProfileResponseDTO> getMemberProfileAndGoal(@PathVariable Long memberId) {
+    public ResponseEntity<MemberProfileResponseDTO> getMemberProfileAndGoal(@PathVariable Long memberId, @AuthenticationPrincipal CustomUserDetails principal) {
+        coachAccessGuard.requireTeachesMember(principal.getUser().getUserId(), memberId);
         return ResponseEntity.ok(memberService.getProfile(memberId));
     }
 
@@ -107,6 +109,10 @@ return ResponseEntity.ok(coachService.takeAttendance(coachId, classId, requestDT
     @PostMapping("/me/workout-plans")
     public ResponseEntity<WorkoutPlanResponseDTO> createAndAssignWorkoutPlan(@AuthenticationPrincipal CustomUserDetails principal, @Valid @RequestBody WorkoutPlanRequestDTO requestDTO) {
         Long coachId = principal.getUser().getUserId();
+        // Giao cho lớp đã được kiểm tra trong service; giao cho cá nhân phải là học viên của coach
+        if ("INDIVIDUAL".equalsIgnoreCase(requestDTO.getTargetType())) {
+            coachAccessGuard.requireTeachesMember(coachId, requestDTO.getTargetId());
+        }
         return ResponseEntity.ok(workoutPlanService.createAndAssignWorkoutPlan(coachId, requestDTO));
     }
 
@@ -121,35 +127,46 @@ return ResponseEntity.ok(coachService.takeAttendance(coachId, classId, requestDT
     // Xem giao an cua mot hoc vien cu the
     @PreAuthorize("hasRole('COACH')")
     @GetMapping("/members/{memberId}/workout-plans")
-    public ResponseEntity<List<WorkoutPlanResponseDTO>> getMemberWorkoutPlans(@PathVariable Long memberId) {
+    public ResponseEntity<List<WorkoutPlanResponseDTO>> getMemberWorkoutPlans(@PathVariable Long memberId, @AuthenticationPrincipal CustomUserDetails principal) {
+        coachAccessGuard.requireTeachesMember(principal.getUser().getUserId(), memberId);
         return ResponseEntity.ok(workoutPlanService.getPlansByMember(memberId));
     }
 
     // xem giao an hien tai da gan cho mot lop cu the nao
     @PreAuthorize("hasRole('COACH') OR hasRole('MEMBER')")
     @GetMapping("/classes/{classId}/workout-plans")
-    public ResponseEntity<List<WorkoutPlanResponseDTO>> getClassWorkoutPlans(@PathVariable Long classId) {
+    public ResponseEntity<List<WorkoutPlanResponseDTO>> getClassWorkoutPlans(@PathVariable Long classId, @AuthenticationPrincipal CustomUserDetails principal) {
+        Long userId = principal.getUser().getUserId();
+        if (principal.getUser() instanceof Coach) {
+            coachAccessGuard.requireOwnsClass(userId, classId);
+        } else {
+            coachAccessGuard.requireMemberInClass(userId, classId);
+        }
         return ResponseEntity.ok(workoutPlanService.getPlansByClass(classId));
     }
 
     @LogAudit(actionType = "RECORD_WORKOUT_RESULT", targetEntity = "WorkoutResult")
     @PreAuthorize("hasRole('COACH')")
     @PostMapping("/members/{memberId}/workout-results")
-    public ResponseEntity<WorkoutResultResponseDTO> recordWorkoutResult(@PathVariable Long memberId, @Valid @RequestBody WorkoutResultRequestDTO requestDTO) {
+    public ResponseEntity<WorkoutResultResponseDTO> recordWorkoutResult(@PathVariable Long memberId, @Valid @RequestBody WorkoutResultRequestDTO requestDTO, @AuthenticationPrincipal CustomUserDetails principal) {
+        coachAccessGuard.requireTeachesMember(principal.getUser().getUserId(), memberId);
         requestDTO.setMemberId(memberId);
         return ResponseEntity.ok(workoutResultService.recordWorkoutResult(requestDTO));
     }
 
     @PreAuthorize("hasRole('COACH')")
     @GetMapping("/members/{memberId}/workout-results")
-    public ResponseEntity<List<WorkoutResultResponseDTO>> getMemberWorkoutResult(@PathVariable Long memberId) {
+    public ResponseEntity<List<WorkoutResultResponseDTO>> getMemberWorkoutResult(@PathVariable Long memberId,  @AuthenticationPrincipal CustomUserDetails principal) {
+        coachAccessGuard.requireTeachesMember(principal.getUser().getUserId(), memberId);
+
         return ResponseEntity.ok(workoutResultService.getResultsByMember(memberId));
     }
 
     @LogAudit(actionType = "UPDATE_WORKOUT_RESULT", targetEntity = "WorkoutResult")
     @PreAuthorize("hasRole('COACH')")
     @PutMapping("/workout-results/{resultId}")
-    public ResponseEntity<WorkoutResultResponseDTO> updateWorkoutResult(@PathVariable Long resultId, @Valid @RequestBody WorkoutResultRequestDTO requestDTO) {
+    public ResponseEntity<WorkoutResultResponseDTO> updateWorkoutResult(@PathVariable Long resultId, @Valid @RequestBody WorkoutResultRequestDTO requestDTO, @AuthenticationPrincipal CustomUserDetails principal) {
+        coachAccessGuard.requireCanAccessResult(principal.getUser().getUserId(), resultId);
         return ResponseEntity.ok(workoutResultService.updateWorkoutResult(resultId, requestDTO));
     }
 
@@ -167,7 +184,8 @@ return ResponseEntity.ok(coachService.takeAttendance(coachId, classId, requestDT
 
     @PreAuthorize("hasRole('COACH')")
     @GetMapping("/members/{memberId}/progress")
-    public ResponseEntity<MemberProgressResponseDTO> getMyProgress(@PathVariable Long memberId) {
+    public ResponseEntity<MemberProgressResponseDTO> getMyProgress(@PathVariable Long memberId, @AuthenticationPrincipal CustomUserDetails principal) {
+        coachAccessGuard.requireTeachesMember(principal.getUser().getUserId(), memberId);
        return ResponseEntity.ok(workoutResultService.getMemberProgress(memberId));
     }
 
@@ -177,6 +195,7 @@ return ResponseEntity.ok(coachService.takeAttendance(coachId, classId, requestDT
     @PostMapping("/classes/{classId}/notifications")
     public ResponseEntity<NotificationResponseDTO> sendClassNotification(@AuthenticationPrincipal CustomUserDetails principal, @PathVariable Long classId, @Valid @RequestBody NotificationRequestDTO requestDTO) {
         Long coachId = principal.getUser().getUserId();
+        coachAccessGuard.requireOwnsClass(coachId, classId);
         return ResponseEntity.ok(notificationService.sendNotificationToClass(coachId, classId, requestDTO));
     }
 
@@ -186,13 +205,15 @@ return ResponseEntity.ok(coachService.takeAttendance(coachId, classId, requestDT
     @PostMapping("/members/{memberId}/notifications")
     public ResponseEntity<NotificationResponseDTO> sendMemberNotification(@AuthenticationPrincipal CustomUserDetails principal, @PathVariable Long memberId, @Valid @RequestBody NotificationRequestDTO requestDTO) {
         Long coachId = principal.getUser().getUserId();
+        coachAccessGuard.requireTeachesMember(coachId, memberId);
         return ResponseEntity.ok(notificationService.sendNotificationToMember(coachId, memberId, requestDTO));
     }
 
     // COACH xem danh sach thong bao da gui cua lop
     @PreAuthorize("hasRole('COACH')")
     @GetMapping("/classes/{classId}/notifications")
-    public ResponseEntity<List<NotificationResponseDTO>> getClassNotifications(@PathVariable Long classId) {
+    public ResponseEntity<List<NotificationResponseDTO>> getClassNotifications(@PathVariable Long classId, @AuthenticationPrincipal CustomUserDetails principal) {
+        coachAccessGuard.requireOwnsClass(principal.getUser().getUserId(), classId);
         return ResponseEntity.ok(notificationService.getClassNotifications(classId));
     }
 
