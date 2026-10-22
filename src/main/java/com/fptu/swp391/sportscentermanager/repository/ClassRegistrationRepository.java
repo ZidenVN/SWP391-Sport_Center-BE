@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -49,12 +50,21 @@ public interface ClassRegistrationRepository extends JpaRepository<ClassRegistra
                                          @Param("now") LocalDateTime now);
 
 
+    // BE-22: lượt đăng ký phát sinh trong kỳ (tính theo registeredAt, kể cả sau đó đã hủy)
     @Query("""
             select count(r) from ClassRegistration r
-            where r.status = :status and r.registeredAt between :start and :end
+            where r.registeredAt between :start and :end
         """)
-    long countByStatusBetween(@Param("status") String status, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    long countRegisteredBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
+    // BE-22: lượt hủy trong kỳ (tính theo cancelledAt, không phải registeredAt)
+    @Query("""
+            select count(r) from ClassRegistration r
+            where r.status = 'CANCELLED' and r.cancelledAt between :start and :end
+        """)
+    long countCancelledBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    // BE-22: tỉ lệ lấp đầy của các lớp đang mở có lịch nằm trong kỳ
     @Query("""
             SELECT c.classId,
                    sub.subjectName,
@@ -67,9 +77,18 @@ public interface ClassRegistrationRepository extends JpaRepository<ClassRegistra
             LEFT JOIN c.coach coach
             LEFT JOIN c.room room
             LEFT JOIN ClassRegistration r ON r.sportClass.classId = c.classId
+            WHERE c.status = 'OPENING' AND c.scheduleTime BETWEEN :start AND :end
             GROUP BY c.classId, sub.subjectName, coach.lastName, coach.firstName, room.roomName, c.maxCapacity
         """)
-    List<Object[]> getClassOccupancyStats();
+    List<Object[]> getClassOccupancyStats(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    // BE-15: đếm chỗ đã đăng ký cho nhiều lớp 1 lần (tránh N+1 khi trả 1 trang lớp)
+    @Query("""
+        SELECT r.sportClass.classId, COUNT(r) FROM ClassRegistration r
+        WHERE r.status = 'REGISTERED' AND r.sportClass.classId IN :classIds
+        GROUP BY r.sportClass.classId
+        """)
+    List<Object[]> countActiveByClassIds(@Param("classIds") Collection<Long> classIds);
 
     // Danh sách học viên đang đăng ký của 1 lớp (roster + điểm danh). JOIN FETCH để tránh N+1
     @Query("""

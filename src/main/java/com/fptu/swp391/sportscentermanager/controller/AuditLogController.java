@@ -3,6 +3,7 @@ package com.fptu.swp391.sportscentermanager.controller;
 import com.fptu.swp391.sportscentermanager.dto.AuditLogResponseDTO;
 import com.fptu.swp391.sportscentermanager.service.AuditLogService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -14,17 +15,27 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
+
 @RestController
 @RequestMapping("/api/v1/admin/audit-logs")
 @RequiredArgsConstructor
 public class AuditLogController {
     private final AuditLogService auditLogService;
 
+    // BE-26: VD /api/v1/admin/audit-logs?fromDate=2026-10-01&toDate=2026-10-31&actionType=CONFIRM_PAYMENT&targetEntity=Payment&userId=3
     @PreAuthorize("hasRole('CENTER_MANAGER')")
     @GetMapping
-    public ResponseEntity<Page<AuditLogResponseDTO>> getAllAuditLogs(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size){
-        Pageable pageable = PageRequest.of(page,size, Sort.by(Sort.Direction.DESC,"createdAt"));
-        return ResponseEntity.ok(auditLogService.getAllLogs(pageable));
+    public ResponseEntity<Page<AuditLogResponseDTO>> getAllAuditLogs(
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+        @RequestParam(required = false) String actionType,
+        @RequestParam(required = false) String targetEntity,
+        @RequestParam(required = false) Long userId,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size){
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100), Sort.by(Sort.Direction.DESC,"createdAt"));
+        return ResponseEntity.ok(auditLogService.searchLogs(fromDate, toDate, actionType, targetEntity, userId, pageable));
     }
 
 }

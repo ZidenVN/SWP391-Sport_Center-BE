@@ -1,5 +1,6 @@
 package com.fptu.swp391.sportscentermanager.controller;
 
+import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
 import com.fptu.swp391.sportscentermanager.dto.MemberSearchResponseDTO;
 import com.fptu.swp391.sportscentermanager.service.ReceptionistService;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class ReceptionistController {
     }
 
     // ---------- Register Walk-in Member ----------
+    @LogAudit(actionType = "CREATE", targetEntity = "Member")
     @PreAuthorize("hasRole('RECEPTIONIST') and hasAuthority('CREATE_USER')")
     @PostMapping
     public ResponseEntity<WalkInMemberResponseDTO> registerWalkIn(
@@ -45,6 +47,9 @@ public class ReceptionistController {
     }
 
     // ---------- Manage Member Subscriptions (include Process Payment) ----------
+    // BE-17: tạo gói + giao dịch ở trạng thái PENDING. Thu tiền xong gọi
+    // PATCH /api/v1/receptionist/payments/{paymentId}/confirm để kích hoạt gói.
+    @LogAudit(actionType = "SUBSCRIBE_PACKAGE", targetEntity = "Member")
     @PreAuthorize("hasRole('RECEPTIONIST') and hasAuthority('MANAGE_SUBSCRIPTION')")
     @PostMapping("/{memberId}/subscriptions")
     public ResponseEntity<SubscriptionResponseDTO> subscribeForMember(

@@ -1,15 +1,19 @@
 package com.fptu.swp391.sportscentermanager.controller;
 
 import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
+import com.fptu.swp391.sportscentermanager.dto.ClassCancelRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.SportClassRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.SportClassResponseDTO;
 import com.fptu.swp391.sportscentermanager.service.SportClassService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -31,6 +35,24 @@ public class SportClassController {
         return ResponseEntity.ok(sportClassService.getAllClasses());
     }
 
+    // BE-15: tìm lớp cho Calendar / Class catalog. Mọi tham số đều không bắt buộc.
+    // VD: /api/v1/classes/search?fromDate=2026-10-20&toDate=2026-10-26&subjectId=1&available=true&page=0&size=20
+    @PreAuthorize("hasAuthority('VIEW_CLASS')")
+    @GetMapping("/search")
+    public ResponseEntity<Page<SportClassResponseDTO>> searchClasses(
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+        @RequestParam(required = false) Long subjectId,
+        @RequestParam(required = false) Long coachId,
+        @RequestParam(required = false) Long roomId,
+        @RequestParam(required = false) String status,
+        @RequestParam(required = false) Boolean available,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(sportClassService.searchClasses(fromDate, toDate, subjectId, coachId, roomId,
+            status, available, page, size));
+    }
+
     @PreAuthorize("hasAuthority('VIEW_CLASS')")
     @GetMapping("/{id}")
     public ResponseEntity<SportClassResponseDTO> getClassById(@PathVariable Long id){
@@ -49,6 +71,23 @@ public class SportClassController {
     @PutMapping("/{id}")
     public ResponseEntity<SportClassResponseDTO> updateClass(@PathVariable Long id, @Valid @RequestBody SportClassRequestDTO requestDTO){
         return ResponseEntity.ok(sportClassService.updateClass(id, requestDTO));
+    }
+
+    // BE-16: hủy lớp -> hủy các đăng ký + gửi thông báo cho học viên
+    @LogAudit(actionType = "CANCEL", targetEntity = "SportClass")
+    @PreAuthorize("hasAuthority('MANAGE_CLASS')")
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<SportClassResponseDTO> cancelClass(@PathVariable Long id,
+                                                             @Valid @RequestBody(required = false) ClassCancelRequestDTO requestDTO) {
+        return ResponseEntity.ok(sportClassService.cancelClass(id, requestDTO != null ? requestDTO.getReason() : null));
+    }
+
+    // BE-16: đánh dấu lớp đã diễn ra xong
+    @LogAudit(actionType = "COMPLETE", targetEntity = "SportClass")
+    @PreAuthorize("hasAuthority('MANAGE_CLASS')")
+    @PatchMapping("/{id}/complete")
+    public ResponseEntity<SportClassResponseDTO> completeClass(@PathVariable Long id) {
+        return ResponseEntity.ok(sportClassService.completeClass(id));
     }
 
     @LogAudit(actionType = "DELETE", targetEntity = "SportClass")

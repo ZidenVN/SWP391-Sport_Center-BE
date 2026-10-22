@@ -37,6 +37,7 @@ public class UserController {
         return ResponseEntity.ok(userService.updateUser(id, userDetails));
     }
 
+    @LogAudit(actionType = "TOGGLE_STATUS", targetEntity = "User")
     @PreAuthorize("hasAuthority('DEACTIVATE_USER') OR hasRole('CENTER_MANAGER')")
     @PatchMapping("/{id}/status")
     public ResponseEntity<String> toggleUserStatus(@PathVariable Long id) {
@@ -44,6 +45,7 @@ public class UserController {
         return ResponseEntity.ok("Đã cập nhật trạng thái user thành công!");
     }
 
+    @LogAudit(actionType = "ASSIGN_ROLE", targetEntity = "User")
     @PreAuthorize("hasRole('CENTER_MANAGER')")  // chỉ cho phép ROLE CENTER_MANAGER mới gọi được API
     @PatchMapping("/{userId}/role/{roleId}")
     public ResponseEntity<UserResponseDTO> assignRoleToUser(@PathVariable Long userId, @PathVariable Long roleId) {

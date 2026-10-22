@@ -2,6 +2,8 @@ package com.fptu.swp391.sportscentermanager.repository;
 
 import com.fptu.swp391.sportscentermanager.entity.SportClass;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -21,4 +23,51 @@ public interface SportClassRepository extends JpaRepository<SportClass, Long> {
     List<SportClass> findByCoach_UserIdOrderByScheduleTimeAsc(Long coachId);
 
     List<SportClass> findByCoach_UserIdAndScheduleTimeBetweenOrderByScheduleTimeAsc(Long coachId, LocalDateTime start, LocalDateTime end);
+
+    // BE-15: tìm lớp theo khoảng ngày / môn / HLV / phòng / trạng thái / còn chỗ. Tham số null = bỏ qua filter đó.
+    // LEFT JOIN coach để lớp chưa có HLV vẫn hiện ra khi không lọc theo HLV.
+    @Query(value = """
+        SELECT c FROM SportClass c
+        LEFT JOIN c.coach co
+        WHERE (:from IS NULL OR c.scheduleTime >= :from)
+          AND (:to IS NULL OR c.scheduleTime <= :to)
+          AND (:subjectId IS NULL OR c.subject.subjectId = :subjectId)
+          AND (:roomId IS NULL OR c.room.roomId = :roomId)
+          AND (:coachId IS NULL OR co.userId = :coachId)
+          AND (:status IS NULL OR c.status = :status)
+          AND (:available IS NULL
+               OR (:available = TRUE AND c.maxCapacity > (SELECT COUNT(r) FROM ClassRegistration r
+                                                          WHERE r.sportClass = c AND r.status = 'REGISTERED'))
+               OR (:available = FALSE AND c.maxCapacity <= (SELECT COUNT(r) FROM ClassRegistration r
+                                                            WHERE r.sportClass = c AND r.status = 'REGISTERED')))
+        """,
+        countQuery = """
+        SELECT COUNT(c) FROM SportClass c
+        LEFT JOIN c.coach co
+        WHERE (:from IS NULL OR c.scheduleTime >= :from)
+          AND (:to IS NULL OR c.scheduleTime <= :to)
+          AND (:subjectId IS NULL OR c.subject.subjectId = :subjectId)
+          AND (:roomId IS NULL OR c.room.roomId = :roomId)
+          AND (:coachId IS NULL OR co.userId = :coachId)
+          AND (:status IS NULL OR c.status = :status)
+          AND (:available IS NULL
+               OR (:available = TRUE AND c.maxCapacity > (SELECT COUNT(r) FROM ClassRegistration r
+                                                          WHERE r.sportClass = c AND r.status = 'REGISTERED'))
+               OR (:available = FALSE AND c.maxCapacity <= (SELECT COUNT(r) FROM ClassRegistration r
+                                                            WHERE r.sportClass = c AND r.status = 'REGISTERED')))
+        """)
+    Page<SportClass> search(@Param("from") LocalDateTime from,
+                            @Param("to") LocalDateTime to,
+                            @Param("subjectId") Long subjectId,
+                            @Param("roomId") Long roomId,
+                            @Param("coachId") Long coachId,
+                            @Param("status") String status,
+                            @Param("available") Boolean available,
+                            Pageable pageable);
+
+    // BE-22: số lớp diễn ra trong ngày
+    long countByStatusAndScheduleTimeBetween(String status, LocalDateTime start, LocalDateTime end);
+
+    // BE-27: HLV còn lớp sắp dạy thì không cho khóa
+    boolean existsByCoach_UserIdAndStatusAndScheduleTimeAfter(Long coachId, String status, LocalDateTime time);
 }

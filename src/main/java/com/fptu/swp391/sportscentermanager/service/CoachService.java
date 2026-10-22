@@ -10,7 +10,7 @@ public interface CoachService {
    CoachResponseDTO createCoach(CoachRequestDTO requestDTO);
    List<CoachResponseDTO> getAllCoaches();
    CoachResponseDTO getCoachById(Long id);
-   CoachResponseDTO updateCoach(Long id, CoachRequestDTO requestDTO);
+   CoachResponseDTO updateCoach(Long id, CoachUpdateRequestDTO requestDTO);
    void toggleCoachStatus(Long id);
 
    List<TeachingScheduleResponseDTO> getMyTeachingSchedule(Long coachId);

@@ -13,6 +13,7 @@ import com.fptu.swp391.sportscentermanager.repository.MemberRepository;
 import com.fptu.swp391.sportscentermanager.repository.MembershipPackageRepository;
 import com.fptu.swp391.sportscentermanager.repository.PaymentRepository;
 import com.fptu.swp391.sportscentermanager.repository.SubscriptionRepository;
+import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
 import com.fptu.swp391.sportscentermanager.service.VNPayService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
@@ -35,6 +36,7 @@ public class VNPayServiceImpl implements VNPayService {
     private final MembershipPackageRepository packageRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final PaymentRepository paymentRepository;
+    private final SubscriptionService subscriptionService;
 
 
     @Override
@@ -177,17 +179,13 @@ public class VNPayServiceImpl implements VNPayService {
         String transactionNo = request.getParameter("vnp_TransactionNo");
 
         if ("00".equals(responseCode)) {
+            LocalDateTime paidAt = LocalDateTime.now();
             payment.setStatus("COMPLETED");
-            payment.setPaymentDate(LocalDateTime.now());
+            payment.setPaidAt(paidAt);
+            payment.setTransactionRef(transactionNo);
             paymentRepository.save(payment);
 
-
-            Subscription subscription = payment.getSubscription();
-            LocalDateTime startDate = calculateStartDate(subscription.getMember().getUserId(), LocalDateTime.now());
-            subscription.setStartDate(startDate);
-            subscription.setEndDate(startDate.plusDays(subscription.getMembershipPackage().getDurationDays()));
-            subscription.setStatus("ACTIVE");
-            subscriptionRepository.save(subscription);
+            subscriptionService.activate(payment.getSubscription(), paidAt);
 
             return VNPayCallBackResponseDTO.builder()
                 .success(true)

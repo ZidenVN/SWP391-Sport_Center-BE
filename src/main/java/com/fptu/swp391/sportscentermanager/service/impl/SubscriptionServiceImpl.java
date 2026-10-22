@@ -7,6 +7,8 @@ import com.fptu.swp391.sportscentermanager.entity.MembershipPackage;
 import com.fptu.swp391.sportscentermanager.entity.Payment;
 import com.fptu.swp391.sportscentermanager.entity.Subscription;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
+import com.fptu.swp391.sportscentermanager.enums.PaymentMethod;
+import com.fptu.swp391.sportscentermanager.enums.PaymentStatus;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.MemberRepository;
 import com.fptu.swp391.sportscentermanager.repository.MembershipPackageRepository;
@@ -40,32 +42,62 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         LocalDateTime now = LocalDateTime.now();
 
-        // Gia hạn: nếu đang có gói còn hạn thì nối tiếp, không thì bắt đầu từ bây giờ
-        LocalDateTime startDate = subscriptionRepository
-            .findFirstByMember_UserIdAndStatusOrderByEndDateDesc(memberId, "ACTIVE")
-            .map(Subscription::getEndDate)
-            .filter(d -> d.isAfter(now))
-            .orElse(now);
+        // BE-17/D-10: không cho mở thêm giao dịch khi member còn 1 giao dịch đang chờ thu tiền
+        for (Subscription pending : subscriptionRepository.findByMember_UserIdAndStatus(memberId, "PENDING")) {
+            Payment pendingPayment = latestPayment(pending);
+            if (pendingPayment == null || !PaymentStatus.PENDING.name().equals(pendingPayment.getStatus())) continue;
+            boolean staleOnline = PaymentMethod.VNPAY.name().equals(pendingPayment.getPaymentMethod())
+                && pendingPayment.getPaymentDate().isBefore(now.minusMinutes(15));
+            if (!staleOnline) {
+                throw new AppException(ErrorCode.PAYMENT_PENDING_EXISTS);
+            }
+            // Link VNPay đã hết hạn: hủy để không treo mãi
+            pending.setStatus("CANCELLED");
+            pendingPayment.setStatus(PaymentStatus.CANCELLED.name());
+        }
+
+        // Ngày dự kiến (tính lại lúc xác nhận thu tiền, xem activate)
+        LocalDateTime startDate = calculateStartDate(memberId, now);
         LocalDateTime endDate = startDate.plusDays(pkg.getDurationDays());
 
+        // Gói chỉ ACTIVE sau khi lễ tân xác nhận đã thu tiền: PATCH /api/v1/receptionist/payments/{paymentId}/confirm
         Subscription subscription = subscriptionRepository.save(Subscription.builder()
             .member(member)
             .membershipPackage(pkg)
             .startDate(startDate)
             .endDate(endDate)
-            .status("ACTIVE")
+            .status("PENDING")
             .build());
 
-        // Process Payment (include)
+        // Process Payment (include): ghi nhận giao dịch, chưa phải thực thu
         Payment payment = paymentRepository.save(Payment.builder()
             .subscription(subscription)
             .amount(BigDecimal.valueOf(pkg.getPrice()))
             .paymentMethod(dto.getPaymentMethod())
             .paymentDate(now)
-            .status("COMPLETED")
+            .status(PaymentStatus.PENDING.name())
             .build());
 
         return toResponse(subscription, payment);
+    }
+
+    @Override
+    @Transactional
+    public void activate(Subscription subscription, LocalDateTime paidAt) {
+        LocalDateTime startDate = calculateStartDate(subscription.getMember().getUserId(), paidAt);
+        subscription.setStartDate(startDate);
+        subscription.setEndDate(startDate.plusDays(subscription.getMembershipPackage().getDurationDays()));
+        subscription.setStatus("ACTIVE");
+        subscriptionRepository.save(subscription);
+    }
+
+    // Gia hạn: nếu đang có gói còn hạn thì nối tiếp, không thì bắt đầu từ bây giờ
+    private LocalDateTime calculateStartDate(Long memberId, LocalDateTime now) {
+        return subscriptionRepository
+            .findFirstByMember_UserIdAndStatusOrderByEndDateDesc(memberId, "ACTIVE")
+            .map(Subscription::getEndDate)
+            .filter(d -> d.isAfter(now))
+            .orElse(now);
     }
 
     @Override
@@ -103,6 +135,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         dto.setEndDate(s.getEndDate());
         dto.setStatus(s.getStatus());
         if (p != null) {
+            dto.setPaymentId(p.getPaymentId());
             dto.setAmount(p.getAmount());
             dto.setPaymentMethod(p.getPaymentMethod());
             dto.setPaymentStatus(p.getStatus());
