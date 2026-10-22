@@ -43,6 +43,7 @@ public class SportClassServiceImpl implements SportClassService {
        }
 
        validateClassTime(requestDTO.getStartTime(), requestDTO.getEndTime());
+       checkScheduleConflict(requestDTO.getRoomId(), requestDTO.getCoachId(), requestDTO.getStartTime(), requestDTO.getEndTime(), 0L);
 
         SportClass newClass = SportClass.builder().maxCapacity(requestDTO.getMaxCapacity()).startTime(requestDTO.getStartTime()).endTime(requestDTO.getEndTime()).status("OPENING").room(room).subject(subject).coach(coach).build();
 
@@ -102,6 +103,10 @@ public class SportClassServiceImpl implements SportClassService {
             throw new AppException(ErrorCode.COACH_INACTIVE);
         }
 
+        if (sportClassRepository.existsCoachConflict(coachId, sportClass.getStartTime(), sportClass.getEndTime(), classId)) {
+            throw new AppException(ErrorCode.COACH_SCHEDULE_CONFLICT);
+        }
+
         sportClass.setCoach(coach);
         SportClass savedClass = sportClassRepository.save(sportClass);
 
@@ -122,6 +127,8 @@ public class SportClassServiceImpl implements SportClassService {
         SportClass sportClass = sportClassRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
 
         validateClassTime(requestDTO.getStartTime(), requestDTO.getEndTime());
+
+        checkScheduleConflict(requestDTO.getRoomId(), requestDTO.getCoachId(), requestDTO.getStartTime(), requestDTO.getEndTime(), id);
 
         sportClass.setMaxCapacity(requestDTO.getMaxCapacity());
         sportClass.setStartTime(requestDTO.getStartTime());
@@ -159,6 +166,15 @@ public class SportClassServiceImpl implements SportClassService {
     private void validateClassTime(LocalDateTime startTime, LocalDateTime endTime) {
         if(!endTime.isAfter(startTime)){
             throw new AppException(ErrorCode.INVALID_CLASS_TIME);
+        }
+    }
+
+    private void checkScheduleConflict(Long roomId, Long coachId, LocalDateTime startTime, LocalDateTime endTime, Long excludeClassId) {
+        if (sportClassRepository.existsRoomConflict(roomId, startTime, endTime, excludeClassId)) {
+            throw new AppException(ErrorCode.ROOM_SCHEDULE_CONFLICT);
+        }
+        if (coachId != null && sportClassRepository.existsCoachConflict(coachId, startTime, endTime, excludeClassId)) {
+            throw new AppException(ErrorCode.COACH_SCHEDULE_CONFLICT);
         }
     }
 }

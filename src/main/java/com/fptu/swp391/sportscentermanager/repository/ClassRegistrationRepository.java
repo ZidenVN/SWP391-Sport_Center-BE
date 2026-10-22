@@ -95,4 +95,19 @@ public interface ClassRegistrationRepository extends JpaRepository<ClassRegistra
         AND r.status = 'REGISTERED'
         """)
     List<Long> findActiveClassIdsByMember(@Param("memberId") Long memberId);
+
+    @Query("""
+        SELECT COUNT(r) > 0 FROM ClassRegistration r
+        WHERE r.member.userId = :memberId
+        AND r.status = 'REGISTERED'
+        AND r.sportClass.classId <> :classId
+        AND r.sportClass.startTime < :endTime
+        AND :startTime < r.sportClass.endTime
+        """)
+
+    boolean existsMemberScheduleConflict(@Param("memberId") Long memberId,
+                                         @Param("classId") Long classId,
+                                         @Param("startTime") LocalDateTime startTime,
+                                         @Param("endTime") LocalDateTime endTime);
+
 }
