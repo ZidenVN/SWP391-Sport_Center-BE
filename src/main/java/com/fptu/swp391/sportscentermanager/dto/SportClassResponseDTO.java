@@ -17,4 +17,9 @@ public class SportClassResponseDTO {
     private String coachName;
     private String roomName;
     private String subjectName;
+    private Long coachId;
+    private String coachSpeciality;
+    private Long roomId;
+    private Long subjectId;
+    private String subjectDescription;
 }

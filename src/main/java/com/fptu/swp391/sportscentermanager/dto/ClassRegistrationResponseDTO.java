@@ -16,6 +16,8 @@ public class ClassRegistrationResponseDTO {
     private String subjectName;
     private String roomName;
     private String coachName;
+    private Long coachId;
+    private String coachSpeciality;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private String status;           // REGISTERED | CANCELLED

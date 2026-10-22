@@ -139,6 +139,8 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
             .roomName(c.getRoom() != null ? c.getRoom().getRoomName() : null)
             .coachName(c.getCoach() != null
                 ? c.getCoach().getFirstName() + " " + c.getCoach().getLastName() : "Chưa có HLV")
+            .coachId(c.getCoach() != null ? c.getCoach().getUserId() : null)
+            .coachSpeciality(c.getCoach() != null ? c.getCoach().getSpeciality() : null)
             .startTime(c.getStartTime())
             .endTime(c.getEndTime())
             .status(r.getStatus())

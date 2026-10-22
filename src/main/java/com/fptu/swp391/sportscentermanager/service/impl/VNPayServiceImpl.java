@@ -83,7 +83,12 @@ public class VNPayServiceImpl implements VNPayService {
         vnpParams.put("vnp_OrderInfo", "Thanh toan goi tap " + pkg.getPackageId());
         vnpParams.put("vnp_OrderType", "other");
         vnpParams.put("vnp_Locale", "vn");
-        vnpParams.put("vnp_ReturnUrl", vnPayConfig.getVnpReturnUrl());
+        // Tùy chọn: FE chọn sẵn phương thức để VNPay bỏ qua màn chọn (VNBANK = ATM nội địa, INTCARD = thẻ quốc tế, VNPAYQR = QR)
+        String bankCode = request.getParameter("bankCode");
+        if (bankCode != null && Set.of("VNBANK", "INTCARD", "VNPAYQR").contains(bankCode)) {
+            vnpParams.put("vnp_BankCode", bankCode);
+        }
+        vnpParams.put("vnp_ReturnUrl", resolveReturnUrl(request.getParameter("returnUrl")));
         vnpParams.put("vnp_IpAddr", VNPayConfig.getIpAddress(request));
         vnpParams.put("vnp_CreateDate", vnpCreateDate);
         vnpParams.put("vnp_ExpireDate", vnpExpireDate);
@@ -212,6 +217,26 @@ public class VNPayServiceImpl implements VNPayService {
                 .responseCode(responseCode)
                 .build();
         }
+    }
+
+    // FE có thể xin return URL khác (vd: thanh toán bằng điện thoại khi quét QR cần IP LAN thay cho localhost).
+    // Chỉ chấp nhận trang /payment-result trên cùng host đã cấu hình hoặc trong mạng nội bộ, tránh open redirect.
+    private String resolveReturnUrl(String requested) {
+        String configured = vnPayConfig.getVnpReturnUrl();
+        if (requested == null || requested.isBlank()) return configured;
+        try {
+            java.net.URI uri = java.net.URI.create(requested);
+            String host = uri.getHost();
+            boolean validScheme = "http".equals(uri.getScheme()) || "https".equals(uri.getScheme());
+            boolean validPath = uri.getPath() != null && uri.getPath().endsWith("/payment-result");
+            boolean sameHost = host != null && host.equalsIgnoreCase(java.net.URI.create(configured).getHost());
+            boolean privateLan = host != null && (host.equals("localhost") || host.equals("127.0.0.1")
+                || host.startsWith("192.168.") || host.startsWith("10.") || host.matches("172\\.(1[6-9]|2\\d|3[01])\\..*"));
+            if (validScheme && validPath && uri.getQuery() == null && (sameHost || privateLan)) return requested;
+        } catch (IllegalArgumentException ignored) {
+            // URL sai định dạng -> dùng cấu hình mặc định
+        }
+        return configured;
     }
 
     private LocalDateTime calculateStartDate(Long memberId, LocalDateTime now) {

@@ -1,5 +1,6 @@
 package com.fptu.swp391.sportscentermanager.repository;
 
+import com.fptu.swp391.sportscentermanager.entity.Member;
 import com.fptu.swp391.sportscentermanager.entity.Subscription;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -30,5 +31,15 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
                                    @Param("now") LocalDateTime now);
 
     List<Subscription> findByMember_UserIdAndStatus(Long memberId, String status);
+
+    // Các member có gói ACTIVE hết hạn trong khoảng (now, until] — dùng cho job nhắc gia hạn
+    @Query("""
+            SELECT DISTINCT s.member FROM Subscription s
+            WHERE s.status = 'ACTIVE'
+              AND s.endDate > :now
+              AND s.endDate <= :until
+            """)
+    List<Member> findMembersWithSubscriptionEndingBetween(@Param("now") LocalDateTime now,
+                                                          @Param("until") LocalDateTime until);
 
 }

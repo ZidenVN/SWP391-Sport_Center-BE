@@ -101,7 +101,7 @@ public class NotificationServiceImpl implements NotificationService {
                     .content(n.getContent())
                     .targetType(n.getTargetType())
                     .sendDate(n.getSentDate())
-                    .targetName("Cá nhân")
+                    .targetName("SYSTEM".equals(n.getTargetType()) ? "Hệ thống" : "Cá nhân")
                 .build());
         }
 
@@ -140,5 +140,25 @@ public class NotificationServiceImpl implements NotificationService {
                 .targetName("Lớp " + classId)
                 .build())
             .toList();
+    }
+
+    @Override
+    @Transactional
+    public void sendSystemNotification(List<? extends User> users, String title, String content) {
+        if (users == null || users.isEmpty()) return;
+
+        Notification savedNotification = notificationRepository.save(Notification.builder()
+            .title(title)
+            .content(content)
+            .targetType("SYSTEM")
+            .sentDate(LocalDateTime.now())
+            .build());
+
+        notificationAccountRepository.saveAll(users.stream()
+            .map(user -> NotificationAccount.builder()
+                .notification(savedNotification)
+                .user(user)
+                .build())
+            .toList());
     }
 }
