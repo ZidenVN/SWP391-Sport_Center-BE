@@ -41,4 +41,6 @@ public interface SportClassRepository extends JpaRepository<SportClass, Long> {
                                 @Param("startTime") LocalDateTime startTime,
                                 @Param("endTime") LocalDateTime endTime,
                                 @Param("excludeClassId") Long excludeClassId);
+
+    boolean existsByRoom_RoomIdAndMaxCapacityGreaterThan(Long roomId, Integer capacity);
 }
