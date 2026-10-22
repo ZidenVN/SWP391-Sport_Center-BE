@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -54,6 +55,8 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/swagger-ui.html"
                 ).permitAll()
+                    // trang giới thiệu (chưa đăng nhập) được xem bảng giá và bộ môn; thêm/sửa/xóa vẫn cần quyền MANAGE_*
+                    .requestMatchers(HttpMethod.GET, "/api/v1/packages", "/api/v1/subjects").permitAll()
                     .anyRequest().authenticated()
             ).exceptionHandling(ex -> ex
                 // Chưa đăng nhập / token sai / token hết hạn -> 401

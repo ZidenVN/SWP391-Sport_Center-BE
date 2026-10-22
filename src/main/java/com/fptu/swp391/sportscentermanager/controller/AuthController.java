@@ -75,6 +75,7 @@ public class AuthController {
 
             return ResponseEntity.ok(AuthResponse.builder()
                 .token(token)
+                .email(user.getEmail())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .fullName(fullName)
@@ -109,33 +110,25 @@ public class AuthController {
     }
 
     @PostMapping("/google")
-    public ResponseEntity<?> loginWithGoogle(@Valid @RequestBody GoogleLoginRequest request) {
+    public ResponseEntity<?> loginWithGoogle(@RequestBody GoogleLoginRequest request) {
         try {
-            // decode để check Token
-            com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier verifier =
-                new com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier.Builder(new com.google.api.client.http.javanet.NetHttpTransport(), new com.google.api.client.json.gson.GsonFactory())
-                    .setAudience(java.util.Collections.singletonList(googleClientId)).build();
-            // tách bước đọc token khỏi bước xác minh: token hỏng định dạng -> 401,
-            // còn lỗi mạng khi lấy khóa công khai của Google vẫn là lỗi server (500)
-            GoogleIdToken parsed;
-            try {
-                parsed = GoogleIdToken.parse(new com.google.api.client.json.gson.GsonFactory(), request.getToken());
-            } catch (Exception e) {
-                parsed = null;
+            GoogleProfile profile;
+            if (request.getAccessToken() != null && !request.getAccessToken().isBlank()) {
+                profile = profileFromAccessToken(request.getAccessToken());
+            } else if (request.getToken() != null && !request.getToken().isBlank()) {
+                profile = profileFromIdToken(request.getToken());
+            } else {
+                return ResponseEntity.status(400).body("Thiếu token Google");
             }
-            GoogleIdToken idToken = parsed != null && verifier.verify(parsed) ? parsed : null;
-
-            if (idToken == null) {
+            if (profile == null) {
                 return ResponseEntity.status(401).body("Token Google không hợp lệ");
             }
-            GoogleIdToken.Payload payload = idToken.getPayload();
-            if (!Boolean.TRUE.equals(payload.getEmailVerified())) {
+            if (!profile.emailVerified()) {
                 return ResponseEntity.status(401).body("Email Google chưa được xác minh");
             }
-            String email = payload.getEmail();
-            // claim chuẩn của Google: given_name = tên, family_name = họ (app lưu firstName = tên, lastName = họ)
-            String firstName = (String) payload.get("given_name");
-            String lastName = (String) payload.get("family_name");
+            String email = profile.email();
+            String firstName = profile.givenName();
+            String lastName = profile.familyName();
 
             // kiểm tra db user đã tồn tại chưa; chưa có thì tạo hội viên mới
             java.util.Optional<User> userOption = userRepository.findByEmail(email);
@@ -174,6 +167,7 @@ public class AuthController {
 
             return ResponseEntity.ok(AuthResponse.builder()
                 .token(jwtToken)
+                .email(user != null ? user.getEmail() : email)
                 .firstName(firstNameVal)
                 .lastName(lastNameVal)
                 .fullName(fullNameVal)
@@ -186,6 +180,64 @@ public class AuthController {
             log.warn("Đăng nhập Google thất bại: {}", e.getMessage());
             return ResponseEntity.status(500).body("Lỗi xác thực Google: " + e.getMessage());
         }
+    }
+
+    // Thông tin người dùng lấy được từ Google sau khi đã xác minh token
+    private record GoogleProfile(String email, boolean emailVerified, String givenName, String familyName) {}
+
+    // ID token (nút chuẩn của Google): tự kiểm chữ ký + audience. Token hỏng định dạng -> null (401),
+    // lỗi mạng khi lấy khóa công khai của Google thì ném ra để trả 500
+    private GoogleProfile profileFromIdToken(String token) throws Exception {
+        com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier verifier =
+            new com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier.Builder(new com.google.api.client.http.javanet.NetHttpTransport(), new com.google.api.client.json.gson.GsonFactory())
+                .setAudience(java.util.Collections.singletonList(googleClientId)).build();
+        GoogleIdToken parsed;
+        try {
+            parsed = GoogleIdToken.parse(new com.google.api.client.json.gson.GsonFactory(), token);
+        } catch (Exception e) {
+            return null;
+        }
+        if (!verifier.verify(parsed)) {
+            return null;
+        }
+        GoogleIdToken.Payload payload = parsed.getPayload();
+        // claim chuẩn của Google: given_name = tên, family_name = họ (app lưu firstName = tên, lastName = họ)
+        return new GoogleProfile(payload.getEmail(), Boolean.TRUE.equals(payload.getEmailVerified()),
+            (String) payload.get("given_name"), (String) payload.get("family_name"));
+    }
+
+    // Access token (nút tự thiết kế dùng luồng OAuth): hỏi Google xem token có phải cấp cho CHÍNH Client ID của app không
+    // (chặn dùng token lấy từ app khác), rồi mới đọc email / tên từ userinfo
+    private GoogleProfile profileFromAccessToken(String accessToken) throws Exception {
+        java.net.http.HttpClient http = java.net.http.HttpClient.newHttpClient();
+        java.net.http.HttpResponse<String> info = http.send(java.net.http.HttpRequest.newBuilder(java.net.URI.create(
+                "https://oauth2.googleapis.com/tokeninfo?access_token=" + java.net.URLEncoder.encode(accessToken, java.nio.charset.StandardCharsets.UTF_8)))
+            .GET().build(), java.net.http.HttpResponse.BodyHandlers.ofString());
+        if (info.statusCode() != 200) {
+            return null;
+        }
+        com.google.gson.JsonObject tokenInfo = com.google.gson.JsonParser.parseString(info.body()).getAsJsonObject();
+        String audience = jsonText(tokenInfo, "aud") != null ? jsonText(tokenInfo, "aud") : jsonText(tokenInfo, "azp");
+        if (!googleClientId.equals(audience)) {
+            return null;
+        }
+        java.net.http.HttpResponse<String> userInfo = http.send(java.net.http.HttpRequest.newBuilder(java.net.URI.create(
+                "https://openidconnect.googleapis.com/v1/userinfo"))
+            .header("Authorization", "Bearer " + accessToken).GET().build(), java.net.http.HttpResponse.BodyHandlers.ofString());
+        if (userInfo.statusCode() != 200) {
+            return null;
+        }
+        com.google.gson.JsonObject u = com.google.gson.JsonParser.parseString(userInfo.body()).getAsJsonObject();
+        String email = jsonText(u, "email");
+        if (email == null) {
+            return null;
+        }
+        return new GoogleProfile(email, "true".equalsIgnoreCase(jsonText(u, "email_verified")),
+            jsonText(u, "given_name"), jsonText(u, "family_name"));
+    }
+
+    private static String jsonText(com.google.gson.JsonObject o, String key) {
+        return o.has(key) && !o.get(key).isJsonNull() ? o.get(key).getAsString() : null;
     }
 
     private List<String> extractPermissions(Collection<? extends GrantedAuthority> authorities) {
