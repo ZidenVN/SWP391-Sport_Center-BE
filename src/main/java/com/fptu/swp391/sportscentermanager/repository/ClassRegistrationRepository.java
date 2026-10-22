@@ -82,6 +82,14 @@ public interface ClassRegistrationRepository extends JpaRepository<ClassRegistra
     List<ClassRegistration> findActiveByClassId(@Param("classId") Long classId);
 
     @Query("""
+        SELECT COUNT(r) > 0 FROM ClassRegistration r
+        WHERE r.member.userId = :memberId
+          AND r.sportClass.coach.userId = :coachId
+          AND r.status = 'REGISTERED'
+        """)
+    boolean existsActiveByCoachAndMember(@Param("coachId") Long coachId, @Param("memberId") Long memberId);
+
+    @Query("""
         SELECT r.sportClass.classId FROM ClassRegistration r
         WHERE r.member.userId = :memberId
         AND r.status = 'REGISTERED'
