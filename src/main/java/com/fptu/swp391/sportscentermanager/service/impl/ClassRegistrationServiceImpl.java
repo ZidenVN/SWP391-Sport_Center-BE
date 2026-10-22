@@ -67,6 +67,10 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
             throw new AppException(ErrorCode.ALREADY_REGISTERED);
         }
 
+        if (registrationRepository.existsMemberScheduleConflict(memberId, classId, sportClass.getStartTime(), sportClass.getEndTime())) {
+            throw new AppException(ErrorCode.MEMBER_SCHEDULE_CONFLICT);
+        }
+
         // 4. Còn chỗ không
         long taken = registrationRepository.countBySportClass_ClassIdAndStatus(classId, REGISTERED);
         if (taken >= sportClass.getMaxCapacity()) {
@@ -142,4 +146,7 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
             .cancelledAt(r.getCancelledAt())
             .build();
     }
+
+
+
 }

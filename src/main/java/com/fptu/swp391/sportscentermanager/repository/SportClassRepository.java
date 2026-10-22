@@ -18,7 +18,27 @@ public interface SportClassRepository extends JpaRepository<SportClass, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT c FROM SportClass c WHERE c.classId = :id")
     Optional<SportClass> findByIdForUpdate(@Param("id") Long id);
+
     List<SportClass> findByCoach_UserIdOrderByStartTimeAsc(Long coachId);
 
     List<SportClass> findByCoach_UserIdAndStartTimeBetweenOrderByStartTimeAsc(Long coachId, LocalDateTime start, LocalDateTime end);
+
+    @Query("""
+        SELECT COUNT(c) > 0 FROM SportClass c WHERE c.room.roomId = :roomId AND c.classId<> :excludeClassId AND c.startTime < :endTime AND :startTime < c.endTime""")
+    boolean existsRoomConflict(@Param("roomId") Long roomId,
+                               @Param("startTime") LocalDateTime startTime,
+                               @Param("endTime") LocalDateTime endTime,
+                               @Param("excludeClassId") Long excludeClassId);
+
+    @Query("""
+        SELECT COUNT(c) > 0 FROM SportClass c
+        WHERE c.coach.userId = :coachId
+        AND c.classId <> :excludeClassId
+        AND c.startTime < :endTime
+        AND :startTime < c.endTime
+        """)
+    boolean existsCoachConflict(@Param("coachId") Long coachId,
+                                @Param("startTime") LocalDateTime startTime,
+                                @Param("endTime") LocalDateTime endTime,
+                                @Param("excludeClassId") Long excludeClassId);
 }
