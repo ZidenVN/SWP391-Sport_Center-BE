@@ -4,8 +4,11 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Getter @Setter
-@Builder @NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ClassRegistrationResponseDTO {
     private Long registrationId;
     private Long memberId;
@@ -13,7 +16,8 @@ public class ClassRegistrationResponseDTO {
     private String subjectName;
     private String roomName;
     private String coachName;
-    private LocalDateTime scheduleTime;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
     private String status;           // REGISTERED | CANCELLED
     private LocalDateTime registeredAt;
     private LocalDateTime cancelledAt;
