@@ -98,4 +98,7 @@ public interface SportClassRepository extends JpaRepository<SportClass, Long> {
                                 @Param("startTime") LocalDateTime startTime,
                                 @Param("endTime") LocalDateTime endTime,
                                 @Param("excludeClassId") Long excludeClassId);
+
+    // BE-12: phòng còn lớp ĐANG MỞ cần nhiều chỗ hơn sức chứa mới (lớp đã hủy/kết thúc không tính)
+    boolean existsByRoom_RoomIdAndStatusAndMaxCapacityGreaterThan(Long roomId, String status, Integer capacity);
 }

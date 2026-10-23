@@ -30,8 +30,14 @@ public enum ErrorCode {
     CLASS_NOT_OPEN(HttpStatus.BAD_REQUEST,"ERR_CLASS_003","Lớp học không còn mở đăng ký!"),
     INVALID_CLASS_TIME(HttpStatus.BAD_REQUEST, "ERR_CLASS_004", "Giờ kết thúc phải sau giờ bắt đầu"),
     ROOM_SCHEDULE_CONFLICT(HttpStatus.CONFLICT, "ERR_CLASS_005", "Phòng đã có lớp khác trong khung giờ này!"),
-    COACH_SCHEDULE_CONFLICT(HttpStatus.CONFLICT, "ERR_CLASS_006", "Huấn luyện viên đã có lớp khác trong khung giờ này"),
+    COACH_SCHEDULE_CONFLICT(HttpStatus.CONFLICT, "ERR_CLASS_006", "Huấn luyện viên đã có lớp khác trong khung giờ này!"),
     MEMBER_SCHEDULE_CONFLICT(HttpStatus.CONFLICT, "ERR_REGISTRATION_003", "Bạn đã đăng ký một lớp học khác trùng giờ này!"),
+    ROOM_UNAVAILABLE(HttpStatus.BAD_REQUEST, "ERR_ROOM_001", "Phòng đang bảo trì, không thể xếp lớp!"),
+    ROOM_CAPACITY_BELOW_CLASS(HttpStatus.BAD_REQUEST, "ERR_ROOM_002", "Phòng đang có lớp cần nhiều chỗ hơn sức chứa mới!"),
+    CLASS_CAPACITY_EXCEEDS_ROOM(HttpStatus.BAD_REQUEST, "ERR_CLASS_007", "Sức chứa lớp vượt quá sức chứa của phòng!"),
+    CAPACITY_BELOW_REGISTERED(HttpStatus.BAD_REQUEST, "ERR_CLASS_008", "Sức chứa mới nhỏ hơn số học viên đã đăng ký!"),
+
+
     ALREADY_CHECK_IN(HttpStatus.CONFLICT,"ERR_CHECKIN_001","Hội viên đã check-in rồi!"),
     MEMBER_NOT_IN_CLASS(HttpStatus.BAD_REQUEST, "ERR_ATTENDANCE_001", "Học viên không thuộc danh sách lớp học này!"),
     REGISTRATION_ALREADY_CANCELLED(HttpStatus.CONFLICT,"ERR_REGISTRATION_001","Đăng ký này đã được hủy trước đó!"),
@@ -47,8 +53,8 @@ public enum ErrorCode {
 
     // BE-15 → BE-27
     INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST, "ERR_REQUEST_002", "Khoảng thời gian không hợp lệ: fromDate phải trước hoặc bằng toDate!"),
-    CLASS_ALREADY_CLOSED(HttpStatus.CONFLICT, "ERR_CLASS_007", "Lớp học đã bị hủy hoặc đã kết thúc, không thể thay đổi!"),
-    CLASS_NOT_STARTED(HttpStatus.BAD_REQUEST, "ERR_CLASS_008", "Lớp học chưa kết thúc, không thể đánh dấu hoàn thành!"),
+    CLASS_ALREADY_CLOSED(HttpStatus.CONFLICT, "ERR_CLASS_009", "Lớp học đã bị hủy hoặc đã kết thúc, không thể thay đổi!"),
+    CLASS_NOT_STARTED(HttpStatus.BAD_REQUEST, "ERR_CLASS_010", "Lớp học chưa kết thúc, không thể đánh dấu hoàn thành!"),
     PAYMENT_ALREADY_PROCESSED(HttpStatus.CONFLICT, "ERR_PAYMENT_001", "Giao dịch đã được xử lý trước đó!"),
     PAYMENT_METHOD_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "ERR_PAYMENT_002", "Giao dịch online chỉ được xác nhận qua cổng thanh toán!"),
     TRANSACTION_REF_REQUIRED(HttpStatus.BAD_REQUEST, "ERR_PAYMENT_003", "Chuyển khoản phải nhập mã giao dịch để đối soát!"),
