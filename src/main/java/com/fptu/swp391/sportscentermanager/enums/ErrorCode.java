@@ -44,6 +44,18 @@ public enum ErrorCode {
     ROLE_NOT_MATCH_USER_TYPE(HttpStatus.BAD_REQUEST, "ERR_ROLE_400", "Role không phù hợp với loại tài khoản!"),
     COACH_INACTIVE(HttpStatus.BAD_REQUEST, "ERR_COACH_400", "Huấn luyện viên đang bị khóa, không thể phân công!"),
     PAYMENT_PENDING_EXISTS(HttpStatus.CONFLICT, "ERR_PAYMENT_409", "Bạn đang có giao dịch chờ thanh toán, vui lòng hoàn tất hoặc thử lại sau 15 phút!"),
+
+    // BE-15 → BE-27
+    INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST, "ERR_REQUEST_002", "Khoảng thời gian không hợp lệ: fromDate phải trước hoặc bằng toDate!"),
+    CLASS_ALREADY_CLOSED(HttpStatus.CONFLICT, "ERR_CLASS_007", "Lớp học đã bị hủy hoặc đã kết thúc, không thể thay đổi!"),
+    CLASS_NOT_STARTED(HttpStatus.BAD_REQUEST, "ERR_CLASS_008", "Lớp học chưa kết thúc, không thể đánh dấu hoàn thành!"),
+    PAYMENT_ALREADY_PROCESSED(HttpStatus.CONFLICT, "ERR_PAYMENT_001", "Giao dịch đã được xử lý trước đó!"),
+    PAYMENT_METHOD_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "ERR_PAYMENT_002", "Giao dịch online chỉ được xác nhận qua cổng thanh toán!"),
+    TRANSACTION_REF_REQUIRED(HttpStatus.BAD_REQUEST, "ERR_PAYMENT_003", "Chuyển khoản phải nhập mã giao dịch để đối soát!"),
+    REFUND_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "ERR_PAYMENT_004", "Chỉ hoàn tiền được cho giao dịch đã thanh toán!"),
+    INVOICE_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "ERR_INVOICE_001", "Chỉ xuất hóa đơn cho giao dịch đã thanh toán!"),
+    RECEPTIONIST_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_RECEPTIONIST_404", "Lễ tân không tồn tại!"),
+    COACH_HAS_UPCOMING_CLASSES(HttpStatus.CONFLICT, "ERR_COACH_409", "Huấn luyện viên đang có lớp sắp dạy, hãy đổi HLV cho các lớp đó trước khi khóa!"),
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "ERR_AUTH_403", "Bạn không có quyền truy cập dữ liệu này!")
 
 

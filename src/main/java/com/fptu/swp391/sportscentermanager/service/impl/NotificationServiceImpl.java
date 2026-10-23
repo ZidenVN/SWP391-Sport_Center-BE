@@ -125,7 +125,25 @@ public class NotificationServiceImpl implements NotificationService {
         result.sort(Comparator.comparing(NotificationResponseDTO::getSendDate, Comparator.nullsLast(Comparator.reverseOrder())));
         return result;
     }
+    @Override
+    @Transactional
+    public void notifyUsers(List<? extends User> users, String title, String content, String targetType) {
+        if (users == null || users.isEmpty()) return;
 
+        Notification notification = notificationRepository.save(Notification.builder()
+            .title(title)
+            .content(content)
+            .targetType(targetType)
+            .sentDate(LocalDateTime.now())
+            .build());
+
+        // Gắn từng người nhận để thông báo hiện ở mục "Cá nhân", kể cả khi đăng ký lớp đã bị hủy
+        List<NotificationAccount> links = new ArrayList<>();
+        for (User u : users) {
+            links.add(NotificationAccount.builder().notification(notification).user(u).build());
+        }
+        notificationAccountRepository.saveAll(links);
+    }
     @Override
     @Transactional
     public List<NotificationResponseDTO> getClassNotifications(Long classId) {

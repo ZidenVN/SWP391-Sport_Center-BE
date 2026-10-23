@@ -19,7 +19,9 @@ public class SubscriptionResponseDTO {
     private LocalDateTime endDate;
     private String status;
 
-    // Thông tin thanh toán (chỉ có khi vừa đăng ký)
+    // Thông tin thanh toán (giao dịch gần nhất của gói)
+    // BE-18: FE dùng paymentId để gọi PATCH /api/v1/receptionist/payments/{paymentId}/confirm
+    private Long paymentId;
     private BigDecimal amount;
     private String paymentMethod;
     private String paymentStatus;

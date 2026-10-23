@@ -14,7 +14,8 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 @Getter @Setter @Builder
 @SQLDelete(sql = "update classes set status = 'INACTIVE' where class_id = ?")
-@SQLRestriction("status = 'OPENING'")
+// Lớp bị hủy / đã kết thúc vẫn phải đọc được để giữ lịch sử, chỉ ẩn lớp đã xóa mềm
+@SQLRestriction("status != 'INACTIVE'")
 public class SportClass {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
