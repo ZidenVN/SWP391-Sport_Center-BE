@@ -11,6 +11,9 @@ import java.util.Optional;
 @Repository
 public interface ClassAttendanceRepository extends JpaRepository<ClassAttendance, Long> {
     List<ClassAttendance> findBySportClass_ClassId(Long classId);
+
+    // Toàn bộ điểm danh của 1 hội viên (lịch sử điểm danh)
+    List<ClassAttendance> findByMember_UserId(Long memberId);
     Optional<ClassAttendance> findBySportClass_ClassIdAndMember_UserId(Long classId, Long memberId);
 
     long countByMember_UserIdAndStatus(Long memberID, AttendanceStatus status);

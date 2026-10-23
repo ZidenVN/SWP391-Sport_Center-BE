@@ -10,6 +10,7 @@ import com.fptu.swp391.sportscentermanager.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -24,6 +25,7 @@ public class DataInitializer implements CommandLineRunner {
     private final RolePermissionRepository rolePermissionRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbc;
 
     @Value("${app.init.manager.email:manager@sportcenter.com}")
     private String managerEmail;
@@ -55,7 +57,7 @@ public class DataInitializer implements CommandLineRunner {
             PermissionCode.CHECK_IN_MEMBER, PermissionCode.VIEW_ATTENDANCE,
             PermissionCode.CREATE_PAYMENT, PermissionCode.VIEW_PAYMENT,
             PermissionCode.VIEW_USER, PermissionCode.CREATE_USER, PermissionCode.UPDATE_USER,
-            PermissionCode.VIEW_OWN_SCHEDULE, PermissionCode.UPDATE_OWN_PROFILE,
+            PermissionCode.VIEW_OWN_SCHEDULE, PermissionCode.VIEW_OWN_PROFILE, PermissionCode.UPDATE_OWN_PROFILE,
             PermissionCode.SEARCH_MEMBER,
             PermissionCode.MANAGE_SUBSCRIPTION,
             PermissionCode.MANAGE_TICKET,
@@ -79,15 +81,49 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        Map<String, Permission> permissions = seedPermissions();
+        Set<String> newPermissions = new HashSet<>();
+        Map<String, Permission> permissions = seedPermissions(newPermissions);
         Map<String, Role> roles = seedRoles();
-        seedRolePermissions(roles, permissions);
+        seedRolePermissions(roles, permissions, newPermissions);
         seedDefaultManager(roles.get("CENTER_MANAGER"));
         seedDefaultCoach(roles.get("COACH"));
         seedDefaultReceptionist(roles.get("RECEPTIONIST"));
+
+        // DB đã có từ trước không nhận quyền mặc định mới nữa (để giữ phân quyền Quản lý đã chỉnh),
+        // nên các thay đổi dữ liệu cần thiết được vá đúng 1 lần ở đây.
+        applyPatchOnce("2026-10-receptionist-view-own-profile", () -> grantIfMissing(
+            roles.get("RECEPTIONIST"), permissions.get(PermissionCode.VIEW_OWN_PROFILE.name())));
+        applyPatchOnce("2026-10-default-coach-phone", () -> {
+            // SĐT HLV mặc định cũ thiếu 1 số -> HLV không lưu được hồ sơ
+            if (!userRepository.existsByPhone("0987896540")) {
+                jdbc.update("UPDATE users SET phone = '0987896540' WHERE phone = '098789654'");
+            }
+        });
     }
 
-    private Map<String, Permission> seedPermissions() {
+    // Đánh dấu trong bảng app_data_patches để mỗi bản vá chỉ chạy 1 lần trên mỗi DB
+    private void applyPatchOnce(String key, Runnable patch) {
+        jdbc.execute("CREATE TABLE IF NOT EXISTS app_data_patches (patch_key VARCHAR(100) PRIMARY KEY, applied_at DATETIME NOT NULL)");
+        Integer done = jdbc.queryForObject("SELECT COUNT(*) FROM app_data_patches WHERE patch_key = ?", Integer.class, key);
+        if (done != null && done > 0) return;
+        patch.run();
+        jdbc.update("INSERT INTO app_data_patches (patch_key, applied_at) VALUES (?, NOW())", key);
+        System.out.println("Applied data patch: " + key);
+    }
+
+    private void grantIfMissing(Role role, Permission permission) {
+        if (role == null || permission == null) return;
+        boolean has = rolePermissionRepository.findAllByRole_RoleId(role.getRoleId()).stream()
+            .anyMatch(rp -> rp.getPermission().getPermissionId().equals(permission.getPermissionId()));
+        if (!has) {
+            RolePermission rp = new RolePermission();
+            rp.setRole(role);
+            rp.setPermission(permission);
+            rolePermissionRepository.save(rp);
+        }
+    }
+
+    private Map<String, Permission> seedPermissions(Set<String> newPermissions) {
         Map<String, Permission> result = new HashMap<>();
         for(PermissionCode code : PermissionCode.values()){
             // Hàm findByPermissionName của bạn trả về Object, không phải Optional
@@ -98,6 +134,7 @@ public class DataInitializer implements CommandLineRunner {
                     .permissionName(code.name())
                     .description(code.getDescription())
                     .build());
+                newPermissions.add(code.name());
             }
             result.put(code.name(), p);
         }
@@ -120,13 +157,18 @@ public class DataInitializer implements CommandLineRunner {
         return result;
     }
 
-    private void seedRolePermissions(Map<String, Role> roles, Map<String, Permission> permissions) {
+    // Không ghi đè phân quyền Quản lý đã chỉnh ở trang Phân quyền: chỉ gán quyền mặc định khi
+    // vai trò chưa có quyền nào (DB mới) hoặc khi quyền đó vừa được thêm vào code. Quản lý luôn có toàn quyền.
+    private void seedRolePermissions(Map<String, Role> roles, Map<String, Permission> permissions, Set<String> newPermissions) {
         ROLE_PERMISSIONS.forEach((roleName, codes) -> {
             Role role = roles.get(roleName);
             // Lấy danh sách các quyền hiện tại của Role đó ra trước
             List<RolePermission> existingRPs = rolePermissionRepository.findAllByRole_RoleId(role.getRoleId());
+            boolean freshRole = existingRPs.isEmpty();
+            boolean fullAccess = "CENTER_MANAGER".equals(roleName);
 
             for (PermissionCode code : codes) {
+                if (!fullAccess && !freshRole && !newPermissions.contains(code.name())) continue;
                 Permission permission = permissions.get(code.name());
 
                 // Kiểm tra xem Role này đã có quyền này chưa (tránh lỗi duplicate)
@@ -178,7 +220,7 @@ public class DataInitializer implements CommandLineRunner {
             .lastName("Coach")
             .gender("MALE")
             .email(email)
-            .phone("098789654")
+            .phone("0987896540")
             .passwordHash(passwordEncoder.encode(coachPassword))
             .status(UserStatus.ACTIVE)
             .role(coachRole)

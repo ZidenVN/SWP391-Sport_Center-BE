@@ -1,12 +1,14 @@
 package com.fptu.swp391.sportscentermanager.service.impl;
 
 import com.fptu.swp391.sportscentermanager.dto.ClassRegistrationResponseDTO;
+import com.fptu.swp391.sportscentermanager.entity.ClassAttendance;
 import com.fptu.swp391.sportscentermanager.entity.ClassRegistration;
 import com.fptu.swp391.sportscentermanager.entity.Member;
 import com.fptu.swp391.sportscentermanager.entity.SportClass;
 import com.fptu.swp391.sportscentermanager.entity.Subscription;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
+import com.fptu.swp391.sportscentermanager.repository.ClassAttendanceRepository;
 import com.fptu.swp391.sportscentermanager.repository.ClassRegistrationRepository;
 import com.fptu.swp391.sportscentermanager.repository.MemberRepository;
 import com.fptu.swp391.sportscentermanager.repository.SportClassRepository;
@@ -18,6 +20,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +35,7 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
     private final SportClassRepository sportClassRepository;
     private final MemberRepository memberRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final ClassAttendanceRepository attendanceRepository;
 
     @Override
     @Transactional
@@ -54,9 +60,13 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
         Subscription current = subscriptionRepository.findCurrent(memberId, now)
             .stream().findFirst()
             .orElseThrow(() -> new AppException(ErrorCode.NO_ACTIVE_SUBSCRIPTION));
-        // Gói phải còn hạn tới thời điểm lớp diễn ra
-        if (sportClass.getStartTime().isAfter(current.getEndDate())) {
-            throw new AppException(ErrorCode.SUBSCRIPTION_EXPIRED);
+        // Ngày học phải nằm trong 1 gói đang hiệu lực: gói hiện tại hoặc gói gia hạn nối tiếp phía sau
+        LocalDateTime classStart = sportClass.getStartTime();
+        boolean covered = !classStart.isAfter(current.getEndDate())
+            || subscriptionRepository.findByMember_UserIdAndStatus(memberId, "ACTIVE").stream()
+                .anyMatch(s -> !classStart.isBefore(s.getStartDate()) && !classStart.isAfter(s.getEndDate()));
+        if (!covered) {
+            throw new AppException(ErrorCode.SUBSCRIPTION_NOT_COVER_CLASS);
         }
 
         // 3. Không đăng ký trùng
@@ -112,15 +122,17 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
     @Transactional
     public List<ClassRegistrationResponseDTO> getHistory(Long memberId) {
         requireMember(memberId);
-        return registrationRepository.findHistory(memberId).stream().map(this::toResponse).toList();
+        Map<Long, ClassAttendance> attendance = attendanceByClass(memberId);
+        return registrationRepository.findHistory(memberId).stream().map(r -> toResponse(r, attendance)).toList();
     }
 
     @Override
     @Transactional
     public List<ClassRegistrationResponseDTO> getUpcomingSchedule(Long memberId) {
         requireMember(memberId);
+        Map<Long, ClassAttendance> attendance = attendanceByClass(memberId);
         return registrationRepository.findUpcoming(memberId, LocalDateTime.now())
-            .stream().map(this::toResponse).toList();
+            .stream().map(r -> toResponse(r, attendance)).toList();
     }
 
     private void requireMember(Long memberId) {
@@ -129,8 +141,19 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
         }
     }
 
+    // classId -> điểm danh của hội viên, lấy 1 lần cho cả danh sách
+    private Map<Long, ClassAttendance> attendanceByClass(Long memberId) {
+        return attendanceRepository.findByMember_UserId(memberId).stream()
+            .collect(Collectors.toMap(a -> a.getSportClass().getClassId(), Function.identity(), (a, b) -> b));
+    }
+
     private ClassRegistrationResponseDTO toResponse(ClassRegistration r) {
+        return toResponse(r, Map.of());
+    }
+
+    private ClassRegistrationResponseDTO toResponse(ClassRegistration r, Map<Long, ClassAttendance> attendance) {
         SportClass c = r.getSportClass();
+        ClassAttendance a = attendance.get(c.getClassId());
         return ClassRegistrationResponseDTO.builder()
             .registrationId(r.getRegistrationId())
             .memberId(r.getMember().getUserId())
@@ -146,6 +169,9 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
             .status(r.getStatus())
             .registeredAt(r.getRegisteredAt())
             .cancelledAt(r.getCancelledAt())
+            .classStatus(c.getStatus())
+            .attendanceStatus(a != null && a.getStatus() != null ? a.getStatus().name() : null)
+            .attendanceNote(a != null ? a.getNote() : null)
             .build();
     }
 

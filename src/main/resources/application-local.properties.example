@@ -31,6 +31,9 @@ APP_INIT_MANAGER_PASSWORD=
 APP_INIT_COACH_PASSWORD=
 APP_INIT_RECEPTIONIST_PASSWORD=
 
+# -- AI (không bắt buộc): có key thì gợi ý bài tập / trợ lý dùng Claude, để trống thì dùng gợi ý tự động
+# ANTHROPIC_API_KEY=
+
 # -- Không bắt buộc khi chạy local (đã có giá trị mặc định trong application.properties)
 # CORS_ALLOWED_ORIGINS=http://localhost:*,http://127.0.0.1:*
 # VNPAY_RETURN_URL=http://localhost:5173/payment-result

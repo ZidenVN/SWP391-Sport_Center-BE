@@ -76,7 +76,7 @@ public class SupportTicketServiceImpl implements SupportTicketService {
             .status(t.getStatus())
             .createdDate(t.getCreatedDate())
             .memberId(m != null ? m.getUserId() : null)
-            .memberName(m != null ? m.getLastName() + " " + m.getFirstName() : null)
+            .memberName(m != null ? m.getFirstName() + " " + m.getLastName() : null)
             .receptionistId(t.getReceptionist() != null ? t.getReceptionist().getUserId() : null)
             .build();
     }

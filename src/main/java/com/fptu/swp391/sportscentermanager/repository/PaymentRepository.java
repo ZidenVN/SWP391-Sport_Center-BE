@@ -111,7 +111,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
           AND (:kw IS NULL
                OR LOWER(m.email) LIKE LOWER(CONCAT('%', :kw, '%'))
                OR m.phone LIKE CONCAT('%', :kw, '%')
-               OR LOWER(CONCAT(m.lastName, ' ', m.firstName)) LIKE LOWER(CONCAT('%', :kw, '%')))
+               OR LOWER(CONCAT(m.lastName, ' ', m.firstName)) LIKE LOWER(CONCAT('%', :kw, '%'))
+               OR LOWER(CONCAT(m.firstName, ' ', m.lastName)) LIKE LOWER(CONCAT('%', :kw, '%')))
         ORDER BY p.paymentDate DESC
         """,
         countQuery = """
@@ -125,7 +126,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
           AND (:kw IS NULL
                OR LOWER(m.email) LIKE LOWER(CONCAT('%', :kw, '%'))
                OR m.phone LIKE CONCAT('%', :kw, '%')
-               OR LOWER(CONCAT(m.lastName, ' ', m.firstName)) LIKE LOWER(CONCAT('%', :kw, '%')))
+               OR LOWER(CONCAT(m.lastName, ' ', m.firstName)) LIKE LOWER(CONCAT('%', :kw, '%'))
+               OR LOWER(CONCAT(m.firstName, ' ', m.lastName)) LIKE LOWER(CONCAT('%', :kw, '%')))
         """)
     Page<Payment> search(@Param("status") String status,
                          @Param("method") String method,
@@ -148,7 +150,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
           AND (:kw IS NULL
                OR LOWER(m.email) LIKE LOWER(CONCAT('%', :kw, '%'))
                OR m.phone LIKE CONCAT('%', :kw, '%')
-               OR LOWER(CONCAT(m.lastName, ' ', m.firstName)) LIKE LOWER(CONCAT('%', :kw, '%')))
+               OR LOWER(CONCAT(m.lastName, ' ', m.firstName)) LIKE LOWER(CONCAT('%', :kw, '%'))
+               OR LOWER(CONCAT(m.firstName, ' ', m.lastName)) LIKE LOWER(CONCAT('%', :kw, '%')))
         ORDER BY p.paymentDate DESC
         """)
     List<Payment> searchAll(@Param("status") String status,

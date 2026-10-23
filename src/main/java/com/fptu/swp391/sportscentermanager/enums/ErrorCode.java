@@ -23,8 +23,9 @@ public enum ErrorCode {
     REGISTRATION_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_REGISTRATION_404","Chưa đăng ký lớp này!"),
     TICKET_NOT_FOUND(HttpStatus.NOT_FOUND,"ERR_TICKET_404","Yêu cầu hỗ trợ không tồn tại!"),
 
-    NO_ACTIVE_SUBSCRIPTION(HttpStatus.BAD_REQUEST,"ERR_SUBSCRIPTION_001","Hội viên chưa có gói tập co hiệu lực!"),
+    NO_ACTIVE_SUBSCRIPTION(HttpStatus.BAD_REQUEST,"ERR_SUBSCRIPTION_001","Hội viên chưa có gói tập có hiệu lực!"),
     SUBSCRIPTION_EXPIRED(HttpStatus.BAD_REQUEST,"ERR_SUBSCRIPTION_002","Gói tập đã hết hạn!"),
+    SUBSCRIPTION_NOT_COVER_CLASS(HttpStatus.BAD_REQUEST,"ERR_SUBSCRIPTION_003","Gói tập hết hạn trước ngày diễn ra lớp, vui lòng gia hạn để đặt lớp này!"),
     CLASS_FULL(HttpStatus.CONFLICT,"ERR_CLASS_001","Lớp học đã đủ số lượng!"),
     ALREADY_REGISTERED(HttpStatus.CONFLICT,"ERR_CLASS_002","Bạn đã đăng ký lớp học này rồi!"),
     CLASS_NOT_OPEN(HttpStatus.BAD_REQUEST,"ERR_CLASS_003","Lớp học không còn mở đăng ký!"),
@@ -38,7 +39,8 @@ public enum ErrorCode {
     CAPACITY_BELOW_REGISTERED(HttpStatus.BAD_REQUEST, "ERR_CLASS_008", "Sức chứa mới nhỏ hơn số học viên đã đăng ký!"),
 
 
-    ALREADY_CHECK_IN(HttpStatus.CONFLICT,"ERR_CHECKIN_001","Hội viên đã check-in rồi!"),
+    ALREADY_CHECK_IN(HttpStatus.CONFLICT,"ERR_CHECKIN_001","Hội viên đã check-in hôm nay rồi!"),
+    MEMBER_ACCOUNT_LOCKED(HttpStatus.BAD_REQUEST,"ERR_CHECKIN_002","Tài khoản hội viên đang bị khóa, không thể check-in!"),
     MEMBER_NOT_IN_CLASS(HttpStatus.BAD_REQUEST, "ERR_ATTENDANCE_001", "Học viên không thuộc danh sách lớp học này!"),
     REGISTRATION_ALREADY_CANCELLED(HttpStatus.CONFLICT,"ERR_REGISTRATION_001","Đăng ký này đã được hủy trước đó!"),
     CANCEL_NOT_ALLOWED(HttpStatus.BAD_REQUEST,"ERR_REGISTRATION_002","Lớp học đã bắt đầu, không thể hủy đăng ký!"),

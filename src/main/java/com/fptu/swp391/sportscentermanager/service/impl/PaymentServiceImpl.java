@@ -81,7 +81,7 @@ public class PaymentServiceImpl implements PaymentService {
             .paymentId(payment.getPaymentId())
             .issuedAt(payment.getPaidAt() != null ? payment.getPaidAt() : payment.getPaymentDate())
             .memberId(member.getUserId())
-            .memberName(member.getLastName() + " " + member.getFirstName())
+            .memberName(member.getFirstName() + " " + member.getLastName())
             .memberEmail(member.getEmail())
             .memberPhone(member.getPhone())
             .subscriptionId(sub.getSubscriptionId())
@@ -241,7 +241,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private String fullName(User u) {
-        return u != null ? u.getLastName() + " " + u.getFirstName() : null;
+        return u != null ? u.getFirstName() + " " + u.getLastName() : null;
     }
 
     private PaymentResponseDTO toResponse(Payment p) {

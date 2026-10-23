@@ -1,5 +1,7 @@
 package com.fptu.swp391.sportscentermanager.service.impl;
 
+import com.fptu.swp391.sportscentermanager.dto.MyProfileResponseDTO;
+import com.fptu.swp391.sportscentermanager.dto.MyProfileUpdateDTO;
 import com.fptu.swp391.sportscentermanager.dto.RegisterRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.UserResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.*;
@@ -101,6 +103,11 @@ public class UserServiceImpl implements UserService {
            throw new AppException(ErrorCode.EMAIL_ALREADY_TAKEN);
        }
 
+       // cột phone unique: báo lỗi rõ ràng thay vì để DB ném lỗi 500
+       if (requestDTO.getPhone() != null && !requestDTO.getPhone().equals(user.getPhone()) && userRepository.existsByPhone(requestDTO.getPhone())) {
+           throw new AppException(ErrorCode.PHONE_ALREADY_TAKEN);
+       }
+
        if (requestDTO.getFirstName() != null)
            user.setFirstName(requestDTO.getFirstName());
        if (requestDTO.getLastName() != null)
@@ -152,5 +159,41 @@ public class UserServiceImpl implements UserService {
         if (user instanceof Receptionist) return "RECEPTIONIST";
         if (user instanceof Member) return "MEMBER";
         return null;
+    }
+
+    @Override
+    public MyProfileResponseDTO getMyProfile(Long userId, List<String> permissions) {
+        return toMyProfile(findUserOrThrow(userId), permissions);
+    }
+
+    @Override
+    @Transactional
+    public MyProfileResponseDTO updateMyProfile(Long userId, MyProfileUpdateDTO dto, List<String> permissions) {
+        User user = findUserOrThrow(userId);
+        String phone = dto.getPhone().trim();
+        if (!phone.equals(user.getPhone()) && userRepository.existsByPhone(phone)) {
+            throw new AppException(ErrorCode.PHONE_ALREADY_TAKEN);
+        }
+        user.setFirstName(dto.getFirstName().trim());
+        user.setLastName(dto.getLastName().trim());
+        user.setGender(dto.getGender().toUpperCase());
+        user.setPhone(phone);
+        userRepository.save(user);
+        return toMyProfile(user, permissions);
+    }
+
+    private MyProfileResponseDTO toMyProfile(User user, List<String> permissions) {
+        return MyProfileResponseDTO.builder()
+            .id(user.getUserId())
+            .firstName(user.getFirstName())
+            .lastName(user.getLastName())
+            .gender(user.getGender())
+            .email(user.getEmail())
+            .phone(user.getPhone())
+            .status(user.getStatus() != null ? user.getStatus().name() : null)
+            .roleName(user.getRole() != null ? user.getRole().getRoleName() : null)
+            .speciality(user instanceof Coach coach ? coach.getSpeciality() : null)
+            .permissions(permissions)
+            .build();
     }
 }
