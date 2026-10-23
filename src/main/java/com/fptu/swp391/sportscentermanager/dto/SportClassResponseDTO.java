@@ -17,4 +17,9 @@ public class SportClassResponseDTO {
     private String coachName;
     private String roomName;
     private String subjectName;
+
+    // BE-15: id để FE lọc/hiển thị (số chỗ: currentEnrolled, availableSeats ở trên - BE-12)
+    private Long coachId;
+    private Long roomId;
+    private Long subjectId;
 }

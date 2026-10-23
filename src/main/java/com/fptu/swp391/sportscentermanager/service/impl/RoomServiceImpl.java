@@ -53,7 +53,7 @@ public class RoomServiceImpl implements RoomService {
     @Override
     public RoomResponseDTO updateRoom(Long id, RoomRequestDTO requestDTO) {
         Room existingRoom = getRoomById(id);
-        if (sportClassRepository.existsByRoom_RoomIdAndMaxCapacityGreaterThan(id, requestDTO.getCapacity())) {
+        if (sportClassRepository.existsByRoom_RoomIdAndStatusAndMaxCapacityGreaterThan(id, "OPENING", requestDTO.getCapacity())) {
             throw new AppException(ErrorCode.ROOM_CAPACITY_BELOW_CLASS);
         }
 

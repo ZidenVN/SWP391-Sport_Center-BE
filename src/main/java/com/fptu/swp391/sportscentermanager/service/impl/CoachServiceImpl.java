@@ -54,6 +54,7 @@ public class CoachServiceImpl implements CoachService {
             .email(c.getEmail())
             .phone(c.getPhone())
             .speciality(c.getSpeciality())
+            .status(c.getStatus() != null ? c.getStatus().name() : null)
             .build();
     }
 
@@ -76,6 +77,9 @@ public class CoachServiceImpl implements CoachService {
     public CoachResponseDTO createCoach(CoachRequestDTO requestDTO) {
         if (userRepository.existsByEmail(requestDTO.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_TAKEN);
+        }
+        if (requestDTO.getPhone() != null && userRepository.existsByPhone(requestDTO.getPhone())) {
+            throw new AppException(ErrorCode.PHONE_ALREADY_TAKEN);
         }
 
         Role coachRole = roleRepository.findByRoleName("COACH");
@@ -108,20 +112,21 @@ public class CoachServiceImpl implements CoachService {
     @Override
     @Transactional(readOnly = true)
     public CoachResponseDTO getCoachById(Long id) {
+        // BE-27: vẫn trả HLV đã khóa (kèm status) để Manager xem và mở khóa lại
         Coach c = coachRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
-        if (UserStatus.INACTIVE == c.getStatus()) {
-            throw new AppException(ErrorCode.COACH_NOT_FOUND);
-        }
         return toCoachResponse(c);
     }
 
     @Override
     @Transactional
-    public CoachResponseDTO updateCoach(Long id, CoachRequestDTO requestDTO) {
+    public CoachResponseDTO updateCoach(Long id, CoachUpdateRequestDTO requestDTO) {
         Coach coach = coachRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
 
         if (!requestDTO.getEmail().equalsIgnoreCase(coach.getEmail()) && userRepository.existsByEmail(requestDTO.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_TAKEN);
+        }
+        if (!requestDTO.getPhone().equals(coach.getPhone()) && userRepository.existsByPhone(requestDTO.getPhone())) {
+            throw new AppException(ErrorCode.PHONE_ALREADY_TAKEN);
         }
 
         coach.setFirstName(requestDTO.getFirstName());
@@ -130,10 +135,6 @@ public class CoachServiceImpl implements CoachService {
         coach.setPhone(requestDTO.getPhone());
         coach.setEmail(requestDTO.getEmail());
         coach.setSpeciality(requestDTO.getSpecialty());
-
-        if (requestDTO.getPassword() != null && !requestDTO.getPassword().isBlank()) {
-            coach.setPasswordHash(passwordEncoder.encode(requestDTO.getPassword()));
-        }
 
         Coach savedCoach = coachRepository.save(coach);
 
@@ -146,6 +147,10 @@ public class CoachServiceImpl implements CoachService {
         Coach coach = coachRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
 
         if (UserStatus.ACTIVE == coach.getStatus()) {
+            // BE-27: không khóa HLV khi còn lớp sắp dạy, tránh lớp mồ côi
+            if (sportClassRepository.existsByCoach_UserIdAndStatusAndStartTimeAfter(id, "OPENING", LocalDateTime.now())) {
+                throw new AppException(ErrorCode.COACH_HAS_UPCOMING_CLASSES);
+            }
             coach.setStatus(UserStatus.INACTIVE);
         } else {
             coach.setStatus(UserStatus.ACTIVE);
