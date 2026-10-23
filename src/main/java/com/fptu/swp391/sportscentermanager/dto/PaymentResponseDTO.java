@@ -15,4 +15,12 @@ public class PaymentResponseDTO {
     private String paymentMethod;
     private LocalDateTime paymentDate;
     private String status;
+
+    // BE-17/23: thông tin đối soát
+    private Long memberId;
+    private String memberName;
+    private LocalDateTime paidAt;
+    private String transactionRef;
+    private String confirmedBy;
+    private String note;
 }

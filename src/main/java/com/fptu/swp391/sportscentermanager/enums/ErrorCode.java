@@ -53,6 +53,21 @@ public enum ErrorCode {
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "ERR_AUTH_403", "Bạn không có quyền truy cập dữ liệu này!"),
     CLASS_ALREADY_STARTED(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_CLASS_009", "Lớp học đã bắt đầu, không thể xoá!")
 
+    // BE-15 → BE-27
+    INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST, "ERR_REQUEST_002", "Khoảng thời gian không hợp lệ: fromDate phải trước hoặc bằng toDate!"),
+    CLASS_ALREADY_CLOSED(HttpStatus.CONFLICT, "ERR_CLASS_009", "Lớp học đã bị hủy hoặc đã kết thúc, không thể thay đổi!"),
+    CLASS_NOT_STARTED(HttpStatus.BAD_REQUEST, "ERR_CLASS_010", "Lớp học chưa kết thúc, không thể đánh dấu hoàn thành!"),
+    PAYMENT_ALREADY_PROCESSED(HttpStatus.CONFLICT, "ERR_PAYMENT_001", "Giao dịch đã được xử lý trước đó!"),
+    PAYMENT_METHOD_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "ERR_PAYMENT_002", "Giao dịch online chỉ được xác nhận qua cổng thanh toán!"),
+    TRANSACTION_REF_REQUIRED(HttpStatus.BAD_REQUEST, "ERR_PAYMENT_003", "Chuyển khoản phải nhập mã giao dịch để đối soát!"),
+    REFUND_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "ERR_PAYMENT_004", "Chỉ hoàn tiền được cho giao dịch đã thanh toán!"),
+    INVOICE_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "ERR_INVOICE_001", "Chỉ xuất hóa đơn cho giao dịch đã thanh toán!"),
+    RECEPTIONIST_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_RECEPTIONIST_404", "Lễ tân không tồn tại!"),
+    COACH_HAS_UPCOMING_CLASSES(HttpStatus.CONFLICT, "ERR_COACH_409", "Huấn luyện viên đang có lớp sắp dạy, hãy đổi HLV cho các lớp đó trước khi khóa!"),
+    ACCESS_DENIED(HttpStatus.FORBIDDEN, "ERR_AUTH_403", "Bạn không có quyền truy cập dữ liệu này!")
+
+
+
 
 
 

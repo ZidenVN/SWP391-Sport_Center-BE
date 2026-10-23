@@ -15,7 +15,9 @@ import java.math.RoundingMode;
 import java.time.*;
 import java.util.ArrayList;
 import java.util.List;
-
+import com.fptu.swp391.sportscentermanager.enums.ClassStatus;
+import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
+import com.fptu.swp391.sportscentermanager.exception.AppException;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -39,7 +41,8 @@ public class ReportServiceImpl implements ReportService {
         long newMembersThisMonth = memberRepository.countNewMembersBetween(startOfMonth, endOfMonth);
         BigDecimal revThisMonth = paymentRepository.sumReveneBetween(startOfMonth, endOfMonth);
         BigDecimal revLastMonth = paymentRepository.sumReveneBetween(startOfLastMonth, endOfLastMonth);
-
+        long classesToday = sportClassRepository.countByStatusAndStartTimeBetween(ClassStatus.OPENING.name(),
+            LocalDate.now().atStartOfDay(), LocalDate.now().atTime(LocalTime.MAX));
         double growthRate = 0.0;
         if (revLastMonth != null && revLastMonth.compareTo(BigDecimal.ZERO) > 0) {
             growthRate = revThisMonth.subtract(revLastMonth)
@@ -51,6 +54,7 @@ public class ReportServiceImpl implements ReportService {
         return DashboardOverviewDTO.builder()
                 .totalActiveMembers(activeMembers)
                 .newMembersThisMonth(newMembersThisMonth)
+                .classesToday(classesToday)
                 .revenueThisMonth(revThisMonth)
                 .revenueGrowthRate(growthRate)
                 .build();
@@ -58,31 +62,41 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public MemberReportDTO getMemberReport(LocalDate fromDate, LocalDate toDate) {
-        LocalDateTime start = (fromDate != null ? fromDate : LocalDate.now().minusDays(30)).atStartOfDay();
-        LocalDateTime end = (toDate != null ? toDate : LocalDate.now()).atTime(LocalTime.MAX);
+        LocalDateTime[] range = resolveRange(fromDate, toDate);
+        LocalDateTime start = range[0];
+        LocalDateTime end = range[1];
 
         long total = memberRepository.countTotalMembers();
         long newInRange = memberRepository.countNewMembersBetween(start, end);
         long activeSub = memberRepository.countActiveSubscriptionMembers(LocalDateTime.now());
         long expiredOrNone = Math.max(0, total - activeSub);
-
+        List<TimeSeriesDataPoint> growthTrend = memberRepository.countNewMembersByDay(start, end).stream()
+            .map(row -> TimeSeriesDataPoint.builder()
+                .timeLabel((String) row[0])
+                .value(new BigDecimal(row[1].toString()))
+                .build())
+            .toList();
         return MemberReportDTO.builder()
                 .totalMembers(total)
                 .newMembersInRange(newInRange)
                 .activeSubscriptionMembers(activeSub)
                 .expiredOrNoSubMembers(expiredOrNone)
+                .growthTrend(growthTrend)
                 .build();
     }
 
     @Override
     public ClassRegistrationReportDTO getClassRegistrationReport(LocalDate fromDate, LocalDate toDate) {
-        LocalDateTime start = (fromDate != null ? fromDate : LocalDate.now().minusDays(30)).atStartOfDay();
-        LocalDateTime end = (toDate != null ? toDate : LocalDate.now()).atTime(LocalTime.MAX);
+        LocalDateTime[] range = resolveRange(fromDate, toDate);
+        LocalDateTime start = range[0];
+        LocalDateTime end = range[1];
 
-        long totalRegistered = classRegistrationRepository.countByStatusBetween("REGISTERED", start, end);
-        long totalCancelled = classRegistrationRepository.countByStatusBetween("CANCELLED", start, end);
+        // Lượt đăng ký phát sinh trong kỳ và lượt hủy trong kỳ (theo ngày hủy)
+        long totalRegistered = classRegistrationRepository.countRegisteredBetween(start, end);
+        long totalCancelled = classRegistrationRepository.countCancelledBetween(start, end);
 
-        List<Object[]> rawList = classRegistrationRepository.getClassOccupancyStats();
+        // Chỉ các lớp đang mở có lịch nằm trong kỳ
+        List<Object[]> rawList = classRegistrationRepository.getClassOccupancyStats(start, end);
         List<ClassOccurpancyDetailDTO> details = new ArrayList<>();
         double totalRateSum = 0;
 
@@ -129,8 +143,10 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public RevenueReportDTO getRevenueReport(LocalDate fromDate, LocalDate toDate) {
-        LocalDateTime start = (fromDate != null ? fromDate : LocalDate.now().minusDays(30)).atStartOfDay();
-        LocalDateTime end = (toDate != null ? toDate : LocalDate.now()).atTime(LocalTime.MAX);
+        // BE-21: chỉ tính giao dịch COMPLETED, theo ngày thực thu (paidAt), múi giờ Asia/Ho_Chi_Minh
+        LocalDateTime[] range = resolveRange(fromDate, toDate);
+        LocalDateTime start = range[0];
+        LocalDateTime end = range[1];
 
         BigDecimal totalRevenue = paymentRepository.sumReveneBetween(start, end);
         long totalTransactions = paymentRepository.cntSuccessfulPaymentsBetween(start, end);
@@ -155,6 +171,15 @@ public class ReportServiceImpl implements ReportService {
                 .revenueByPackage(byPackage)
                 .revenueByMethod(byMethod)
                 .build();
+    }
+    // Mặc định 30 ngày gần nhất; fromDate/toDate tính trọn ngày (00:00:00 -> 23:59:59)
+    private LocalDateTime[] resolveRange(LocalDate fromDate, LocalDate toDate) {
+        LocalDate to = toDate != null ? toDate : LocalDate.now();
+        LocalDate from = fromDate != null ? fromDate : to.minusDays(30);
+        if (from.isAfter(to)) {
+            throw new AppException(ErrorCode.INVALID_DATE_RANGE);
+        }
+        return new LocalDateTime[] { from.atStartOfDay(), to.atTime(LocalTime.MAX) };
     }
 
     private List<CategoryRevenueDTO> mapCategoryRevenue(List<Object[]> rawData, BigDecimal totalRevenue) {

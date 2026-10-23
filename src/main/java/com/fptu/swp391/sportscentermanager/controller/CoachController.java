@@ -50,7 +50,7 @@ public class CoachController {
     @LogAudit(actionType = "UPDATE", targetEntity = "Coach")
     @PreAuthorize("hasAuthority('UPDATE_USER') OR hasRole('CENTER_MANAGER') ")
     @PutMapping("/{id}")
-    public ResponseEntity<CoachResponseDTO> updateCoach(@PathVariable Long id, @Valid @RequestBody CoachRequestDTO requestDTO) {
+    public ResponseEntity<CoachResponseDTO> updateCoach(@PathVariable Long id, @Valid @RequestBody CoachUpdateRequestDTO requestDTO) {
         return ResponseEntity.ok(coachService.updateCoach(id, requestDTO));
     }
 
