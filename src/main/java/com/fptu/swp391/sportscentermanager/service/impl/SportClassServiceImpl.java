@@ -8,6 +8,7 @@ import com.fptu.swp391.sportscentermanager.entity.Member;
 import com.fptu.swp391.sportscentermanager.entity.Room;
 import com.fptu.swp391.sportscentermanager.entity.SportClass;
 import com.fptu.swp391.sportscentermanager.entity.Subject;
+import com.fptu.swp391.sportscentermanager.enums.ClassStatus;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
@@ -15,13 +16,21 @@ import com.fptu.swp391.sportscentermanager.repository.*;
 import com.fptu.swp391.sportscentermanager.service.NotificationService;
 import com.fptu.swp391.sportscentermanager.service.SportClassService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +43,8 @@ public class SportClassServiceImpl implements SportClassService {
     private final NotificationService notificationService;
 
     private static final DateTimeFormatter SCHEDULE_FORMAT = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
+    private static final int MAX_PAGE_SIZE = 100;
+    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
 
     @Override
     public SportClassResponseDTO createClass(SportClassRequestDTO requestDTO) {
@@ -67,8 +78,7 @@ public class SportClassServiceImpl implements SportClassService {
 
     @Override
     public SportClassResponseDTO getSportClassById(Long id) {
-        SportClass c = getClassById(id);
-       return toResponseDTO(getClassById(id));
+        return toResponseDTO(getClassById(id));
     }
 
 
@@ -80,6 +90,7 @@ public class SportClassServiceImpl implements SportClassService {
     @Override
     public SportClassResponseDTO assignCoachToClass(Long classId, Long coachId) {
         SportClass sportClass = sportClassRepository.findById(classId).orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
+        requireOpening(sportClass);
 
         Coach coach = coachRepository.findById(coachId).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
 
@@ -101,9 +112,12 @@ public class SportClassServiceImpl implements SportClassService {
     @Transactional
     public SportClassResponseDTO updateClass(Long id, SportClassRequestDTO requestDTO) {
         SportClass sportClass = sportClassRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
+        requireOpening(sportClass);
+
+        // BE-16: giữ lại giờ/phòng cũ để biết có cần báo học viên không
         LocalDateTime oldStart = sportClass.getStartTime();
         LocalDateTime oldEnd = sportClass.getEndTime();
-        Long oldRoomId = sportClass.getRoom().getRoomId();
+        Long oldRoomId = sportClass.getRoom() != null ? sportClass.getRoom().getRoomId() : null;
 
         validateClassTime(requestDTO.getStartTime(), requestDTO.getEndTime());
 
@@ -138,20 +152,128 @@ public class SportClassServiceImpl implements SportClassService {
 
         SportClass savedClass = sportClassRepository.save(sportClass);
 
-        boolean timeChanged = !oldStart.equals(savedClass.getStartTime()) || !oldEnd.equals(savedClass.getEndTime());
-        boolean roomChanged = !oldRoomId.equals(savedClass.getRoom().getRoomId());
-        if (timeChanged || roomChanged) {
-            notificationService.sendSystemNotification(
-                registeredMembers(id),
-                "Lớp " + savedClass.getSubject().getSubjectName() + " thay đổi lịch",
-                "Lớp " + savedClass.getSubject().getSubjectName() + " bạn đã đăng ký được chuyển sang "
-                    + savedClass.getStartTime().format(SCHEDULE_FORMAT) + " - " + savedClass.getEndTime().format(DateTimeFormatter.ofPattern("HH:mm"))
-                    + " tại " + savedClass.getRoom().getRoomName()
-                    + " (lịch cũ: " + oldStart.format(SCHEDULE_FORMAT) + ").");
+        boolean scheduleChanged = !Objects.equals(oldStart, savedClass.getStartTime())
+            || !Objects.equals(oldEnd, savedClass.getEndTime())
+            || !Objects.equals(oldRoomId, savedClass.getRoom().getRoomId());
+        if (scheduleChanged) {
+            notificationService.notifyUsers(registeredMembers(savedClass.getClassId()),
+                "Lớp " + savedClass.getSubject().getSubjectName() + " đổi lịch",
+                "Lớp học đã đổi sang " + savedClass.getStartTime().format(TIME_FMT)
+                    + " - " + savedClass.getEndTime().format(TIME_FMT)
+                    + " tại phòng " + savedClass.getRoom().getRoomName() + ".",
+                "SCHEDULE_CHANGE");
         }
 
         return getSportClassById(savedClass.getClassId());
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<SportClassResponseDTO> searchClasses(LocalDate fromDate, LocalDate toDate, Long subjectId, Long coachId,
+                                                     Long roomId, String status, Boolean available, int page, int size) {
+        if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
+            throw new AppException(ErrorCode.INVALID_DATE_RANGE);
+        }
+        LocalDateTime from = fromDate != null ? fromDate.atStartOfDay() : null;
+        LocalDateTime to = toDate != null ? toDate.atTime(LocalTime.MAX) : null;
+        String statusFilter = (status == null || status.isBlank()) ? null : status.trim().toUpperCase();
+
+        PageRequest pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), MAX_PAGE_SIZE),
+            Sort.by(Sort.Direction.ASC, "startTime"));
+        Page<SportClass> result = sportClassRepository.search(from, to, subjectId, roomId, coachId,
+            statusFilter, available, pageable);
+
+        // Đếm số chỗ đã đăng ký cho cả trang bằng 1 câu query
+        Map<Long, Long> registered = new HashMap<>();
+        List<Long> ids = result.getContent().stream().map(SportClass::getClassId).toList();
+        if (!ids.isEmpty()) {
+            for (Object[] row : classRegistrationRepository.countActiveByClassIds(ids)) {
+                registered.put(((Number) row[0]).longValue(), ((Number) row[1]).longValue());
+            }
+        }
+        return result.map(c -> toResponse(c, registered.getOrDefault(c.getClassId(), 0L)));
+    }
+
+    @Override
+    @Transactional
+    public SportClassResponseDTO cancelClass(Long id, String reason) {
+        SportClass sportClass = sportClassRepository.findByIdForUpdate(id)
+            .orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
+        requireOpening(sportClass);
+
+        // Hủy luôn các đăng ký đang có để không còn chiếm chỗ / hiện trong lịch sắp tới
+        List<ClassRegistration> active = classRegistrationRepository.findActiveByClassId(id);
+        List<Member> members = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+        for (ClassRegistration r : active) {
+            r.setStatus("CANCELLED");
+            r.setCancelledAt(now);
+            members.add(r.getMember());
+        }
+        classRegistrationRepository.saveAll(active);
+
+        sportClass.setStatus(ClassStatus.CANCELLED.name());
+        sportClassRepository.save(sportClass);
+
+        String content = "Lớp " + sportClass.getSubject().getSubjectName() + " lúc "
+            + sportClass.getStartTime().format(TIME_FMT) + " đã bị hủy.";
+        if (reason != null && !reason.isBlank()) {
+            content += " Lý do: " + reason.trim();
+        }
+        notificationService.notifyUsers(members, "Lớp học bị hủy", content, "CLASS_CANCELLED");
+
+        return toResponse(sportClass, 0L);
+    }
+
+    @Override
+    @Transactional
+    public SportClassResponseDTO completeClass(Long id) {
+        SportClass sportClass = getClassById(id);
+        requireOpening(sportClass);
+        // Chỉ đánh dấu hoàn thành khi buổi học đã kết thúc
+        if (sportClass.getEndTime() == null || sportClass.getEndTime().isAfter(LocalDateTime.now())) {
+            throw new AppException(ErrorCode.CLASS_NOT_STARTED);
+        }
+        sportClass.setStatus(ClassStatus.COMPLETED.name());
+        sportClassRepository.save(sportClass);
+        return toResponse(sportClass,
+            classRegistrationRepository.countBySportClass_ClassIdAndStatus(id, "REGISTERED"));
+    }
+
+    private void requireOpening(SportClass sportClass) {
+        if (!ClassStatus.OPENING.name().equals(sportClass.getStatus())) {
+            throw new AppException(ErrorCode.CLASS_ALREADY_CLOSED);
+        }
+    }
+
+    private List<Member> registeredMembers(Long classId) {
+        return classRegistrationRepository.findActiveByClassId(classId).stream()
+            .map(ClassRegistration::getMember).toList();
+    }
+
+    // Dùng chung cho mọi API trả về lớp. registeredCount = số đăng ký đang REGISTERED.
+    private SportClassResponseDTO toResponse(SportClass c, long registeredCount) {
+        long max = c.getMaxCapacity() != null ? c.getMaxCapacity() : 0;
+        return SportClassResponseDTO.builder()
+            .classId(c.getClassId())
+            .maxCapacity(c.getMaxCapacity())
+            .startTime(c.getStartTime())
+            .endTime(c.getEndTime())
+            .status(c.getStatus())
+            .roomId(c.getRoom() != null ? c.getRoom().getRoomId() : null)
+            .roomName(c.getRoom() != null ? c.getRoom().getRoomName() : null)
+            .subjectId(c.getSubject() != null ? c.getSubject().getSubjectId() : null)
+            .subjectName(c.getSubject() != null ? c.getSubject().getSubjectName() : null)
+            .coachId(c.getCoach() != null ? c.getCoach().getUserId() : null)
+            .coachName(c.getCoach() != null ? c.getCoach().getFirstName() + " " + c.getCoach().getLastName() : "Chưa có HLV")
+            // FE hiển thị chuyên môn HLV + mô tả bộ môn trên thẻ lớp
+            .coachSpeciality(c.getCoach() != null ? c.getCoach().getSpeciality() : null)
+            .subjectDescription(c.getSubject() != null ? c.getSubject().getDescription() : null)
+            .currentEnrolled(registeredCount)
+            .availableSeats(Math.max(0L, max - registeredCount))
+            .build();
+    }
+
 
     // Xóa mềm (SportClass đã có @SQLDelete/@SQLRestriction): hủy các đăng ký còn hiệu lực, báo cho học viên,
     // rồi chuyển lớp sang INACTIVE. Dùng save thay vì delete vì các đăng ký vừa nạp vẫn tham chiếu tới lớp
@@ -176,12 +298,6 @@ public class SportClassServiceImpl implements SportClassService {
 
         sportClass.setStatus("INACTIVE");
         sportClassRepository.save(sportClass);
-    }
-
-    private List<Member> registeredMembers(Long classId) {
-        return classRegistrationRepository.findActiveByClassId(classId).stream()
-            .map(ClassRegistration::getMember)
-            .toList();
     }
 
     private void validateClassTime(LocalDateTime startTime, LocalDateTime endTime) {
@@ -209,22 +325,9 @@ public class SportClassServiceImpl implements SportClassService {
         }
     }
 
+    // BE-12: đếm số đã đăng ký rồi dựng response (1 lớp)
     private SportClassResponseDTO toResponseDTO(SportClass c) {
         long enrolled = classRegistrationRepository.countBySportClass_ClassIdAndStatus(c.getClassId(), "REGISTERED");
-        return SportClassResponseDTO.builder().classId(c.getClassId()).maxCapacity(c.getMaxCapacity())
-            .currentEnrolled(enrolled)
-            .availableSeats(Math.max(0L, c.getMaxCapacity() - enrolled))
-            .startTime(c.getStartTime())
-            .endTime(c.getEndTime())
-            .status(c.getStatus())
-            .roomName(c.getRoom().getRoomName())
-            .subjectName(c.getSubject().getSubjectName())
-            .coachName(c.getCoach() != null ? c.getCoach().getFirstName() + " " + c.getCoach().getLastName() : "Chưa có HLV")
-            .coachId(c.getCoach() != null ? c.getCoach().getUserId() : null)
-            .coachSpeciality(c.getCoach() != null ? c.getCoach().getSpeciality() : null)
-            .roomId(c.getRoom().getRoomId())
-            .subjectId(c.getSubject().getSubjectId())
-            .subjectDescription(c.getSubject().getDescription()).build();
-
+        return toResponse(c, enrolled);
     }
 }

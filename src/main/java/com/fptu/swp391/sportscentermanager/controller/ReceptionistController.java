@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import com.fptu.swp391.sportscentermanager.dto.SubscriptionRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.SubscriptionResponseDTO;
 import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
+import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
 @RestController
 @RequestMapping("/api/v1/receptionist/members")
 @RequiredArgsConstructor
@@ -36,6 +37,7 @@ public class ReceptionistController {
     }
 
     // ---------- Register Walk-in Member ----------
+    @LogAudit(actionType = "CREATE", targetEntity = "Member")
     @PreAuthorize("hasRole('RECEPTIONIST') and hasAuthority('CREATE_USER')")
     @PostMapping
     public ResponseEntity<WalkInMemberResponseDTO> registerWalkIn(
@@ -45,6 +47,9 @@ public class ReceptionistController {
     }
 
     // ---------- Manage Member Subscriptions (include Process Payment) ----------
+    // BE-17: tạo gói + giao dịch ở trạng thái PENDING. Thu tiền xong gọi
+    // PATCH /api/v1/receptionist/payments/{paymentId}/confirm để kích hoạt gói.
+    @LogAudit(actionType = "SUBSCRIBE_PACKAGE", targetEntity = "Member")
     @PreAuthorize("hasRole('RECEPTIONIST') and hasAuthority('MANAGE_SUBSCRIPTION')")
     @PostMapping("/{memberId}/subscriptions")
     public ResponseEntity<SubscriptionResponseDTO> subscribeForMember(

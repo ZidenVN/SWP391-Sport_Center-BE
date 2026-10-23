@@ -3,7 +3,6 @@ package com.fptu.swp391.sportscentermanager.service;
 import com.fptu.swp391.sportscentermanager.dto.NotificationRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.NotificationResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.User;
-
 import java.util.List;
 
 public interface NotificationService {
@@ -17,4 +16,8 @@ public interface NotificationService {
 
     // Thông báo tự động do hệ thống sinh ra (đổi lịch lớp, gói sắp hết hạn...), gửi riêng từng user
     void sendSystemNotification(List<? extends User> users, String title, String content);
+
+    // BE-16: gửi 1 thông báo hệ thống (in-app) tới nhiều tài khoản, vd khi lớp bị hủy / đổi lịch
+    void notifyUsers(List<? extends User> users, String title, String content, String targetType);
+
 }

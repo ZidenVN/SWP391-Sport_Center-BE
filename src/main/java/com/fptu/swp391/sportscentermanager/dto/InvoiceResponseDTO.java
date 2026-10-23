@@ -30,4 +30,9 @@ public class InvoiceResponseDTO {
     private BigDecimal amount;
     private String paymentMethod;
     private String paymentStatus;
+
+    // BE-20: thông tin thu tiền
+    private LocalDateTime paidAt;
+    private String transactionRef;
+    private String cashierName;
 }

@@ -22,6 +22,9 @@ import static java.util.stream.Collectors.toList;
 @RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
 
+    // Các loại thông báo do hệ thống tự sinh (không phải HLV gửi)
+    private static final java.util.Set<String> SYSTEM_TYPES = java.util.Set.of("SYSTEM", "SCHEDULE_CHANGE", "CLASS_CANCELLED");
+
     private final NotificationRepository notificationRepository;
     private final NotificationClassRepository notificationClassRepository;
     private final NotificationAccountRepository notificationAccountRepository;
@@ -101,7 +104,8 @@ public class NotificationServiceImpl implements NotificationService {
                     .content(n.getContent())
                     .targetType(n.getTargetType())
                     .sendDate(n.getSentDate())
-                    .targetName("SYSTEM".equals(n.getTargetType()) ? "Hệ thống" : "Cá nhân")
+                    // thông báo tự động (đổi lịch, hủy lớp, nhắc gia hạn) hiển thị là "Hệ thống", còn lại là HLV gửi riêng
+                    .targetName(SYSTEM_TYPES.contains(n.getTargetType()) ? "Hệ thống" : "Cá nhân")
                 .build());
         }
 
@@ -125,7 +129,25 @@ public class NotificationServiceImpl implements NotificationService {
         result.sort(Comparator.comparing(NotificationResponseDTO::getSendDate, Comparator.nullsLast(Comparator.reverseOrder())));
         return result;
     }
+    @Override
+    @Transactional
+    public void notifyUsers(List<? extends User> users, String title, String content, String targetType) {
+        if (users == null || users.isEmpty()) return;
 
+        Notification notification = notificationRepository.save(Notification.builder()
+            .title(title)
+            .content(content)
+            .targetType(targetType)
+            .sentDate(LocalDateTime.now())
+            .build());
+
+        // Gắn từng người nhận để thông báo hiện ở mục "Cá nhân", kể cả khi đăng ký lớp đã bị hủy
+        List<NotificationAccount> links = new ArrayList<>();
+        for (User u : users) {
+            links.add(NotificationAccount.builder().notification(notification).user(u).build());
+        }
+        notificationAccountRepository.saveAll(links);
+    }
     @Override
     @Transactional
     public List<NotificationResponseDTO> getClassNotifications(Long classId) {
