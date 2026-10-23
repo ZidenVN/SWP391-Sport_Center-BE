@@ -2,12 +2,15 @@ package com.fptu.swp391.sportscentermanager.repository;
 
 import com.fptu.swp391.sportscentermanager.entity.Member;
 //TODO: Tìm hiểu lí do tại sao lại cần extends JpaRepository trong interface?
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface MemberRepository extends JpaRepository<Member,Long> {
     @Query("""
@@ -43,4 +46,8 @@ public interface MemberRepository extends JpaRepository<Member,Long> {
         WHERE s.status = 'ACTIVE' AND s.endDate >= :currentDate
     """)
     long countActiveSubscriptionMembers(@Param("currentDate") LocalDateTime currentDate);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT m FROM Member m WHERE m.userId =  :id")
+    Optional<Member> findByIdForUpdate(@Param("id") Long id);
 }

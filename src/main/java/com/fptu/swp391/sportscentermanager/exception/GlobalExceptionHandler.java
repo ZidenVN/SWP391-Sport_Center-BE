@@ -2,6 +2,7 @@ package com.fptu.swp391.sportscentermanager.exception;
 
 import com.fptu.swp391.sportscentermanager.dto.ErrorResponseDTO;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -39,5 +40,17 @@ public class GlobalExceptionHandler {
             errors.put(fieldName, errorMessage);
         });
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    }
+
+    // Vi phạm ràng buộc trong BD (trùng unique...) sẽ bị lỗi 409 thay vì 500
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponseDTO> handleDataIntegrity(DataIntegrityViolationException ex) {
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+            .timestamp(LocalDateTime.now())
+            .status(HttpStatus.CONFLICT.value())
+            .error("ERR_CONFLICT_409")
+            .message("Dữ liệu bị trùng hoặc xung đột, vui lòng thử lại!")
+            .build();
+        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
     }
 }

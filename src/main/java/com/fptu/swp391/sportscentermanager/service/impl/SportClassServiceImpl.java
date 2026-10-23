@@ -2,10 +2,7 @@ package com.fptu.swp391.sportscentermanager.service.impl;
 
 import com.fptu.swp391.sportscentermanager.dto.SportClassRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.SportClassResponseDTO;
-import com.fptu.swp391.sportscentermanager.entity.Coach;
-import com.fptu.swp391.sportscentermanager.entity.Room;
-import com.fptu.swp391.sportscentermanager.entity.SportClass;
-import com.fptu.swp391.sportscentermanager.entity.Subject;
+import com.fptu.swp391.sportscentermanager.entity.*;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
@@ -13,6 +10,7 @@ import com.fptu.swp391.sportscentermanager.repository.*;
 import com.fptu.swp391.sportscentermanager.service.SportClassService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -130,10 +128,22 @@ public class SportClassServiceImpl implements SportClassService {
     }
 
     @Override
+    @Transactional
     public void deleteClass(Long id) {
         SportClass sportClass = getClassById(id);
+        // lopp da bat dau thi giu nguyen khong lam sai lichj su diem danh hoac dang ki
+        if (!sportClass.getStartTime().isAfter(LocalDateTime.now())) {
+            throw new AppException(ErrorCode.CLASS_ALREADY_STARTED);
+        }
+
+        // Cancel toan bo dang ky con hieu luc cua lop
+        LocalDateTime now = LocalDateTime.now();
+        for (ClassRegistration r : classRegistrationRepository.findActiveByClassId(id)) {
+            r.setStatus("CANCELLED");
+            r.setCancelledAt(now);
+        }
         sportClass.setStatus("INACTIVE");
-        sportClassRepository.delete(sportClass);
+        sportClassRepository.save(sportClass);
     }
 
     private void validateClassTime(LocalDateTime startTime, LocalDateTime endTime) {

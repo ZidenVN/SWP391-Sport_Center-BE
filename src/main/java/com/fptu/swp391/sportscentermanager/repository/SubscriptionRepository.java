@@ -19,16 +19,24 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
 
     // Gói đang còn hiệu lực tại thời điểm "now"
     @Query("""
-            SELECT s FROM Subscription s
-            WHERE s.member.userId = :memberId
-              AND s.status = 'ACTIVE'
-              AND s.startDate <= :now
-              AND s.endDate > :now
-            ORDER BY s.endDate DESC
-            """)
+        SELECT s FROM Subscription s
+        WHERE s.member.userId = :memberId
+          AND s.status = 'ACTIVE'
+          AND s.startDate <= :now
+          AND s.endDate > :now
+        ORDER BY s.endDate DESC
+        """)
     List<Subscription> findCurrent(@Param("memberId") Long memberId,
                                    @Param("now") LocalDateTime now);
 
     List<Subscription> findByMember_UserIdAndStatus(Long memberId, String status);
 
+    @Query("""
+        SELECT COUNT(s) > 0 FROM Subscription s
+        WHERE s.member.userId = :memberId
+        AND s.status = 'ACTIVE'
+        AND s.startDate <= :time
+        AND s.endDate > :time
+        """)
+    boolean existsActiveCovering(@Param("memberId") Long memberId, @Param("time") LocalDateTime time);
 }
