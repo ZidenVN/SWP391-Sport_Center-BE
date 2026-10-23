@@ -35,7 +35,7 @@ public class CoachController {
     }
 
     @LogAudit(actionType = "CREATE", targetEntity = "Coach")
-    @PreAuthorize("hasAuthority('CREATE_USER')")
+    @PreAuthorize("hasRole('CENTER_MANAGER')")
     @PostMapping
     public ResponseEntity<CoachResponseDTO> createCoach(@Valid @RequestBody CoachRequestDTO requestDTO) {
         return ResponseEntity.ok(coachService.createCoach(requestDTO));
@@ -48,14 +48,14 @@ public class CoachController {
     }
 
     @LogAudit(actionType = "UPDATE", targetEntity = "Coach")
-    @PreAuthorize("hasAuthority('UPDATE_USER') OR hasRole('CENTER_MANAGER') ")
+    @PreAuthorize("hasRole('CENTER_MANAGER') ")
     @PutMapping("/{id}")
     public ResponseEntity<CoachResponseDTO> updateCoach(@PathVariable Long id, @Valid @RequestBody CoachUpdateRequestDTO requestDTO) {
         return ResponseEntity.ok(coachService.updateCoach(id, requestDTO));
     }
 
     @LogAudit(actionType = "DELETE", targetEntity = "Coach")
-    @PreAuthorize("hasAuthority('DEACTIVATE_USER') OR hasRole('CENTER_MANAGER')")
+    @PreAuthorize("hasRole('CENTER_MANAGER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteCoach(@PathVariable Long id) {
         coachService.toggleCoachStatus(id);
