@@ -4,7 +4,6 @@ import com.fptu.swp391.sportscentermanager.dto.ClassRegistrationResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.ClassRegistration;
 import com.fptu.swp391.sportscentermanager.entity.Member;
 import com.fptu.swp391.sportscentermanager.entity.SportClass;
-import com.fptu.swp391.sportscentermanager.entity.Subscription;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.ClassRegistrationRepository;
@@ -12,7 +11,9 @@ import com.fptu.swp391.sportscentermanager.repository.MemberRepository;
 import com.fptu.swp391.sportscentermanager.repository.SportClassRepository;
 import com.fptu.swp391.sportscentermanager.repository.SubscriptionRepository;
 import com.fptu.swp391.sportscentermanager.service.ClassRegistrationService;
-import jakarta.transaction.Transactional;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -31,10 +32,19 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
     private final MemberRepository memberRepository;
     private final SubscriptionRepository subscriptionRepository;
 
+    @Value("${app.booking.cancel-cutoff-hours}")
+    private long cancelCutoffHours;
+
     @Override
     @Transactional
     public ClassRegistrationResponseDTO register(Long memberId, Long classId) {
-        Member member = memberRepository.findById(memberId)
+        // tại sao trong hàm register lại dùng findByIdForUpdate để xử lí trường hợp có nhiều request đến cùng lúc.
+        /* study case: lớp A còn 1 slot cuối cùng (19/20slot)
+        - An và Bình cùng nhấn đăng kí cùng một giây, 2 request chạy song song.
+        - để giải quyết case này thì phải sử dụng kỹ thuật PESSIMICTIC LOCKING - nghĩa là khi đọc dòng dòng đó trong DB thì khoá luôn dòng đó lại, request khác muốn đọc thì phải đợi request trước xong.
+        - Cách nó hoạt động: Khoá member + lớp (Pessimistic Locking) để các request đăng ký xếp hàng, tránh race condition.
+         */
+        Member member = memberRepository.findByIdForUpdate(memberId)
             .orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
 
         // Khóa dòng của lớp để việc đếm chỗ + ghi đăng ký là một khối không bị chen ngang
@@ -51,12 +61,9 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
         }
 
         // 2. Check Membership Status (include): phải có gói còn hiệu lực
-        Subscription current = subscriptionRepository.findCurrent(memberId, now)
-            .stream().findFirst()
-            .orElseThrow(() -> new AppException(ErrorCode.NO_ACTIVE_SUBSCRIPTION));
-        // Gói phải còn hạn tới thời điểm lớp diễn ra
-        if (sportClass.getStartTime().isAfter(current.getEndDate())) {
-            throw new AppException(ErrorCode.SUBSCRIPTION_EXPIRED);
+        if (!subscriptionRepository.existsActiveCovering(memberId, sportClass.getStartTime())) {
+            boolean hasCurent = !subscriptionRepository.findCurrent(memberId, now).isEmpty();
+            throw new AppException(hasCurent ? ErrorCode.SUBSCRIPTION_EXPIRED : ErrorCode.NO_ACTIVE_SUBSCRIPTION);
         }
 
         // 3. Không đăng ký trùng
@@ -94,12 +101,13 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
             .findByRegistrationIdAndMember_UserId(registrationId, memberId)
             .orElseThrow(() -> new AppException(ErrorCode.REGISTRATION_NOT_FOUND));
 
+        // huỷ lần 2: trả về trạng thái hiện tại, không báo lỗi idempotent
         if (CANCELLED.equals(registration.getStatus())) {
-            throw new AppException(ErrorCode.REGISTRATION_ALREADY_CANCELLED);
+            return toResponse(registration);
         }
-        // Lớp đã bắt đầu thì không hủy được nữa
+
         LocalDateTime start = registration.getSportClass().getStartTime();
-        if (start == null || !start.isAfter(LocalDateTime.now())) {
+        if (start == null || LocalDateTime.now().isAfter(start.minusHours(cancelCutoffHours))) {
             throw new AppException(ErrorCode.CANCEL_NOT_ALLOWED);
         }
 
@@ -146,7 +154,6 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
             .cancelledAt(r.getCancelledAt())
             .build();
     }
-
 
 
 }

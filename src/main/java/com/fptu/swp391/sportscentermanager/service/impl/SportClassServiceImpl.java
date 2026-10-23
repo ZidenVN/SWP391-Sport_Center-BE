@@ -2,6 +2,7 @@ package com.fptu.swp391.sportscentermanager.service.impl;
 
 import com.fptu.swp391.sportscentermanager.dto.SportClassRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.SportClassResponseDTO;
+import com.fptu.swp391.sportscentermanager.entity.*;
 import com.fptu.swp391.sportscentermanager.entity.ClassRegistration;
 import com.fptu.swp391.sportscentermanager.entity.Coach;
 import com.fptu.swp391.sportscentermanager.entity.Member;
@@ -170,6 +171,7 @@ public class SportClassServiceImpl implements SportClassService {
     }
 
     @Override
+    @Transactional
     @Transactional(readOnly = true)
     public Page<SportClassResponseDTO> searchClasses(LocalDate fromDate, LocalDate toDate, Long subjectId, Long coachId,
                                                      Long roomId, String status, Boolean available, int page, int size) {
@@ -276,8 +278,19 @@ public class SportClassServiceImpl implements SportClassService {
     @Override
     public void deleteClass(Long id) {
         SportClass sportClass = getClassById(id);
+        // lopp da bat dau thi giu nguyen khong lam sai lichj su diem danh hoac dang ki
+        if (!sportClass.getStartTime().isAfter(LocalDateTime.now())) {
+            throw new AppException(ErrorCode.CLASS_ALREADY_STARTED);
+        }
+
+        // Cancel toan bo dang ky con hieu luc cua lop
+        LocalDateTime now = LocalDateTime.now();
+        for (ClassRegistration r : classRegistrationRepository.findActiveByClassId(id)) {
+            r.setStatus("CANCELLED");
+            r.setCancelledAt(now);
+        }
         sportClass.setStatus("INACTIVE");
-        sportClassRepository.delete(sportClass);
+        sportClassRepository.save(sportClass);
     }
 
     private void validateClassTime(LocalDateTime startTime, LocalDateTime endTime) {
