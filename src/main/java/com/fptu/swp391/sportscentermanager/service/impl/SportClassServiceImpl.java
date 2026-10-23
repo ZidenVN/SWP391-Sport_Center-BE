@@ -171,7 +171,6 @@ public class SportClassServiceImpl implements SportClassService {
     }
 
     @Override
-    @Transactional
     @Transactional(readOnly = true)
     public Page<SportClassResponseDTO> searchClasses(LocalDate fromDate, LocalDate toDate, Long subjectId, Long coachId,
                                                      Long roomId, String status, Boolean available, int page, int size) {
@@ -276,6 +275,7 @@ public class SportClassServiceImpl implements SportClassService {
     }
 
     @Override
+    @Transactional
     public void deleteClass(Long id) {
         SportClass sportClass = getClassById(id);
         // lopp da bat dau thi giu nguyen khong lam sai lichj su diem danh hoac dang ki

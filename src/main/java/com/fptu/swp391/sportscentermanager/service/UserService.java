@@ -18,4 +18,8 @@ public interface UserService {
     void toggleUserStatus(Long id);
     UserResponseDTO assignRoleToUser(Long userId, Long roleId);
 
+    User changePassword(Long userId, String currentPassword, String newPassword);
+
+    void logout(Long userId);
+
 }
