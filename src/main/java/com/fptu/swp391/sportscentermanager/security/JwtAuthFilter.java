@@ -31,14 +31,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         final String email;
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request,response); return;
+            filterChain.doFilter(request, response);
+            return;
         }
         jwt = authHeader.substring(7);
         try {
             email = jwtUtils.extractEmail(jwt);
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-                if (userDetails.isAccountNonLocked() && userDetails.isEnabled()) {
+                CustomUserDetails userDetails = (CustomUserDetails) userDetailsService.loadUserByUsername(email);
+
+                boolean tokenStillValid = jwtUtils.extractTokenVersion(jwt) == userDetails.getUser().currentTokenVersion();
+                if (tokenStillValid && userDetails.isAccountNonLocked() && userDetails.isEnabled()) {
+                    
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
@@ -47,6 +51,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         } catch (Exception e) {
             log.warn("Lỗi xác thực Token: {}", e.getMessage());
         }
-        filterChain.doFilter(request,response);
+        filterChain.doFilter(request, response);
     }
 }

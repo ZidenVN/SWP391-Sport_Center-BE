@@ -14,7 +14,8 @@ import java.time.LocalDateTime;
 @Inheritance(strategy = InheritanceType.JOINED)
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter @Setter
+@Getter
+@Setter
 @SuperBuilder
 public class User {
     @Id
@@ -51,4 +52,11 @@ public class User {
     @CreationTimestamp
     @Column(name = "create_at", updatable = false, nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "token_version")
+    private Integer tokenVersion;
+
+    public int currentTokenVersion() {
+        return tokenVersion == null ? 0 : tokenVersion;
+    }
 }

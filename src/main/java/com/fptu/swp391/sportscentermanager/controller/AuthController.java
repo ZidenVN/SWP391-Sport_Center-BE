@@ -1,11 +1,7 @@
 package com.fptu.swp391.sportscentermanager.controller;
 
 import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
-import com.fptu.swp391.sportscentermanager.dto.AuthRequest;
-import com.fptu.swp391.sportscentermanager.dto.AuthResponse;
-import com.fptu.swp391.sportscentermanager.dto.GoogleLoginRequest;
-import com.fptu.swp391.sportscentermanager.dto.RegisterRequestDTO;
-import com.fptu.swp391.sportscentermanager.dto.SubscriptionResponseDTO;
+import com.fptu.swp391.sportscentermanager.dto.*;
 import com.fptu.swp391.sportscentermanager.entity.Member;
 import com.fptu.swp391.sportscentermanager.entity.User;
 import com.fptu.swp391.sportscentermanager.enums.UserStatus;
@@ -15,9 +11,11 @@ import com.fptu.swp391.sportscentermanager.repository.UserRepository;
 import com.fptu.swp391.sportscentermanager.security.CustomUserDetails;
 import com.fptu.swp391.sportscentermanager.security.JwtUtils;
 import com.fptu.swp391.sportscentermanager.service.UserService;
+
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import com.google.api.client.auth.openidconnect.IdTokenVerifier;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
@@ -26,16 +24,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.swing.text.html.Option;
 
@@ -66,7 +63,7 @@ public class AuthController {
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
             User user = userDetails.getUser();
 
-            String token = jwtUtils.generateToken(user.getEmail());
+            String token = jwtUtils.generateToken(user);
             String roleName = (user.getRole() != null) ? user.getRole().getRoleName() : "USER";
             String fullName = user.getFirstName() + " " + user.getLastName();
 
@@ -79,7 +76,7 @@ public class AuthController {
                 .lastName(user.getLastName())
                 .fullName(fullName)
                 .role(roleName)
-                    .permissions(extractPermissions(userDetails.getAuthorities()))
+                .permissions(extractPermissions(userDetails.getAuthorities()))
                 .packageName(packageName)
                 .currentPackage(currentPackage)
                 .build());
@@ -94,14 +91,14 @@ public class AuthController {
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequestDTO requestDTO
     ) {
         try {
-           User user = new User();
-           user.setFirstName(requestDTO.getFirstName());
-           user.setLastName(requestDTO.getLastName());
-           user.setGender(requestDTO.getGender());
-           user.setEmail(requestDTO.getEmail());
-           user.setPhone(requestDTO.getPhone());
-           user.setPasswordHash(passwordEncoder.encode(requestDTO.getPassword()));
-           return  ResponseEntity.ok(userService.registerUser(requestDTO));
+            User user = new User();
+            user.setFirstName(requestDTO.getFirstName());
+            user.setLastName(requestDTO.getLastName());
+            user.setGender(requestDTO.getGender());
+            user.setEmail(requestDTO.getEmail());
+            user.setPhone(requestDTO.getPhone());
+            user.setPasswordHash(passwordEncoder.encode(requestDTO.getPassword()));
+            return ResponseEntity.ok(userService.registerUser(requestDTO));
 
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -147,7 +144,7 @@ public class AuthController {
                 }
 
                 User user = userRepository.findByEmail(email).orElse(null);
-                String jwtToken = jwtUtils.generateToken(email);
+                String jwtToken = jwtUtils.generateToken(user);
                 String roleName = (user != null && user.getRole() != null) ? user.getRole().getRoleName() : "MEMBER";
                 String firstNameVal = user != null ? user.getFirstName() : (firstName != null ? firstName : "User");
                 String lastNameVal = user != null ? user.getLastName() : (lastName != null ? lastName : "Google");
@@ -162,7 +159,7 @@ public class AuthController {
                     .lastName(lastNameVal)
                     .fullName(fullNameVal)
                     .role(roleName)
-                        .permissions(extractPermissions(userDetailsService.loadUserByUsername(email).getAuthorities()))
+                    .permissions(extractPermissions(userDetailsService.loadUserByUsername(email).getAuthorities()))
                     .packageName(packageName)
                     .currentPackage(currentPackage)
                     .build());
@@ -192,5 +189,19 @@ public class AuthController {
                 .status(s.getStatus())
                 .build())
             .orElse(null);
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PutMapping("/change-password")
+    public ResponseEntity<Map<String, String>> changePassword(@AuthenticationPrincipal CustomUserDetails principal, @Valid @RequestBody ChangePasswordRequestDTO requestDTO) {
+        User user = userService.changePassword(principal.getUser().getUserId(), requestDTO.getCurrentPassword(), requestDTO.getNewPassword());
+        return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công!", "token", jwtUtils.generateToken(user)));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, String>> logout(@AuthenticationPrincipal CustomUserDetails principal) {
+        userService.logout(principal.getUser().getUserId());
+        return ResponseEntity.ok(Map.of("message", "Đăng xuất thành công"));
     }
 }

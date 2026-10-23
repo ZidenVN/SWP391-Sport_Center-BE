@@ -95,30 +95,30 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserResponseDTO updateUser(Long id, UserResponseDTO requestDTO) {
-       User user = findUserOrThrow(id);
+        User user = findUserOrThrow(id);
 
-       if (requestDTO.getEmail() != null && !requestDTO.getEmail().equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmail(requestDTO.getEmail())) {
-           throw new AppException(ErrorCode.EMAIL_ALREADY_TAKEN);
-       }
+        if (requestDTO.getEmail() != null && !requestDTO.getEmail().equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmail(requestDTO.getEmail())) {
+            throw new AppException(ErrorCode.EMAIL_ALREADY_TAKEN);
+        }
 
-       if (requestDTO.getFirstName() != null)
-           user.setFirstName(requestDTO.getFirstName());
-       if (requestDTO.getLastName() != null)
-           user.setLastName(requestDTO.getLastName());
-       if (requestDTO.getGender() != null)
-           user.setGender(requestDTO.getGender());
-       if (requestDTO.getEmail() != null)
-           user.setEmail(requestDTO.getEmail());
-       if (requestDTO.getPhone() != null)
-           user.setPhone(requestDTO.getPhone());
+        if (requestDTO.getFirstName() != null)
+            user.setFirstName(requestDTO.getFirstName());
+        if (requestDTO.getLastName() != null)
+            user.setLastName(requestDTO.getLastName());
+        if (requestDTO.getGender() != null)
+            user.setGender(requestDTO.getGender());
+        if (requestDTO.getEmail() != null)
+            user.setEmail(requestDTO.getEmail());
+        if (requestDTO.getPhone() != null)
+            user.setPhone(requestDTO.getPhone());
 
-       userRepository.save(user);
-       return toResponse(user);
+        userRepository.save(user);
+        return toResponse(user);
     }
 
     @Override
     @Transactional
-    public UserResponseDTO updateUserStatus(Long id, UserStatus newStatus){
+    public UserResponseDTO updateUserStatus(Long id, UserStatus newStatus) {
         User user = findUserOrThrow(id);
         user.setStatus(newStatus);
         userRepository.save(user);
@@ -136,17 +136,40 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserResponseDTO assignRoleToUser(Long userId, Long roleId) {
-       User user = findUserOrThrow(userId);
-       Role role = roleRepository.findById(roleId).orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
-       if (!role.getRoleName().equals(expectedRoleName(user))){
-           throw new AppException(ErrorCode.ROLE_NOT_MATCH_USER_TYPE);
-       }
+        User user = findUserOrThrow(userId);
+        Role role = roleRepository.findById(roleId).orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+        if (!role.getRoleName().equals(expectedRoleName(user))) {
+            throw new AppException(ErrorCode.ROLE_NOT_MATCH_USER_TYPE);
+        }
 
-       user.setRole(role);
-       return toResponse(user);
+        user.setRole(role);
+        return toResponse(user);
     }
 
-    private String expectedRoleName(User user){
+    @Override
+    @Transactional
+    public User changePassword(Long userId, String currentPassword, String newPassword) {
+        User user = findUserOrThrow(userId);
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash()))
+            throw new AppException(ErrorCode.WRONG_CURRENT_PASSWORD);
+
+        if (passwordEncoder.matches(newPassword, user.getPasswordHash())) {
+            throw new AppException(ErrorCode.NEW_PASSWORD_SAME_AS_OLD);
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setTokenVersion(user.currentTokenVersion() + 1);
+        return userRepository.save(user);
+    }
+
+    @Override
+    public void logout(Long userId) {
+        User user = findUserOrThrow(userId);
+        user.setTokenVersion(user.currentTokenVersion() + 1);
+        userRepository.save(user);
+    }
+
+    private String expectedRoleName(User user) {
         if (user instanceof Manager) return "CENTER_MANAGER";
         if (user instanceof Coach) return "COACH";
         if (user instanceof Receptionist) return "RECEPTIONIST";
