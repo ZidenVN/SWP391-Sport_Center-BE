@@ -11,6 +11,7 @@ import com.fptu.swp391.sportscentermanager.service.RoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -21,12 +22,12 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     public List<Room> getAllRooms() {
-        return roomRepository.findAll();
+        return roomRepository.findByStatusNot("INACTIVE");
     }
 
     @Override
     public Room getRoomById(Long id) {
-        return roomRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
+       return roomRepository.findByRoomIdAndStatusNot(id, "INACTIVE").orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
     }
 
     @Override
@@ -75,7 +76,8 @@ public class RoomServiceImpl implements RoomService {
     @Override
     public void deleteRoomById(Long id) {
         Room room = getRoomById(id);
-        room.setStatus("INACTIVE");
-        roomRepository.delete(room);
+        if (sportClassRepository.existsByRoom_RoomIdAndStatusAndStartTimeAfter(id, "OPENING", LocalDateTime.now())) {
+            throw new AppException(ErrorCode.ROOM_IN_USE);
+        }
     }
 }

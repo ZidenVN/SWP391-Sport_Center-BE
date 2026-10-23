@@ -13,7 +13,6 @@ import org.hibernate.annotations.SQLRestriction;
 
 @SQLDelete(sql = "update subjects set status = 'INACTIVE' where subject_id = ?")
 
-@SQLRestriction("status = 'ACTIVE'")
 public class Subject {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

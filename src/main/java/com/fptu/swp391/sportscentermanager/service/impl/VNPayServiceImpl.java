@@ -41,7 +41,7 @@ public class VNPayServiceImpl implements VNPayService {
     @Transactional
     public VNPayPaymentResponseDTO createPaymentUrl(Long memberId, Long packageId, HttpServletRequest request) {
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
-        MembershipPackage pkg = packageRepository.findById(packageId).orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND));
+        MembershipPackage pkg = packageRepository.findByPackageIdAndStatus(packageId, "ACTIVE").orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND));
 
         LocalDateTime now = LocalDateTime.now();
 

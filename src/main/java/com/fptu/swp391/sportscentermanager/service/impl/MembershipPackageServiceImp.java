@@ -18,12 +18,12 @@ public class MembershipPackageServiceImp implements MembershipPackageService {
 
     @Override
     public List<MembershipPackage> getAllPackage() {
-        return packageRepository.findAll();
+        return packageRepository.findByStatus("ACTIVE");
     }
 
     @Override
     public MembershipPackage getPackageById(Long id) {
-        return packageRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND));
+        return packageRepository.findByPackageIdAndStatus(id, "ACTIVE").orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND));
     }
 
     @Override

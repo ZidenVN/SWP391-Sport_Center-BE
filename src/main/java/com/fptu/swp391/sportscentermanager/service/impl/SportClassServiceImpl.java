@@ -3,21 +3,11 @@ package com.fptu.swp391.sportscentermanager.service.impl;
 import com.fptu.swp391.sportscentermanager.dto.SportClassRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.SportClassResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.*;
-import com.fptu.swp391.sportscentermanager.entity.ClassRegistration;
-import com.fptu.swp391.sportscentermanager.entity.Coach;
-import com.fptu.swp391.sportscentermanager.entity.Member;
-import com.fptu.swp391.sportscentermanager.entity.Room;
-import com.fptu.swp391.sportscentermanager.entity.SportClass;
-import com.fptu.swp391.sportscentermanager.entity.Subject;
 import com.fptu.swp391.sportscentermanager.enums.ClassStatus;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
-import com.fptu.swp391.sportscentermanager.repository.ClassRegistrationRepository;
-import com.fptu.swp391.sportscentermanager.repository.CoachRepository;
-import com.fptu.swp391.sportscentermanager.repository.RoomRepository;
-import com.fptu.swp391.sportscentermanager.repository.SportClassRepository;
-import com.fptu.swp391.sportscentermanager.repository.SubjectRepository;
+import com.fptu.swp391.sportscentermanager.repository.*;
 import com.fptu.swp391.sportscentermanager.service.NotificationService;
 import com.fptu.swp391.sportscentermanager.service.SportClassService;
 import lombok.RequiredArgsConstructor;
@@ -31,11 +21,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -52,11 +38,10 @@ public class SportClassServiceImpl implements SportClassService {
 
     @Override
     public SportClassResponseDTO createClass(SportClassRequestDTO requestDTO) {
-        Room room = roomRepository.findById(requestDTO.getRoomId()).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
+        Room room = roomRepository.findByRoomIdAndStatusNot(requestDTO.getRoomId(), "INACTIVE").orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
 
-        Subject subject = subjectRepository.findById(requestDTO.getSubjectId()).orElseThrow(() -> new AppException(ErrorCode.SUBJECT_NOT_FOUND));
+        Subject subject = subjectRepository.findBySubjectIdAndStatus(requestDTO.getSubjectId(), "ACTIVE").orElseThrow(() -> new AppException(ErrorCode.SUBJECT_NOT_FOUND));
 
-        // TODO: Xử lý logic gán Coach sau khi hoàn thiện module Coach
         Coach coach = null;
         if (requestDTO.getCoachId() != null) {
             coach = coachRepository.findById(requestDTO.getCoachId()).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
@@ -130,7 +115,7 @@ public class SportClassServiceImpl implements SportClassService {
         sportClass.setStartTime(requestDTO.getStartTime());
         sportClass.setEndTime(requestDTO.getEndTime());
 
-        Room room = sportClass.getRoom().getRoomId().equals(requestDTO.getRoomId()) ? sportClass.getRoom() : roomRepository.findById(requestDTO.getRoomId()).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
+        Room room = sportClass.getRoom().getRoomId().equals(requestDTO.getRoomId()) ? sportClass.getRoom() : roomRepository.findByRoomIdAndStatusNot(requestDTO.getRoomId(), "INACTIVE").orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
 
         validateRoomForClass(room, requestDTO.getMaxCapacity());
 
@@ -142,7 +127,7 @@ public class SportClassServiceImpl implements SportClassService {
         sportClass.setRoom(room);
 
         if (!sportClass.getSubject().getSubjectId().equals(requestDTO.getSubjectId())) {
-            Subject newSubject = subjectRepository.findById(requestDTO.getSubjectId()).orElseThrow(() -> new AppException(ErrorCode.SUBJECT_NOT_FOUND));
+            Subject newSubject = subjectRepository.findBySubjectIdAndStatus(requestDTO.getSubjectId(), "ACTIVE").orElseThrow(() -> new AppException(ErrorCode.SUBJECT_NOT_FOUND));
             sportClass.setSubject(newSubject);
         }
 

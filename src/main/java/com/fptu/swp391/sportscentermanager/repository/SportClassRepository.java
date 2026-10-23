@@ -101,4 +101,7 @@ public interface SportClassRepository extends JpaRepository<SportClass, Long> {
 
     // BE-12: phòng còn lớp ĐANG MỞ cần nhiều chỗ hơn sức chứa mới (lớp đã hủy/kết thúc không tính)
     boolean existsByRoom_RoomIdAndStatusAndMaxCapacityGreaterThan(Long roomId, String status, Integer capacity);
+
+    boolean existsByRoom_RoomIdAndStatusAndStartTimeAfter(Long roomId, String status, LocalDateTime time);
+    boolean existsBySubject_SubjectIdAndStatusAndStartTimeAfter(Long subjectId, String status, LocalDateTime time);
 }

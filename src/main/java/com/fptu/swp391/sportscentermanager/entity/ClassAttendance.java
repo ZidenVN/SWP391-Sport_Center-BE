@@ -33,6 +33,7 @@ public class ClassAttendance {
     private LocalDateTime attendanceDate;
 
     @Column(name = "status", nullable = false, columnDefinition = "NVARCHAR(20)")
+    @Enumerated(EnumType.STRING)
     private AttendanceStatus status;
 
     @Column(name = "note", columnDefinition = "NVARCHAR(255)")

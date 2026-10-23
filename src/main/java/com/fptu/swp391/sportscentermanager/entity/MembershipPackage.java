@@ -19,7 +19,6 @@ import org.hibernate.annotations.SQLRestriction;
 
 @SQLDelete(sql = "update packages set status = 'INACTIVE' where package_id = ?")
 
-@SQLRestriction("status = 'ACTIVE'")
 public class MembershipPackage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

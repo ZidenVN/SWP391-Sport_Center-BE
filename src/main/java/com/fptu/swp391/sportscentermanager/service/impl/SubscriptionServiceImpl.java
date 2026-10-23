@@ -36,7 +36,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     public SubscriptionResponseDTO subscribe(Long memberId, SubscriptionRequestDTO dto) {
         Member member = memberRepository.findById(memberId)
             .orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
-        MembershipPackage pkg = packageRepository.findById(dto.getPackageId())
+        MembershipPackage pkg = packageRepository.findByPackageIdAndStatus(dto.getPackageId(), "ACTIVE")
             .orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND));
 
         LocalDateTime now = LocalDateTime.now();

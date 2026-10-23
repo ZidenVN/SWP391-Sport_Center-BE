@@ -5,12 +5,14 @@ import com.fptu.swp391.sportscentermanager.dto.SubjectResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.Subject;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
+import com.fptu.swp391.sportscentermanager.repository.SportClassRepository;
 import com.fptu.swp391.sportscentermanager.repository.SubjectRepository;
 import com.fptu.swp391.sportscentermanager.service.SubjectService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static com.fptu.swp391.sportscentermanager.dto.SubjectResponseDTO.*;
@@ -20,15 +22,16 @@ import static com.fptu.swp391.sportscentermanager.dto.SubjectResponseDTO.*;
 public class SubjectServiceImpl implements SubjectService {
 
     private final SubjectRepository subjectRepository;
+    private final SportClassRepository sportClassRepository;
 
     @Override
     public List<Subject> getAllSubjects() {
-        return subjectRepository.findAll();
+        return subjectRepository.findByStatus("ACTIVE");
     }
 
     @Override
     public Subject getSubjectById(Long id) {
-        return subjectRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.SUBJECT_NOT_FOUND));
+        return subjectRepository.findBySubjectIdAndStatus(id, "ACTIVE").orElseThrow(() -> new AppException(ErrorCode.SUBJECT_NOT_FOUND));
     }
 
     @Override
@@ -65,7 +68,8 @@ public class SubjectServiceImpl implements SubjectService {
     @Override
     public void deleteSubjectById(Long id) {
         Subject subject = getSubjectById(id);
-        subject.setStatus("INACTIVE");
-        subjectRepository.deleteById(id);
+        if (sportClassRepository.existsBySubject_SubjectIdAndStatusAndStartTimeAfter(id, "OPENING", LocalDateTime.now())){
+            throw new AppException(ErrorCode.SUBJECT_IN_USE);
+        }
     }
 }

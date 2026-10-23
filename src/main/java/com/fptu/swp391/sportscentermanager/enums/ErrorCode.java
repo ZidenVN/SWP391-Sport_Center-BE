@@ -66,7 +66,9 @@ public enum ErrorCode {
     COACH_HAS_UPCOMING_CLASSES(HttpStatus.CONFLICT, "ERR_COACH_409", "Huấn luyện viên đang có lớp sắp dạy, hãy đổi HLV cho các lớp đó trước khi khóa!"),
     WRONG_CURRENT_PASSWORD(HttpStatus.BAD_REQUEST, "ERR_AUTH_001", "Mật khẩu hiện tại không đúng!"),
     NEW_PASSWORD_SAME_AS_OLD(HttpStatus.BAD_REQUEST, "ERR_AUTH_002", "Mật khẩu mới phải khác mật khẩu hiện tại!"),
-    CANNOT_CHANGE_OWN_STATUS(HttpStatus.BAD_REQUEST, "ERR_USER_003", "Không thể tự khoá hoặc mở khoá tài khoản của chính mình!")
+    CANNOT_CHANGE_OWN_STATUS(HttpStatus.BAD_REQUEST, "ERR_USER_003", "Không thể tự khoá hoặc mở khoá tài khoản của chính mình!"),
+    ROOM_IN_USE(HttpStatus.CONFLICT, "ERR_ROOM_003", "Phòng đang có lớp học sắp diễn ra, hãy huỷ hoặc đổi phòng cho các lớp đó trước!"),
+    SUBJECT_IN_USE(HttpStatus.CONFLICT, "ERR_SUB_409", "Môn học đang có lớp sắp diễn ra, hãy huỷ các lớp đó trước!")
 
 
 
