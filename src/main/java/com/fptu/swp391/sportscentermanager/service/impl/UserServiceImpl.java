@@ -2,21 +2,23 @@ package com.fptu.swp391.sportscentermanager.service.impl;
 
 import com.fptu.swp391.sportscentermanager.dto.RegisterRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.UserResponseDTO;
+import com.fptu.swp391.sportscentermanager.dto.UserUpdateRequestDTO;
 import com.fptu.swp391.sportscentermanager.entity.*;
+import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import com.fptu.swp391.sportscentermanager.enums.UserStatus;
+import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.RoleRepository;
 import com.fptu.swp391.sportscentermanager.repository.UserRepository;
 import com.fptu.swp391.sportscentermanager.service.UserService;
-import com.fptu.swp391.sportscentermanager.exception.AppException;
-import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import org.springframework.data.domain.Pageable;
 
 @Service
 @RequiredArgsConstructor
@@ -75,16 +77,16 @@ public class UserServiceImpl implements UserService {
         return "Đăng ký tài khoản thành công!";
     }
 
+
     // CRUD
 
     @Override
-    public List<UserResponseDTO> getAllUsers() {
-        List<User> users = userRepository.findAll();
-        List<UserResponseDTO> result = new ArrayList<>();
-        for (User u : users) {
-            result.add(toResponse(u));
-        }
-        return result;
+    public Page<UserResponseDTO> searchUsers(String keyword, String roleName, UserStatus status, int page, int size) {
+        String kw = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
+        String role = (roleName == null || roleName.isBlank()) ? null : roleName.trim().toUpperCase();
+        int safeSize = Math.min(Math.max(size, 1), 100);   // tối đa 100 dòng mỗi trang
+        Pageable pageable = PageRequest.of(Math.max(page, 0), safeSize, Sort.by("userId").descending());
+        return userRepository.searchUsers(kw, role, status, pageable).map(this::toResponse);
     }
 
     @Override
@@ -94,27 +96,32 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponseDTO updateUser(Long id, UserResponseDTO requestDTO) {
+    public UserResponseDTO updateUser(Long id, UserUpdateRequestDTO requestDTO) {
         User user = findUserOrThrow(id);
-
-        if (requestDTO.getEmail() != null && !requestDTO.getEmail().equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmail(requestDTO.getEmail())) {
+        if (requestDTO.getEmail() != null && !requestDTO.getEmail().equalsIgnoreCase(user.getEmail())
+            && userRepository.existsByEmail(requestDTO.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_TAKEN);
+        }
+        if (requestDTO.getPhone() != null && !requestDTO.getPhone().equals(user.getPhone())
+            && userRepository.existsByPhone(requestDTO.getPhone())) {
+            throw new AppException(ErrorCode.PHONE_ALREADY_TAKEN);
         }
 
         if (requestDTO.getFirstName() != null)
-            user.setFirstName(requestDTO.getFirstName());
+            user.setFirstName(requestDTO.getFirstName().trim());
         if (requestDTO.getLastName() != null)
-            user.setLastName(requestDTO.getLastName());
+            user.setLastName(requestDTO.getLastName().trim());
         if (requestDTO.getGender() != null)
-            user.setGender(requestDTO.getGender());
+            user.setGender(requestDTO.getGender().trim().toUpperCase());
         if (requestDTO.getEmail() != null)
-            user.setEmail(requestDTO.getEmail());
+            user.setEmail(requestDTO.getEmail().trim());
         if (requestDTO.getPhone() != null)
-            user.setPhone(requestDTO.getPhone());
+            user.setPhone(requestDTO.getPhone().trim());
 
-        userRepository.save(user);
-        return toResponse(user);
+        return toResponse(userRepository.save(user));
     }
+
+
 
     @Override
     @Transactional
@@ -127,11 +134,15 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void toggleUserStatus(Long id) {
+    public void toggleUserStatus(Long id, Long currentUserId) {
+        if (id.equals(currentUserId)) {
+            throw new AppException(ErrorCode.CANNOT_CHANGE_OWN_STATUS);
+        }
         User user = findUserOrThrow(id);
         user.setStatus(user.getStatus() == UserStatus.ACTIVE ? UserStatus.INACTIVE : UserStatus.ACTIVE);
         userRepository.save(user);
     }
+
 
     @Override
     @Transactional
@@ -163,6 +174,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void logout(Long userId) {
         User user = findUserOrThrow(userId);
         user.setTokenVersion(user.currentTokenVersion() + 1);
