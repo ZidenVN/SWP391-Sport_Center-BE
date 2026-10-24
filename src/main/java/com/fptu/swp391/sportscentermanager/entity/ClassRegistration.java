@@ -37,4 +37,7 @@ public class ClassRegistration {
 
     @Column(name = "cancelled_at")
     private LocalDateTime cancelledAt;
+
+    @Column(name = "reminder_sent_at")
+    private LocalDateTime reminderSentAt;
 }
