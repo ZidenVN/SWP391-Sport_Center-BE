@@ -68,9 +68,8 @@ public enum ErrorCode {
     NEW_PASSWORD_SAME_AS_OLD(HttpStatus.BAD_REQUEST, "ERR_AUTH_002", "Mật khẩu mới phải khác mật khẩu hiện tại!"),
     CANNOT_CHANGE_OWN_STATUS(HttpStatus.BAD_REQUEST, "ERR_USER_003", "Không thể tự khoá hoặc mở khoá tài khoản của chính mình!"),
     ROOM_IN_USE(HttpStatus.CONFLICT, "ERR_ROOM_003", "Phòng đang có lớp học sắp diễn ra, hãy huỷ hoặc đổi phòng cho các lớp đó trước!"),
-    SUBJECT_IN_USE(HttpStatus.CONFLICT, "ERR_SUB_409", "Môn học đang có lớp sắp diễn ra, hãy huỷ các lớp đó trước!")
-
-
+    SUBJECT_IN_USE(HttpStatus.CONFLICT, "ERR_SUB_409", "Môn học đang có lớp sắp diễn ra, hãy huỷ các lớp đó trước!"),
+    MEMBER_INACTIVE(HttpStatus.BAD_REQUEST, "ERR_CHECKIN_002", "Tài khoản hội viên đang bị khoá!")
 
 
 

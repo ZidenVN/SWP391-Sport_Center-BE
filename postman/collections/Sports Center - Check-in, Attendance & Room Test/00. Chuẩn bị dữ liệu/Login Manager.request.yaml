@@ -1,0 +1,50 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "{{managerEmail}}",
+      "password": "{{managerPassword}}"
+    }
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 200', () => pm.response.to.have.status(200));
+      if (pm.response.code < 300) pm.collectionVariables.set('managerToken', pm.response.json().token);
+    language: text/javascript
+  - type: beforeRequest
+    code: |-
+      // Sinh hậu tố duy nhất cho dữ liệu test và các mốc thời gian (giờ máy = giờ VN)
+      const run = Date.now().toString().slice(-8);
+      pm.collectionVariables.set('run', run);
+      pm.collectionVariables.set('phoneCoach', '09' + run);
+      pm.collectionVariables.set('phoneRecep', '08' + run);
+      pm.collectionVariables.set('phoneMember', '07' + run);
+      pm.collectionVariables.set('phoneReg', '03' + run);
+      pm.collectionVariables.set('coachEmailQa', `qa.coach.${run}@example.com`);
+      pm.collectionVariables.set('memberEmailQa', `qa.member.${run}@example.com`);
+      const pad = n => String(n).padStart(2, '0');
+      const dt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+      const day = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      const base = new Date(); base.setDate(base.getDate() + 2); base.setHours(9, 0, 0, 0);
+      const add = m => new Date(base.getTime() + m * 60000);
+      pm.collectionVariables.set('classStart', dt(base));
+      pm.collectionVariables.set('classEnd', dt(add(60)));
+      pm.collectionVariables.set('overlapStart', dt(add(30)));
+      pm.collectionVariables.set('overlapEnd', dt(add(90)));
+      pm.collectionVariables.set('classBStart', dt(add(60)));
+      pm.collectionVariables.set('classBEnd', dt(add(120)));
+      pm.collectionVariables.set('beforeStart', dt(add(-30)));
+      const today = new Date(); const in7 = new Date(); in7.setDate(in7.getDate() + 7);
+      const in14 = new Date(); in14.setDate(in14.getDate() + 14);
+      pm.collectionVariables.set('today', day(today));
+      pm.collectionVariables.set('in7', day(in7));
+      pm.collectionVariables.set('in14', day(in14));
+    language: text/javascript
+order: 1000

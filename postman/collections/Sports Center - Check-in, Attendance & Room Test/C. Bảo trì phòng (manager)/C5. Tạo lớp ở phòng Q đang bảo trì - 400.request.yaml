@@ -1,0 +1,31 @@
+$kind: http-request
+name: C5. Tạo lớp ở phòng Q đang bảo trì -> 400
+url: "{{base_url}}/api/v1/classes"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "maxCapacity": 10,
+      "startTime": "{{classBStart}}",
+      "endTime": "{{classBEnd}}",
+      "coachId": {{coachId}},
+      "roomId": {{roomQId}},
+      "subjectId": {{subjectId}}
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{managerToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 400 ROOM_UNAVAILABLE', () => {
+        pm.response.to.have.status(400);
+        pm.expect(pm.response.json().error).to.eql('ERR_ROOM_001');
+      });
+      if (pm.response.code < 300) pm.collectionVariables.set('classQId', pm.response.json().classId);
+    language: text/javascript
+order: 5000

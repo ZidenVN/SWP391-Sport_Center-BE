@@ -61,7 +61,14 @@ public class RoomServiceImpl implements RoomService {
         existingRoom.setRoomName(requestDTO.getRoomName());
         existingRoom.setCapacity(requestDTO.getCapacity());
         if (requestDTO.getStatus() != null && !requestDTO.getStatus().isBlank()) {
-            existingRoom.setStatus(requestDTO.getStatus().trim());
+            String newStatus = requestDTO.getStatus().trim();
+            // Không cho chuyển sang bảo trì khi phòng còn lớp sắp diễn ra
+            if ("MAINTENANCE".equals(newStatus)
+                && !"MAINTENANCE".equals(existingRoom.getStatus())
+                && sportClassRepository.existsByRoom_RoomIdAndStatusAndStartTimeAfter(id, "OPENING", LocalDateTime.now())) {
+                throw new AppException(ErrorCode.ROOM_IN_USE);
+            }
+            existingRoom.setStatus(newStatus);
         }
 
         Room updatedRoom = roomRepository.save(existingRoom);

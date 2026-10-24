@@ -1,0 +1,29 @@
+$kind: http-request
+name: C2. Phòng P đổi tên, giữ AVAILABLE -> 200
+url: "{{base_url}}/api/v1/rooms/{{roomId}}"
+method: PUT
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "roomName": "QA Room {{run}} (sua)",
+      "capacity": 20,
+      "status": "AVAILABLE"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{managerToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 200', () => pm.response.to.have.status(200));
+      pm.test('Đổi tên, vẫn AVAILABLE', () => {
+        const r = pm.response.json();
+        pm.expect(r.roomName).to.eql('QA Room ' + pm.collectionVariables.get('run') + ' (sua)');
+        pm.expect(r.status).to.eql('AVAILABLE');
+      });
+    language: text/javascript
+order: 2000

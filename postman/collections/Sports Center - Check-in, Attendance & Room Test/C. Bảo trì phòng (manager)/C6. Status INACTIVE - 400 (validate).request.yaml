@@ -1,0 +1,23 @@
+$kind: http-request
+name: C6. Status INACTIVE -> 400 (validate)
+url: "{{base_url}}/api/v1/rooms/{{roomQId}}"
+method: PUT
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "roomName": "QA Room Q {{run}}",
+      "capacity": 20,
+      "status": "INACTIVE"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{managerToken}}"
+scripts:
+  - type: afterResponse
+    code: pm.test('HTTP 400', () => pm.response.to.have.status(400));
+    language: text/javascript
+order: 6000
