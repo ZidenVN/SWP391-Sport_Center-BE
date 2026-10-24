@@ -1,0 +1,28 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/receptionist/members"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "firstName": "QA",
+      "lastName": "Member {{run}}",
+      "gender": "FEMALE",
+      "email": "qa.member.{{run}}@example.com",
+      "phone": "{{phoneMember}}",
+      "trainingGoal": "Kiểm thử"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{receptionistToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));
+      if (pm.response.code < 300) pm.collectionVariables.set('memberId', pm.response.json().member.memberId);
+      if (pm.response.code < 300) pm.collectionVariables.set('memberTempPassword', pm.response.json().temporaryPassword);
+    language: text/javascript
+order: 9000

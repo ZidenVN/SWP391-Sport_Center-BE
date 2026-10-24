@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/classes/{{classId}}/cancel"
+method: PATCH
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "reason": "Test bảo trì phòng"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{managerToken}}"
+scripts:
+  - type: afterResponse
+    code: pm.test('HTTP 200', () => pm.response.to.have.status(200));
+    language: text/javascript
+order: 8000

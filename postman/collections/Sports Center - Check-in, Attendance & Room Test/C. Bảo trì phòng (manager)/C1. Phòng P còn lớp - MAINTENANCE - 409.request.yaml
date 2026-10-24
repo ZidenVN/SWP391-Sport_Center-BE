@@ -1,0 +1,27 @@
+$kind: http-request
+name: C1. Phòng P còn lớp -> MAINTENANCE -> 409
+url: "{{base_url}}/api/v1/rooms/{{roomId}}"
+method: PUT
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "roomName": "QA Room {{run}}",
+      "capacity": 20,
+      "status": "MAINTENANCE"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{managerToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 409 ROOM_IN_USE', () => {
+        pm.response.to.have.status(409);
+        pm.expect(pm.response.json().error).to.eql('ERR_ROOM_003');
+      });
+    language: text/javascript
+order: 1000

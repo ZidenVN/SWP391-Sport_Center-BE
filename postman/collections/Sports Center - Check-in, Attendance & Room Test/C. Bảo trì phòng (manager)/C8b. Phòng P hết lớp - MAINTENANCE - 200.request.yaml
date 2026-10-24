@@ -1,0 +1,25 @@
+$kind: http-request
+name: C8b. Phòng P hết lớp -> MAINTENANCE -> 200
+url: "{{base_url}}/api/v1/rooms/{{roomId}}"
+method: PUT
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "roomName": "QA Room {{run}}",
+      "capacity": 20,
+      "status": "MAINTENANCE"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{managerToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 200', () => pm.response.to.have.status(200));
+      pm.test('status = MAINTENANCE', () => pm.expect(pm.response.json().status).to.eql('MAINTENANCE'));
+    language: text/javascript
+order: 9000

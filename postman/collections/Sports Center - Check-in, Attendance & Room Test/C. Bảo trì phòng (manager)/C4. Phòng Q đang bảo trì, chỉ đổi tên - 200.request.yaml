@@ -1,0 +1,23 @@
+$kind: http-request
+name: C4. Phòng Q đang bảo trì, chỉ đổi tên -> 200
+url: "{{base_url}}/api/v1/rooms/{{roomQId}}"
+method: PUT
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "roomName": "QA Room Q {{run}} (sua)",
+      "capacity": 20,
+      "status": "MAINTENANCE"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{managerToken}}"
+scripts:
+  - type: afterResponse
+    code: pm.test('HTTP 200 (không bị chặn nhầm)', () => pm.response.to.have.status(200));
+    language: text/javascript
+order: 4000

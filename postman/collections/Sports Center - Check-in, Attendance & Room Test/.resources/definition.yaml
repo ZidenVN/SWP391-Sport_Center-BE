@@ -1,0 +1,44 @@
+$kind: collection
+description: Test API lịch sử điểm danh (member), check-in tại quầy (lễ tân) và chặn chuyển phòng sang bảo trì khi còn lớp. Điền managerPassword + receptionistPassword rồi Run cả collection theo thứ tự trên DB local.
+variables:
+  base_url: http://localhost:8080
+  managerEmail: manager@sportcenter.com
+  managerPassword: ""
+  receptionistEmail: receptionist@Sportcenter.com
+  receptionistPassword: ""
+  testPassword: QaTest@12345
+  badToken: abc.def.ghi
+  run: ""
+  phoneCoach: ""
+  phoneRecep: ""
+  phoneMember: ""
+  phoneReg: ""
+  coachEmailQa: ""
+  memberEmailQa: ""
+  classStart: ""
+  classEnd: ""
+  overlapStart: ""
+  overlapEnd: ""
+  classBStart: ""
+  classBEnd: ""
+  beforeStart: ""
+  today: ""
+  in7: ""
+  in14: ""
+  managerToken: ""
+  receptionistToken: ""
+  subjectId: ""
+  roomId: ""
+  packageId: ""
+  coachId: ""
+  coachToken: ""
+  memberId: ""
+  memberTempPassword: ""
+  subscriptionId: ""
+  paymentId: ""
+  memberToken: ""
+  memberNoSubId: ""
+  classId: ""
+  registrationId: ""
+  roomQId: ""
+  checkInId: ""
