@@ -79,5 +79,6 @@ public class RoomServiceImpl implements RoomService {
         if (sportClassRepository.existsByRoom_RoomIdAndStatusAndStartTimeAfter(id, "OPENING", LocalDateTime.now())) {
             throw new AppException(ErrorCode.ROOM_IN_USE);
         }
+        roomRepository.delete(room);
     }
 }

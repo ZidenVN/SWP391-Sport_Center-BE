@@ -1,0 +1,17 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/roles"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{managerToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 200', () => pm.response.to.have.status(200));
+      const roles = pm.response.json();
+      const id = n => (roles.find(r => r.roleName === n) || {}).roleId;
+      pm.collectionVariables.set('memberRoleId', id('MEMBER'));
+      pm.collectionVariables.set('coachRoleId', id('COACH'));
+    language: text/javascript
+order: 4000

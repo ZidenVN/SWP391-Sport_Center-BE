@@ -1,0 +1,27 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/classes"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "maxCapacity": 10,
+      "startTime": "{{classBStart}}",
+      "endTime": "{{classBEnd}}",
+      "coachId": {{coachId}},
+      "roomId": {{roomId}},
+      "subjectId": {{subjectId}}
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{managerToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));
+      if (pm.response.code < 300) pm.collectionVariables.set('classBId', pm.response.json().classId);
+    language: text/javascript
+order: 5000

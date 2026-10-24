@@ -71,5 +71,6 @@ public class SubjectServiceImpl implements SubjectService {
         if (sportClassRepository.existsBySubject_SubjectIdAndStatusAndStartTimeAfter(id, "OPENING", LocalDateTime.now())){
             throw new AppException(ErrorCode.SUBJECT_IN_USE);
         }
+        subjectRepository.delete(subject);
     }
 }

@@ -1,0 +1,23 @@
+$kind: http-request
+name: PATCH xác nhận lần 2 -> lỗi
+url: "{{base_url}}/api/v1/receptionist/payments/{{paymentId}}/confirm"
+method: PATCH
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "note": "lần 2"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{receptionistToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 409', () => pm.response.to.have.status(409));
+      pm.test('error = ERR_PAYMENT_001', () => pm.expect(pm.response.json().error).to.eql('ERR_PAYMENT_001'));
+    language: text/javascript
+order: 9000

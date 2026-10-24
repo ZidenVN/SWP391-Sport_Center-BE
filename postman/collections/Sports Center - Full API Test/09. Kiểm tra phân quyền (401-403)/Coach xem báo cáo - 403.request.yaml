@@ -1,0 +1,13 @@
+$kind: http-request
+name: Coach xem báo cáo -> 403
+url: "{{base_url}}/api/v1/manager/reports/overview"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{coachToken}}"
+scripts:
+  - type: afterResponse
+    code: pm.test('HTTP 403', () => pm.response.to.have.status(403));
+    language: text/javascript
+order: 10000

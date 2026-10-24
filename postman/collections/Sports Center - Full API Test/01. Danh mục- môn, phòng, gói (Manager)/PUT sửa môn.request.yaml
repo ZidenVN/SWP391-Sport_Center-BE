@@ -1,0 +1,21 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/subjects/{{subjectId}}"
+method: PUT
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "subjectName": "QA Subject {{run}} (sửa)",
+      "description": "Đã sửa"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{managerToken}}"
+scripts:
+  - type: afterResponse
+    code: pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));
+    language: text/javascript
+order: 4000

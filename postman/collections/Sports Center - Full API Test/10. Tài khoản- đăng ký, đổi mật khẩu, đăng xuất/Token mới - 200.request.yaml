@@ -1,0 +1,13 @@
+$kind: http-request
+name: Token mới -> 200
+url: "{{base_url}}/api/v1/members/me"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{memberToken2}}"
+scripts:
+  - type: afterResponse
+    code: pm.test('HTTP 200', () => pm.response.to.have.status(200));
+    language: text/javascript
+order: 6000

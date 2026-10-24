@@ -1,0 +1,15 @@
+$kind: http-request
+name: GET /users lọc role COACH
+url: "{{base_url}}/api/v1/users?role=COACH"
+method: GET
+queryParams:
+  role: COACH
+auth:
+  type: bearer
+  credentials:
+    token: "{{managerToken}}"
+scripts:
+  - type: afterResponse
+    code: pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));
+    language: text/javascript
+order: 13000

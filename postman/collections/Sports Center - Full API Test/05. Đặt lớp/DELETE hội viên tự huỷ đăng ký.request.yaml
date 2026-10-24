@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/members/me/registrations/{{registrationId}}"
+method: DELETE
+auth:
+  type: bearer
+  credentials:
+    token: "{{memberToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));
+      pm.test('status = CANCELLED', () => pm.expect(pm.response.json().status).to.eql('CANCELLED'));
+    language: text/javascript
+order: 3000

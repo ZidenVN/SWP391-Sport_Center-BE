@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/receptionist/tickets?memberId={{memberId}}"
+method: GET
+queryParams:
+  memberId: "{{memberId}}"
+auth:
+  type: bearer
+  credentials:
+    token: "{{receptionistToken}}"
+scripts:
+  - type: afterResponse
+    code: pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));
+    language: text/javascript
+order: 2000

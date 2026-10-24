@@ -1,0 +1,26 @@
+$kind: http-request
+name: Lễ tân tạo Coach -> 403
+url: "{{base_url}}/api/v1/coaches"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "firstName": "X",
+      "lastName": "Y",
+      "gender": "MALE",
+      "phone": "0900000000",
+      "email": "qa.coach.{{run}}@example.com",
+      "password": "{{testPassword}}"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{receptionistToken}}"
+scripts:
+  - type: afterResponse
+    code: pm.test('HTTP 403', () => pm.response.to.have.status(403));
+    language: text/javascript
+order: 8000

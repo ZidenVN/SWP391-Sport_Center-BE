@@ -2,6 +2,10 @@
 workspace:
   id: 520cffbe-9e6b-4a9e-bee7-df70bf6e66f9
 
+cloudResources:
+  collections:
+    ../postman/collections/Sports Center - Full API Test: b5aeb11d-ca4b-4477-8d9a-dc56d6691140
+
 # All resources in the `postman/` folder are automatically registered in Local View.
 # Point to additional files outside the `postman/` folder to register them individually. Example:
 #localResources:

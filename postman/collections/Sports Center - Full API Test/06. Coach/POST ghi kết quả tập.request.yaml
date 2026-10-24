@@ -1,0 +1,24 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/coaches/members/{{memberId}}/workout-results"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "memberId": {{memberId}},
+      "activityDetails": "Hoàn thành 45 phút",
+      "coachFeedback": "Tốt"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{coachToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));
+      if (pm.response.code < 300) pm.collectionVariables.set('resultId', pm.response.json().resultId);
+    language: text/javascript
+order: 11000

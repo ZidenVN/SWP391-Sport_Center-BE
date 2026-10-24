@@ -1,0 +1,18 @@
+$kind: http-request
+name: GET /users có phân trang
+url: "{{base_url}}/api/v1/users?page=0&size=5"
+method: GET
+queryParams:
+  page: "0"
+  size: "5"
+auth:
+  type: bearer
+  credentials:
+    token: "{{managerToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 200', () => pm.response.to.have.status(200));
+      pm.test('Có content + totalElements', () => { const j = pm.response.json(); pm.expect(j).to.have.property('content'); pm.expect(j).to.have.property('totalElements'); });
+    language: text/javascript
+order: 11000

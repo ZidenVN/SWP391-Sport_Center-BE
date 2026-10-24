@@ -1,0 +1,16 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/payments/vnpay/create-url?packageId={{packageId}}"
+method: POST
+queryParams:
+  packageId: "{{packageId}}"
+auth:
+  type: bearer
+  credentials:
+    token: "{{memberToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 200', () => pm.response.to.have.status(200));
+      pm.test('Có paymentUrl', () => pm.expect(pm.response.json().paymentUrl).to.include('vnpayment'));
+    language: text/javascript
+order: 6000

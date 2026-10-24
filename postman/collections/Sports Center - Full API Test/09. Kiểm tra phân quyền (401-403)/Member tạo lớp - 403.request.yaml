@@ -1,0 +1,26 @@
+$kind: http-request
+name: Member tạo lớp -> 403
+url: "{{base_url}}/api/v1/classes"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "maxCapacity": 10,
+      "startTime": "{{classBStart}}",
+      "endTime": "{{classBEnd}}",
+      "coachId": {{coachId}},
+      "roomId": {{roomId}},
+      "subjectId": {{subjectId}}
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{memberToken}}"
+scripts:
+  - type: afterResponse
+    code: pm.test('HTTP 403', () => pm.response.to.have.status(403));
+    language: text/javascript
+order: 4000

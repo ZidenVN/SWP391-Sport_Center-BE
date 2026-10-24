@@ -1,0 +1,12 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/receptionist/members/{{memberId}}/subscriptions/current"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{receptionistToken}}"
+scripts:
+  - type: afterResponse
+    code: pm.test('HTTP 200', () => pm.response.to.have.status(200));
+    language: text/javascript
+order: 10000

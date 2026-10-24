@@ -1,0 +1,17 @@
+$kind: http-request
+name: GET /users tìm theo keyword
+url: "{{base_url}}/api/v1/users?keyword=qa.coach.{{run}}"
+method: GET
+queryParams:
+  keyword: qa.coach.{{run}}
+auth:
+  type: bearer
+  credentials:
+    token: "{{managerToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 200', () => pm.response.to.have.status(200));
+      pm.test('Đúng 1 kết quả', () => pm.expect(pm.response.json().totalElements).to.eql(1));
+    language: text/javascript
+order: 12000

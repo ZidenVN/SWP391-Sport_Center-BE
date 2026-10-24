@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/classes/{{classId}}"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{managerToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 200', () => pm.response.to.have.status(200));
+      pm.test('Có availableSeats', () => pm.expect(pm.response.json()).to.have.property('availableSeats'));
+    language: text/javascript
+order: 7000

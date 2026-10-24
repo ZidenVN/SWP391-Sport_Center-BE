@@ -1,0 +1,27 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/coaches/me/workout-plans"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "planName": "QA plan lớp {{run}}",
+      "exerciseDetails": "Khởi động 10 phút, tập chính 40 phút",
+      "duration": "2 tuần",
+      "dueDate": "{{in14}}",
+      "targetType": "CLASS",
+      "targetId": {{classId}}
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{coachToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));
+      if (pm.response.code < 300) pm.collectionVariables.set('planId', pm.response.json().planId);
+    language: text/javascript
+order: 6000

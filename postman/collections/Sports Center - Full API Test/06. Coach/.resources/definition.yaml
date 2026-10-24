@@ -1,0 +1,3 @@
+$kind: collection
+description: Coach vừa tạo dạy lớp A, hội viên test đã đặt lớp A nên coach được phép truy cập học viên này.
+order: 7000

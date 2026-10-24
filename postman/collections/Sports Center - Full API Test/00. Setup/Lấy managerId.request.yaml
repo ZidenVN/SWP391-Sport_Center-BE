@@ -1,0 +1,17 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/users?role=CENTER_MANAGER&size=5"
+method: GET
+queryParams:
+  role: CENTER_MANAGER
+  size: "5"
+auth:
+  type: bearer
+  credentials:
+    token: "{{managerToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 200', () => pm.response.to.have.status(200));
+      if (pm.response.code < 300) pm.collectionVariables.set('managerId', pm.response.json().content[0].id);
+    language: text/javascript
+order: 3000

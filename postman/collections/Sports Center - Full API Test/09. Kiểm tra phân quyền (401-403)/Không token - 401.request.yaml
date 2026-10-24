@@ -1,0 +1,13 @@
+$kind: http-request
+name: Không token -> 401
+url: "{{base_url}}/api/v1/members/me"
+method: GET
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 401', () => pm.response.to.have.status(401));
+      pm.test('error = ERR_AUTH_401', () => pm.expect(pm.response.json().error).to.eql('ERR_AUTH_401'));
+    language: text/javascript
+order: 1000

@@ -1,0 +1,28 @@
+$kind: http-request
+name: POST lớp trùng phòng -> 409
+url: "{{base_url}}/api/v1/classes"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "maxCapacity": 10,
+      "startTime": "{{overlapStart}}",
+      "endTime": "{{overlapEnd}}",
+      "coachId": {{coachId}},
+      "roomId": {{roomId}},
+      "subjectId": {{subjectId}}
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{managerToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 409', () => pm.response.to.have.status(409));
+      pm.test('error = ERR_CLASS_005', () => pm.expect(pm.response.json().error).to.eql('ERR_CLASS_005'));
+    language: text/javascript
+order: 2000

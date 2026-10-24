@@ -1,0 +1,13 @@
+$kind: http-request
+name: Token rác -> 401
+url: "{{base_url}}/api/v1/members/me"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{badToken}}"
+scripts:
+  - type: afterResponse
+    code: pm.test('HTTP 401', () => pm.response.to.have.status(401));
+    language: text/javascript
+order: 2000

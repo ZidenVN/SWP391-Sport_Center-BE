@@ -1,0 +1,27 @@
+$kind: http-request
+url: "{{base_url}}/api/v1/manager/receptionists"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "firstName": "QA",
+      "lastName": "Recep {{run}}",
+      "gender": "FEMALE",
+      "email": "qa.recep.{{run}}@example.com",
+      "phone": "{{phoneRecep}}",
+      "password": "{{testPassword}}"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{managerToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));
+      if (pm.response.code < 300) pm.collectionVariables.set('staffId', pm.response.json().userId);
+    language: text/javascript
+order: 5000

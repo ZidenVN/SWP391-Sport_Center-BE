@@ -1,0 +1,40 @@
+$kind: collection
+description: Bộ test toàn hệ thống. Điền managerPassword + receptionistPassword rồi Run cả collection theo thứ tự. Nên chạy trên DB local (Docker).
+variables:
+  base_url: http://localhost:8080
+  managerEmail: manager@sportcenter.com
+  managerPassword: ""
+  receptionistEmail: receptionist@Sportcenter.com
+  receptionistPassword: ""
+  testPassword: QaTest@12345
+  badToken: abc.def.ghi
+  run: ""
+  phoneCoach: ""
+  phoneRecep: ""
+  phoneMember: ""
+  phoneReg: ""
+  coachEmailQa: ""
+  memberEmailQa: ""
+  classStart: ""
+  classEnd: ""
+  overlapStart: ""
+  overlapEnd: ""
+  classBStart: ""
+  classBEnd: ""
+  beforeStart: ""
+  today: ""
+  in7: ""
+  in14: ""
+  managerToken: ""
+  managerId: ""
+  memberRoleId: ""
+  coachRoleId: ""
+  subjectId: ""
+  roomId: ""
+  packageId: ""
+  coachId: ""
+  staffId: ""
+  coachToken: ""
+  classId: ""
+  classBId: ""
+  planId: ""

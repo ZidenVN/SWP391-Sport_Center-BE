@@ -1,0 +1,15 @@
+$kind: http-request
+name: GET gói hiện tại trước khi thu tiền -> 422
+url: "{{base_url}}/api/v1/receptionist/members/{{memberId}}/subscriptions/current"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{receptionistToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 422', () => pm.response.to.have.status(422));
+      pm.test('error = ERR_SUBSCRIPTION_001', () => pm.expect(pm.response.json().error).to.eql('ERR_SUBSCRIPTION_001'));
+    language: text/javascript
+order: 6000

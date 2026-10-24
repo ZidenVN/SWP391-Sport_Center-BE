@@ -1,0 +1,23 @@
+$kind: http-request
+name: PUT /users/{id} trùng SĐT -> 400
+url: "{{base_url}}/api/v1/users/{{coachId}}"
+method: PUT
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "phone": "{{phoneRecep}}"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{managerToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 400', () => pm.response.to.have.status(400));
+      pm.test('error = ERR_USER_002', () => pm.expect(pm.response.json().error).to.eql('ERR_USER_002'));
+    language: text/javascript
+order: 16000
