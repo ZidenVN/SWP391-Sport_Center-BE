@@ -1,0 +1,19 @@
+$kind: http-request
+url: ""
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{managerToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 200', () => pm.response.to.have.status(200));
+      const body = pm.response.json();
+      const logs = Array.isArray(body) ? body : (body.content || []);
+      pm.test('Có log CHECK_IN của hội viên test', () => {
+        const memberId = Number(pm.collectionVariables.get('memberId'));
+        pm.expect(logs.some(l => l.actionType === 'CHECK_IN' && Number(l.targetEntityId) === memberId)).to.be.true;
+      });
+    language: text/javascript
+order: 12000

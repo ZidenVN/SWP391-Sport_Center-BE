@@ -1,0 +1,28 @@
+$kind: http-request
+name: A1. Member xem lịch sử điểm danh -> 200
+url: ""
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{memberToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('HTTP 200', () => pm.response.to.have.status(200));
+      const list = pm.response.json();
+      pm.test('Là mảng, có ít nhất 1 buổi', () => pm.expect(list).to.be.an('array').that.is.not.empty);
+      pm.test('Đủ field', () => pm.expect(list[0]).to.include.keys(
+        'attendanceId','classId','subjectName','coachName','roomName','startTime','endTime','status','statusDescription','markedAt'));
+      pm.test('Có buổi của lớp vừa điểm danh, PRESENT -> Có mặt', () => {
+        const a = list.find(x => x.classId === Number(pm.collectionVariables.get('classId')));
+        pm.expect(a, 'không thấy lớp vừa điểm danh').to.exist;
+        pm.expect(a.status).to.eql('PRESENT');
+        pm.expect(a.statusDescription).to.eql('Có mặt');
+        pm.expect(a.note).to.eql('QA');
+      });
+      pm.test('Sắp xếp buổi mới nhất trước', () => {
+        for (let i = 1; i < list.length; i++) pm.expect(list[i-1].startTime >= list[i].startTime).to.be.true;
+      });
+    language: text/javascript
+order: 1000

@@ -16,6 +16,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/members")
 @RequiredArgsConstructor
@@ -80,5 +82,11 @@ public class MemberController {
     public ResponseEntity<java.util.List<NotificationResponseDTO>> getNotifications(@AuthenticationPrincipal CustomUserDetails principal) {
         Long memberId = principal.getUser().getUserId();
         return ResponseEntity.ok(notificationService.getMyNotifications(memberId));
+    }
+
+    @PreAuthorize("hasRole('MEMBER')")
+    @GetMapping("/me/attendances")
+    public ResponseEntity<List<MemberAttendanceResponseDTO>> getMyAttendances(@AuthenticationPrincipal CustomUserDetails principal) {
+        return ResponseEntity.ok(memberService.getMyAttendances(principal.getUser().getUserId()));
     }
 }
