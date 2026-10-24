@@ -39,4 +39,15 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
         AND s.endDate > :time
         """)
     boolean existsActiveCovering(@Param("memberId") Long memberId, @Param("time") LocalDateTime time);
+
+    @Query("""
+        select s from Subscription s
+        join fetch s.member join fetch s.membershipPackage
+        where s.status = 'ACTIVE'
+       and s.expiryReminderSentAt is null
+       and s.endDate > :now
+       and s.endDate <= :deadline
+       and not exists (select 1 from Subscription  n where n.member = s.member and n.status = 'ACTIVE' and n.endDate > s.endDate)
+        """)
+    List<Subscription> findExpiringWithoutReminder(@Param("now") LocalDateTime now, @Param("deadline") LocalDateTime deadline);
 }

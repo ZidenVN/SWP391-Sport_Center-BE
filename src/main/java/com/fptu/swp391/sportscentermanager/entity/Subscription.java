@@ -28,4 +28,8 @@ public class Subscription {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "package_id", nullable = false)
     private MembershipPackage membershipPackage;
+
+    @Column(name = "expiry_reminder_sent_at")
+    private LocalDateTime expiryReminderSentAt;
+
 }

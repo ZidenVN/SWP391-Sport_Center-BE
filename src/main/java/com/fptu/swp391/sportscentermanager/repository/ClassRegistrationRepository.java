@@ -124,10 +124,21 @@ public interface ClassRegistrationRepository extends JpaRepository<ClassRegistra
         AND r.sportClass.startTime < :endTime
         AND :startTime < r.sportClass.endTime
         """)
-
     boolean existsMemberScheduleConflict(@Param("memberId") Long memberId,
                                          @Param("classId") Long classId,
                                          @Param("startTime") LocalDateTime startTime,
                                          @Param("endTime") LocalDateTime endTime);
 
+
+    @Query("""
+            select r from ClassRegistration r
+            join fetch r.member join fetch r.sportClass c
+            left join fetch c.subject
+            left join fetch c.room
+            where r.status = 'REGISTERED'
+            and r.reminderSentAt is null
+            and c.status = 'OPENING'
+            and c.startTime > :now                                and c.startTime <= :deadline
+        """)
+    List<ClassRegistration> findUpcomingWithoutReminder(@Param("now") LocalDateTime now, @Param("deadline") LocalDateTime deadline);
 }
