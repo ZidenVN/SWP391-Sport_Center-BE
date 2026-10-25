@@ -60,6 +60,15 @@ public class CheckInServiceImpl implements CheckInService {
         return checkInRepository.findInRange(from, from.plusDays(1)).stream().map(this::toResponse).toList();
     }
 
+    @Override
+    public List<CheckInResponseDTO> getMemberCheckIns(Long memberId) {
+        if (!memberRepository.existsById(memberId)) {
+            throw new AppException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+
+        return checkInRepository.findByMemberId(memberId).stream().map(this::toResponse).toList();
+    }
+
     private CheckInResponseDTO toResponse(CheckIn ci) {
         Member m = ci.getMember();
         Receptionist r = ci.getReceptionist();

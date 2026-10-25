@@ -8,4 +8,6 @@ import java.util.List;
 public interface CheckInService {
     CheckInResponseDTO checkIn(Long memberId, Long receptionistId);
     List<CheckInResponseDTO> getCheckIns(LocalDate date);
+
+    List<CheckInResponseDTO> getMemberCheckIns(Long memberId);
 }

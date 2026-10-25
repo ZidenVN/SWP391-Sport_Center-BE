@@ -6,6 +6,7 @@ import com.fptu.swp391.sportscentermanager.dto.*;
 import com.fptu.swp391.sportscentermanager.entity.Coach;
 import com.fptu.swp391.sportscentermanager.security.CoachAccessGuard;
 import com.fptu.swp391.sportscentermanager.security.CustomUserDetails;
+import com.fptu.swp391.sportscentermanager.service.CheckInService;
 import com.fptu.swp391.sportscentermanager.service.MemberService;
 import com.fptu.swp391.sportscentermanager.service.NotificationService;
 import com.fptu.swp391.sportscentermanager.service.WorkoutResultService;
@@ -28,6 +29,7 @@ public class MemberController {
     private final WorkoutResultService workoutResultService;
     private final NotificationService notificationService;
     private final CoachAccessGuard coachAccessGuard;
+    private final CheckInService checkInService;
 
     //TODO: PreAuthorize có tác dụng gì? ND phải cung cấp trong ("") là gì?
     @PreAuthorize("hasRole('MEMBER') and hasAuthority('VIEW_OWN_PROFILE')")
@@ -88,5 +90,11 @@ public class MemberController {
     @GetMapping("/me/attendances")
     public ResponseEntity<List<MemberAttendanceResponseDTO>> getMyAttendances(@AuthenticationPrincipal CustomUserDetails principal) {
         return ResponseEntity.ok(memberService.getMyAttendances(principal.getUser().getUserId()));
+    }
+
+    @PreAuthorize("hasRole('MEMBER')")
+    @GetMapping("/me/check-ins")
+    public ResponseEntity<List<CheckInResponseDTO>> getMyCheckIns(@AuthenticationPrincipal CustomUserDetails principal) {
+        return ResponseEntity.ok(checkInService.getMemberCheckIns(principal.getUser().getUserId()));
     }
 }
