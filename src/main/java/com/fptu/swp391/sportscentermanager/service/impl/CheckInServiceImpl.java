@@ -74,7 +74,7 @@ public class CheckInServiceImpl implements CheckInService {
     private CheckInResponseDTO toResponse(CheckIn ci) {
         Member m = ci.getMember();
         Receptionist r = ci.getReceptionist();
-        return CheckInResponseDTO.builder()
+        CheckInResponseDTO dto = CheckInResponseDTO.builder()
             .checkInId(ci.getCheckInId())
             .memberId(m.getUserId())
             .memberName(m.getLastName() + " " + m.getFirstName())
@@ -82,5 +82,13 @@ public class CheckInServiceImpl implements CheckInService {
             .checkInTime(ci.getCheckInTime())
             .receptionistName(r != null ? r.getLastName() + " " + r.getFirstName() : null)
             .build();
+
+        subscriptionRepository.findCurrent(m.getUserId(), ci.getCheckInTime())
+            .stream().findFirst().ifPresent(sub -> {
+                dto.setPackageName(sub.getMembershipPackage().getPackageName());
+                dto.setSubscriptionEndDate(sub.getEndDate());
+            });
+
+        return dto;
     }
 }

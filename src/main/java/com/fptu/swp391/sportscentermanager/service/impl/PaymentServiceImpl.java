@@ -16,6 +16,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.ArrayList;
+import com.fptu.swp391.sportscentermanager.entity.ClassRegistration;
+import com.fptu.swp391.sportscentermanager.repository.ClassRegistrationRepository;
 import com.fptu.swp391.sportscentermanager.dto.ConfirmPaymentRequestDTO;
 import com.fptu.swp391.sportscentermanager.entity.User;
 import com.fptu.swp391.sportscentermanager.enums.PaymentMethod;
@@ -40,6 +43,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final SubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;
     private final SubscriptionService subscriptionService;
+    private final ClassRegistrationRepository classRegistrationRepository;
 
     private static final int MAX_PAGE_SIZE = 100;
     // 'SUCCESS' là dữ liệu cũ, coi như đã thu
@@ -174,8 +178,34 @@ public class PaymentServiceImpl implements PaymentService {
 
         // Gói của giao dịch này hết hiệu lực
         Subscription sub = payment.getSubscription();
-        sub.setStatus("CANCELLED");
-        subscriptionRepository.save(sub);
+        if (sub != null) {
+            sub.setStatus("CANCELLED");
+            subscriptionRepository.save(sub);
+
+            // Mục 11: Huỷ các đăng ký lớp chưa diễn ra trong thời gian của gói
+            // nếu không còn gói ACTIVE nào khác phủ thời điểm đó
+            if (sub.getMember() != null) {
+                Long memberId = sub.getMember().getUserId();
+                LocalDateTime now = LocalDateTime.now();
+                List<ClassRegistration> upcoming = classRegistrationRepository.findUpcoming(memberId, now);
+                List<ClassRegistration> toCancel = new ArrayList<>();
+                for (ClassRegistration reg : upcoming) {
+                    if (reg.getSportClass() != null && reg.getSportClass().getStartTime() != null) {
+                        LocalDateTime classStart = reg.getSportClass().getStartTime();
+                        boolean inSubRange = (sub.getStartDate() == null || !classStart.isBefore(sub.getStartDate()))
+                                && (sub.getEndDate() == null || !classStart.isAfter(sub.getEndDate()));
+                        if (inSubRange && !subscriptionRepository.existsActiveCovering(memberId, classStart)) {
+                            reg.setStatus("CANCELLED");
+                            reg.setCancelledAt(now);
+                            toCancel.add(reg);
+                        }
+                    }
+                }
+                if (!toCancel.isEmpty()) {
+                    classRegistrationRepository.saveAll(toCancel);
+                }
+            }
+        }
 
         return toResponse(payment);
     }
