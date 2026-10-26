@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-
+import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
 @Service
 @RequiredArgsConstructor
 public class CheckInServiceImpl implements CheckInService {
@@ -26,7 +26,7 @@ public class CheckInServiceImpl implements CheckInService {
     private final SubscriptionRepository subscriptionRepository;
     private final CheckInRepository checkInRepository;
     private final ReceptionistRepository receptionistRepository;
-
+    private final SubscriptionService subscriptionService;
     @Override
     @Transactional
     public CheckInResponseDTO checkIn(Long memberId, Long receptionistId) {
@@ -50,6 +50,8 @@ public class CheckInServiceImpl implements CheckInService {
         CheckInResponseDTO dto = toResponse(saved);
         dto.setPackageName(current.getMembershipPackage().getPackageName());
         dto.setSubscriptionEndDate(current.getEndDate());
+        // BR-CHK-02: trả hết gói đang hiệu lực (gói CLASS hết buổi vẫn có, BR-SUB-03)
+        dto.setActiveSubscriptions(subscriptionService.getCurrentSubscriptions(memberId));
         return dto;
     }
 

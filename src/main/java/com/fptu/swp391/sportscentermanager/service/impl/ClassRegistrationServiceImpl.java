@@ -19,7 +19,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
+import com.fptu.swp391.sportscentermanager.entity.Subscription;
+import com.fptu.swp391.sportscentermanager.enums.PackageType;
+import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
 @Service
 @RequiredArgsConstructor
 public class ClassRegistrationServiceImpl implements ClassRegistrationService {
@@ -31,7 +33,7 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
     private final SportClassRepository sportClassRepository;
     private final MemberRepository memberRepository;
     private final SubscriptionRepository subscriptionRepository;
-
+    private final SubscriptionService subscriptionService;
     @Value("${app.booking.cancel-cutoff-hours}")
     private long cancelCutoffHours;
 
@@ -60,10 +62,13 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
             throw new AppException(ErrorCode.CLASS_NOT_OPEN);
         }
 
-        // 2. Check Membership Status (include): phải có gói còn hiệu lực
-        if (!subscriptionRepository.existsActiveCovering(memberId, sportClass.getStartTime())) {
-            boolean hasCurent = !subscriptionRepository.findCurrent(memberId, now).isEmpty();
-            throw new AppException(hasCurent ? ErrorCode.SUBSCRIPTION_EXPIRED : ErrorCode.NO_ACTIVE_SUBSCRIPTION);
+        // 2. Check Membership Status (include): phải có gói CLASS đúng môn, còn hạn, còn buổi (BR-REG-02)
+        // Danh sách đã sắp gói hết hạn sớm nhất lên đầu (BR-REG-04)
+        Long subjectId = sportClass.getSubject() != null ? sportClass.getSubject().getSubjectId() : null;
+        List<Long> validSubscriptionIds = subscriptionRepository
+            .findValidIdsForClass(memberId, subjectId, sportClass.getStartTime());
+        if (validSubscriptionIds.isEmpty()) {
+            throw new AppException(noValidSubscriptionReason(memberId, subjectId, sportClass.getStartTime(), now));
         }
 
         // 3. Không đăng ký trùng
@@ -84,12 +89,22 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
             throw new AppException(ErrorCode.CLASS_FULL);
         }
 
-        // 5. Ghi đăng ký (dùng lại dòng cũ nếu trước đó đã hủy)
+        // 5. Trừ 1 buổi của gói đã chọn (BR-REG-05). Khoá dòng gói để không bị trừ/hoàn chen ngang (BR-REG-08)
+        Subscription subscription = subscriptionRepository.findByIdForUpdate(validSubscriptionIds.get(0))
+            .orElseThrow(() -> new AppException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
+        if (!subscription.hasSessionLeft()) {
+            throw new AppException(ErrorCode.NO_SESSIONS_LEFT);
+        }
+        subscription.setUsedSessions(subscription.getUsedSessions() + 1);
+        subscriptionRepository.save(subscription);
+
+        // 6. Ghi đăng ký (dùng lại dòng cũ nếu trước đó đã hủy)
         ClassRegistration registration = (existing != null) ? existing
             : ClassRegistration.builder().member(member).sportClass(sportClass).build();
         registration.setStatus(REGISTERED);
         registration.setRegisteredAt(now);
         registration.setCancelledAt(null);
+        registration.setSubscription(subscription);
 
         return toResponse(registrationRepository.save(registration));
     }
@@ -113,6 +128,8 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
 
         registration.setStatus(CANCELLED);
         registration.setCancelledAt(LocalDateTime.now());
+        // BR-CAN-01: huỷ trước cutoff thì hoàn 1 buổi vào đúng gói đã trừ
+        subscriptionService.refundSession(registration);
         return toResponse(registrationRepository.save(registration));
     }
 
@@ -130,7 +147,24 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
         return registrationRepository.findUpcoming(memberId, LocalDateTime.now())
             .stream().map(this::toResponse).toList();
     }
-
+    // Thứ tự báo lỗi khi không có gói hợp lệ (bảng mục 3.3)
+    private ErrorCode noValidSubscriptionReason(Long memberId, Long subjectId, LocalDateTime classTime, LocalDateTime now) {
+        List<Subscription> covering = subscriptionRepository.findCovering(memberId, classTime);
+        if (covering.isEmpty()) {
+            boolean hasCurrent = !subscriptionRepository.findCurrent(memberId, now).isEmpty();
+            return hasCurrent ? ErrorCode.SUBSCRIPTION_EXPIRED : ErrorCode.NO_ACTIVE_SUBSCRIPTION;
+        }
+        List<Subscription> classPackages = covering.stream()
+            .filter(s -> s.getMembershipPackage().getPackageType() == PackageType.CLASS)
+            .toList();
+        if (classPackages.isEmpty()) {
+            return ErrorCode.PACKAGE_NOT_ALLOW_CLASS;
+        }
+        boolean subjectCovered = classPackages.stream()
+            .anyMatch(s -> s.getMembershipPackage().getSubjects().stream()
+                .anyMatch(sub -> sub.getSubjectId().equals(subjectId)));
+        return subjectCovered ? ErrorCode.NO_SESSIONS_LEFT : ErrorCode.SUBJECT_NOT_COVERED;
+    }
     private void requireMember(Long memberId) {
         if (!memberRepository.existsById(memberId)) {
             throw new AppException(ErrorCode.MEMBER_NOT_FOUND);
@@ -153,6 +187,9 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
             .status(r.getStatus())
             .registeredAt(r.getRegisteredAt())
             .cancelledAt(r.getCancelledAt())
+            .subscriptionId(r.getSubscription() != null ? r.getSubscription().getSubscriptionId() : null)
+            .usedSessions(r.getSubscription() != null ? r.getSubscription().getUsedSessions() : null)
+            .remainingSessions(r.getSubscription() != null ? r.getSubscription().remainingSessions() : null)
             .build();
     }
 

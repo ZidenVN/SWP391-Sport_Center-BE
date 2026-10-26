@@ -22,4 +22,9 @@ public class ClassRegistrationResponseDTO {
     private String imageUrl;
     private LocalDateTime registeredAt;
     private LocalDateTime cancelledAt;
+
+    // Gói bị trừ buổi cho lần đăng ký này
+    private Long subscriptionId;
+    private Integer usedSessions;
+    private Integer remainingSessions; // null = không giới hạn
 }
