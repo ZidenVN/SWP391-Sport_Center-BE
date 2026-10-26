@@ -18,5 +18,6 @@ public class TeachingScheduleResponseDTO {
     private Integer maxCapacity;
     private Long currentEnrolled;
     private String status;
+    private String imageUrl;
 }
 

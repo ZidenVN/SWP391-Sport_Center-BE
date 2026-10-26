@@ -19,6 +19,7 @@ public class ClassRegistrationResponseDTO {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private String status;           // REGISTERED | CANCELLED
+    private String imageUrl;
     private LocalDateTime registeredAt;
     private LocalDateTime cancelledAt;
 }

@@ -8,6 +8,7 @@ import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.*;
+import com.fptu.swp391.sportscentermanager.service.ImageStorageService;
 import com.fptu.swp391.sportscentermanager.service.NotificationService;
 import com.fptu.swp391.sportscentermanager.service.SportClassService;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -32,12 +34,13 @@ public class SportClassServiceImpl implements SportClassService {
     private final CoachRepository coachRepository;
     private final ClassRegistrationRepository classRegistrationRepository;
     private final NotificationService notificationService;
+    private final ImageStorageService imageStorageService;
 
     private static final int MAX_PAGE_SIZE = 100;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
 
     @Override
-    public SportClassResponseDTO createClass(SportClassRequestDTO requestDTO) {
+    public SportClassResponseDTO createClass(SportClassRequestDTO requestDTO, MultipartFile image) {
         Room room = roomRepository.findByRoomIdAndStatusNot(requestDTO.getRoomId(), "INACTIVE").orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
 
         Subject subject = subjectRepository.findBySubjectIdAndStatus(requestDTO.getSubjectId(), "ACTIVE").orElseThrow(() -> new AppException(ErrorCode.SUBJECT_NOT_FOUND));
@@ -53,7 +56,9 @@ public class SportClassServiceImpl implements SportClassService {
 
         checkScheduleConflict(requestDTO.getRoomId(), requestDTO.getCoachId(), requestDTO.getStartTime(), requestDTO.getEndTime(), 0L);
 
-        SportClass newClass = SportClass.builder().maxCapacity(requestDTO.getMaxCapacity()).startTime(requestDTO.getStartTime()).endTime(requestDTO.getEndTime()).status("OPENING").room(room).subject(subject).coach(coach).build();
+        String imageUrl = imageStorageService.uploadClassImage(image);
+
+        SportClass newClass = SportClass.builder().maxCapacity(requestDTO.getMaxCapacity()).startTime(requestDTO.getStartTime()).endTime(requestDTO.getEndTime()).status("OPENING").room(room).subject(subject).coach(coach).imageUrl(imageUrl).build();
 
         SportClass savedClass = sportClassRepository.save(newClass);
 
@@ -98,7 +103,7 @@ public class SportClassServiceImpl implements SportClassService {
     }
 
     @Override
-    public SportClassResponseDTO updateClass(Long id, SportClassRequestDTO requestDTO) {
+    public SportClassResponseDTO updateClass(Long id, SportClassRequestDTO requestDTO,  MultipartFile image) {
         SportClass sportClass = sportClassRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
         requireOpening(sportClass);
 
@@ -136,6 +141,10 @@ public class SportClassServiceImpl implements SportClassService {
             sportClass.setCoach(newCoach);
         } else {
             sportClass.setCoach(null);
+        }
+
+        if (image != null && !image.isEmpty()) {
+            sportClass.setImageUrl(imageStorageService.uploadClassImage(image));
         }
 
         SportClass savedClass = sportClassRepository.save(sportClass);
@@ -248,6 +257,7 @@ public class SportClassServiceImpl implements SportClassService {
             .startTime(c.getStartTime())
             .endTime(c.getEndTime())
             .status(c.getStatus())
+            .imageUrl(c.getImageUrl())
             .roomId(c.getRoom() != null ? c.getRoom().getRoomId() : null)
             .roomName(c.getRoom() != null ? c.getRoom().getRoomName() : null)
             .subjectId(c.getSubject() != null ? c.getSubject().getSubjectId() : null)

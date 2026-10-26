@@ -143,6 +143,7 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
             .registrationId(r.getRegistrationId())
             .memberId(r.getMember().getUserId())
             .classId(c.getClassId())
+            .imageUrl(c.getImageUrl())
             .subjectName(c.getSubject() != null ? c.getSubject().getSubjectName() : null)
             .roomName(c.getRoom() != null ? c.getRoom().getRoomName() : null)
             .coachName(c.getCoach() != null

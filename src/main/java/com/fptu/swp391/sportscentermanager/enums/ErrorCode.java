@@ -69,19 +69,17 @@ public enum ErrorCode {
     CANNOT_CHANGE_OWN_STATUS(HttpStatus.BAD_REQUEST, "ERR_USER_003", "Không thể tự khoá hoặc mở khoá tài khoản của chính mình!"),
     ROOM_IN_USE(HttpStatus.CONFLICT, "ERR_ROOM_003", "Phòng đang có lớp học sắp diễn ra, hãy huỷ hoặc đổi phòng cho các lớp đó trước!"),
     SUBJECT_IN_USE(HttpStatus.CONFLICT, "ERR_SUB_409", "Môn học đang có lớp sắp diễn ra, hãy huỷ các lớp đó trước!"),
-    MEMBER_INACTIVE(HttpStatus.BAD_REQUEST, "ERR_CHECKIN_002", "Tài khoản hội viên đang bị khoá!")
+    MEMBER_INACTIVE(HttpStatus.BAD_REQUEST, "ERR_CHECKIN_002", "Tài khoản hội viên đang bị khoá!"),
 
+    IMAGE_REQUIRED(HttpStatus.BAD_REQUEST, "ERR_IMG_001", "Vui lòng chọn ảnh cho lớp học"),
+    IMAGE_VALID_TYPE(HttpStatus.BAD_REQUEST, "ERR_IMG_002", "Chỉ hỗ trợ ảnh JPG, PNG, WEBP, HEIC!"),
+    IMAGE_TOO_LARGE(HttpStatus.BAD_REQUEST, "ERR_IMG_003", "Ảnh tối đa 10MB!"),
+    IMAGE_UPLOAD_FAILED(HttpStatus.BAD_GATEWAY, "ERR_IMG_004", "Upload ảnh thất bại, vui lòng thử lại!"),
 
-
-
-
-
-
-
-
-
-
-
+    AI_DAILY_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "ERR_AI_001", "Bạn đã dùng hết lượt hỏi AI hôm nay, vui lòng quay lại vào ngày mai!"),
+    AI_PROVIDER_BUSY(HttpStatus.SERVICE_UNAVAILABLE, "ERR_AI_002", "Trợ lý AI đang quá tải, vui lòng thử lại sau ít phút!"),
+    AI_UNAVAILABLE(HttpStatus.BAD_GATEWAY, "ERR_AI_003", "Trợ lý AI tạm thời không phản hồi, vui lòng thử lại!"),
+    AI_CONVERSATION_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_AI_004", "Cuộc trò chuyện không tồn tại!")
 
 
 
