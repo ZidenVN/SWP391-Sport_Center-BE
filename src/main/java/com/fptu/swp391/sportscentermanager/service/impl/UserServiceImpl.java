@@ -7,6 +7,7 @@ import com.fptu.swp391.sportscentermanager.entity.*;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
+import com.fptu.swp391.sportscentermanager.repository.ClassRegistrationRepository;
 import com.fptu.swp391.sportscentermanager.repository.RoleRepository;
 import com.fptu.swp391.sportscentermanager.repository.UserRepository;
 import com.fptu.swp391.sportscentermanager.service.UserService;
@@ -18,6 +19,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import org.springframework.data.domain.Pageable;
 
 @Service
@@ -27,6 +30,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ClassRegistrationRepository classRegistrationRepository;
 
     private UserResponseDTO toResponse(User user) {
         return UserResponseDTO.builder()
@@ -129,6 +133,9 @@ public class UserServiceImpl implements UserService {
         User user = findUserOrThrow(id);
         user.setStatus(newStatus);
         userRepository.save(user);
+        if (newStatus == UserStatus.INACTIVE) {
+            cancelUpcomingRegistrationsIfMember(user);
+        }
         return toResponse(user);
     }
 
@@ -139,8 +146,28 @@ public class UserServiceImpl implements UserService {
             throw new AppException(ErrorCode.CANNOT_CHANGE_OWN_STATUS);
         }
         User user = findUserOrThrow(id);
-        user.setStatus(user.getStatus() == UserStatus.ACTIVE ? UserStatus.INACTIVE : UserStatus.ACTIVE);
+        UserStatus targetStatus = user.getStatus() == UserStatus.ACTIVE ? UserStatus.INACTIVE : UserStatus.ACTIVE;
+        user.setStatus(targetStatus);
         userRepository.save(user);
+        if (targetStatus == UserStatus.INACTIVE) {
+            cancelUpcomingRegistrationsIfMember(user);
+        }
+    }
+
+    private void cancelUpcomingRegistrationsIfMember(User user) {
+        boolean isMember = (user instanceof Member)
+                || (user.getRole() != null && "MEMBER".equalsIgnoreCase(user.getRole().getRoleName()));
+        if (isMember) {
+            LocalDateTime now = LocalDateTime.now();
+            List<ClassRegistration> upcoming = classRegistrationRepository.findUpcoming(user.getUserId(), now);
+            for (ClassRegistration reg : upcoming) {
+                reg.setStatus("CANCELLED");
+                reg.setCancelledAt(now);
+            }
+            if (!upcoming.isEmpty()) {
+                classRegistrationRepository.saveAll(upcoming);
+            }
+        }
     }
 
 
