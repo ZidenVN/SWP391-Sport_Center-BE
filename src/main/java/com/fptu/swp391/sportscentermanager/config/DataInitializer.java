@@ -144,7 +144,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedDefaultManager(Role managerRole) {
-        if (userRepository.existsByEmail(managerEmail)) return;
+        if (userRepository.existsByEmail(managerEmail) || userRepository.existsByPhone("0989999999")) return;
 
         if (managerPassword.isBlank()) {
             System.out.println("Chưa cấu hình mật khẩu, bỏ qua tạo tài khoản Manager mặc định");
@@ -166,7 +166,7 @@ public class DataInitializer implements CommandLineRunner {
 
     private void seedDefaultCoach(Role coachRole) {
         String email = "coach@Sportcenter.com";
-        if (userRepository.existsByEmail(email)) return ;
+        if (userRepository.existsByEmail(email) || userRepository.existsByPhone("098789654")) return ;
 
         if (coachPassword.isBlank()) {
             System.out.println("Chưa cấu hình mật khẩu, bỏ qua tạo tài khoản HLV mặc định");
@@ -189,7 +189,7 @@ public class DataInitializer implements CommandLineRunner {
 
     private void seedDefaultReceptionist(Role receptionistRole) {
         String email = "receptionist@Sportcenter.com";
-        if (userRepository.existsByEmail(email)) return;
+        if (userRepository.existsByEmail(email) || userRepository.existsByPhone("0341234567")) return;
 
         if (receptionistPassword.isBlank()) {
             System.out.println("Chưa cấu hình mật khẩu, bỏ qua tạo tài khoản Lễ tân mặc định");
