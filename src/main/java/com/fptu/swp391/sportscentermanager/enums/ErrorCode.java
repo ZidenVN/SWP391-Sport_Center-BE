@@ -69,15 +69,12 @@ public enum ErrorCode {
     CANNOT_CHANGE_OWN_STATUS(HttpStatus.BAD_REQUEST, "ERR_USER_003", "Không thể tự khoá hoặc mở khoá tài khoản của chính mình!"),
     ROOM_IN_USE(HttpStatus.CONFLICT, "ERR_ROOM_003", "Phòng đang có lớp học sắp diễn ra, hãy huỷ hoặc đổi phòng cho các lớp đó trước!"),
     SUBJECT_IN_USE(HttpStatus.CONFLICT, "ERR_SUB_409", "Môn học đang có lớp sắp diễn ra, hãy huỷ các lớp đó trước!"),
-    MEMBER_INACTIVE(HttpStatus.BAD_REQUEST, "ERR_CHECKIN_002", "Tài khoản hội viên đang bị khoá!")
+    MEMBER_INACTIVE(HttpStatus.BAD_REQUEST, "ERR_CHECKIN_002", "Tài khoản hội viên đang bị khoá!"),
 
-
-
-
-
-
-
-
+    IMAGE_REQUIRED(HttpStatus.BAD_REQUEST, "ERR_IMG_001", "Vui lòng chọn ảnh cho lớp học"),
+    IMAGE_VALID_TYPE(HttpStatus.BAD_REQUEST, "ERR_IMG_002", "Chỉ hỗ trợ ảnh JPG, PNG, WEBP, HEIC!"),
+    IMAGE_TOO_LARGE(HttpStatus.BAD_REQUEST, "ERR_IMG_003", "Ảnh tối đa 10MB!"),
+    IMAGE_UPLOAD_FAILED(HttpStatus.BAD_GATEWAY, "ERR_IMG_004", "Upload ảnh thất bại, vui lòng thử lại!")
 
 
 

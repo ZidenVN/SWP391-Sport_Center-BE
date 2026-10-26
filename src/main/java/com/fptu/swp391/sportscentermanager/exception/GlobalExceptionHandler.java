@@ -9,6 +9,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -52,5 +53,10 @@ public class GlobalExceptionHandler {
             .message("Dữ liệu bị trùng hoặc xung đột, vui lòng thử lại!")
             .build();
         return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponseDTO> hanleMaxUploadSize(MaxUploadSizeExceededException ex){
+        return handleAppException(new AppException(ErrorCode.IMAGE_TOO_LARGE));
     }
 }

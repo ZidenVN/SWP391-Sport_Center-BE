@@ -178,6 +178,7 @@ public class CoachServiceImpl implements CoachService {
                 .maxCapacity(c.getMaxCapacity())
                 .currentEnrolled(enrolledCnt)
                 .status(c.getStatus())
+                .imageUrl(c.getImageUrl())
                 .build();
             result.add(dto);
         }
