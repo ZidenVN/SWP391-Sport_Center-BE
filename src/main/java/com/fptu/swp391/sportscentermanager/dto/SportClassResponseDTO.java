@@ -14,6 +14,7 @@ public class SportClassResponseDTO {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private String status;
+    private String imageUrl;
     private String coachName;
     private String roomName;
     private String subjectName;
