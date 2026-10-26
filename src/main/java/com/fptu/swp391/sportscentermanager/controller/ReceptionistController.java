@@ -1,19 +1,18 @@
 package com.fptu.swp391.sportscentermanager.controller;
 
-import com.fptu.swp391.sportscentermanager.dto.MemberSearchResponseDTO;
+import com.fptu.swp391.sportscentermanager.dto.*;
+import com.fptu.swp391.sportscentermanager.service.MemberService;
 import com.fptu.swp391.sportscentermanager.service.ReceptionistService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import com.fptu.swp391.sportscentermanager.dto.WalkInMemberRequestDTO;
-import com.fptu.swp391.sportscentermanager.dto.WalkInMemberResponseDTO;
+
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import com.fptu.swp391.sportscentermanager.dto.SubscriptionRequestDTO;
-import com.fptu.swp391.sportscentermanager.dto.SubscriptionResponseDTO;
 import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
 import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
 @RestController
@@ -23,10 +22,11 @@ public class ReceptionistController {
 
     private final ReceptionistService receptionistService;
     private final SubscriptionService subscriptionService;
+    private final MemberService memberService;
     // ---------- Search Member Info ----------
     @PreAuthorize("hasRole('RECEPTIONIST') and hasAuthority('SEARCH_MEMBER')")
     @GetMapping
-    public ResponseEntity<List<MemberSearchResponseDTO>> search(@RequestParam String keyword) {
+    public ResponseEntity<List<MemberSearchResponseDTO>> search(@RequestParam(defaultValue = "") String keyword) {
         return ResponseEntity.ok(receptionistService.searchMembers(keyword));
     }
 
@@ -35,6 +35,14 @@ public class ReceptionistController {
     public ResponseEntity<MemberSearchResponseDTO> getMember(@PathVariable Long memberId) {
         return ResponseEntity.ok(receptionistService.getMember(memberId));
     }
+
+    @LogAudit(actionType = "UPDATE", targetEntity = "Member")
+    @PreAuthorize("hasRole('RECEPTIONIST') and hasAuthority('UPDATE_USER')")
+    @PutMapping("/{memberId}")
+    public ResponseEntity<MemberProfileResponseDTO> updateMember(@PathVariable Long memberId, @Valid @RequestBody MemberProfileUpdateDTO dto){
+        return ResponseEntity.ok(memberService.updateProfile(memberId, dto));
+    }
+
 
     // ---------- Register Walk-in Member ----------
     @LogAudit(actionType = "CREATE", targetEntity = "Member")

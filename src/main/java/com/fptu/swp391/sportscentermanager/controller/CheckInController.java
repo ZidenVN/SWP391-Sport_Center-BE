@@ -36,4 +36,10 @@ public class CheckInController {
         return ResponseEntity.ok(checkInService.getCheckIns(date != null ? date : LocalDate.now()));
     }
 
+    @PreAuthorize("hasRole('RECEPTIONIST') AND hasAuthority('CHECK_IN_MEMBER')")
+    @GetMapping("/members/{memberId}/check-ins")
+    public ResponseEntity<List<CheckInResponseDTO>> memberCheckIns(@PathVariable Long memberId) {
+        return ResponseEntity.ok(checkInService.getMemberCheckIns(memberId));
+    }
+
 }

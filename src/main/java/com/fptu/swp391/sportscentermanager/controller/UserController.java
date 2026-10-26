@@ -61,4 +61,17 @@ public class UserController {
     public ResponseEntity<UserResponseDTO> assignRoleToUser(@PathVariable Long userId, @PathVariable Long roleId) {
         return ResponseEntity.ok(userService.assignRoleToUser(userId, roleId));
     }
+
+    @PreAuthorize("hasAnyRole('CENTER_MANAGER','COACH','RECEPTIONIST')")    @GetMapping("/me")
+    public ResponseEntity<UserResponseDTO> getMe(@AuthenticationPrincipal CustomUserDetails principal) {
+        return ResponseEntity.ok(userService.getUserById(principal.getUser().getUserId()));
+    }
+
+    @PreAuthorize("hasAnyRole('CENTER_MANAGER','COACH','RECEPTIONIST')")
+    @PutMapping("/me")
+    public ResponseEntity<UserResponseDTO> updateMe(@AuthenticationPrincipal CustomUserDetails principal,
+    @Valid @RequestBody UserUpdateRequestDTO requestDTO) {
+        requestDTO.setEmail(null); // khong cho tu doi
+        return ResponseEntity.ok(userService.updateUser(principal.getUser().getUserId(), requestDTO));
+    }
 }

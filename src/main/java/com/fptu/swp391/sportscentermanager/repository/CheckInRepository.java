@@ -19,4 +19,13 @@ public interface CheckInRepository extends JpaRepository<CheckIn, Long> {
         order by c.checkInTime desc
         """)
     List<CheckIn> findInRange(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("""
+        select c from CheckIn c
+                join fetch c.member
+                        left join fetch c.receptionist
+                                where c.member.userId = :memberId
+                                        order by c.checkInTime desc
+        """)
+    List<CheckIn> findByMemberId(@Param("memberId") Long memberId);
 }

@@ -34,13 +34,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
 
     @Override
     public List<MemberSearchResponseDTO> searchMembers(String keyword) {
-        if (keyword == null || keyword.isBlank()) {
-            return List.of();
-        }
-        return memberRepository.search(keyword.trim())
-            .stream()
-            .map(this::toResponse)
-            .toList();
+        return memberRepository.search(keyword == null ? "" : keyword.trim()).stream().map(this::toResponse).toList();
     }
 
     @Override
