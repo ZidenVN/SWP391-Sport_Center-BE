@@ -40,4 +40,9 @@ public class ClassRegistration {
 
     @Column(name = "reminder_sent_at")
     private LocalDateTime reminderSentAt;
+
+    // Gói đã bị trừ buổi cho lần đăng ký này (để hoàn đúng gói). Dữ liệu cũ = null
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subscription_id")
+    private Subscription subscription;
 }

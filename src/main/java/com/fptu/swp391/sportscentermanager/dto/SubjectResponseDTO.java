@@ -1,5 +1,6 @@
 package com.fptu.swp391.sportscentermanager.dto;
 
+import com.fptu.swp391.sportscentermanager.enums.AreaAccess;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,4 +12,5 @@ public class SubjectResponseDTO {
     private Long subjectId;
     private String subjectName;
     private String description;
+    private AreaAccess areaAccess;
 }

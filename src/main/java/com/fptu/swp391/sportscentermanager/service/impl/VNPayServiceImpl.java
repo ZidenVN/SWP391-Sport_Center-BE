@@ -59,7 +59,7 @@ public class VNPayServiceImpl implements VNPayService {
         }
 
 
-        LocalDateTime startDate = calculateStartDate(memberId, now);
+        LocalDateTime startDate = subscriptionService.calculateStartDate(memberId, pkg, now);
         LocalDateTime endDate = startDate.plusDays(pkg.getDurationDays());
 
         Subscription subscription = subscriptionRepository.save(Subscription.builder().member(member).membershipPackage(pkg).startDate(startDate).endDate(endDate).status("PENDING").build());
@@ -210,7 +210,4 @@ public class VNPayServiceImpl implements VNPayService {
         }
     }
 
-    private LocalDateTime calculateStartDate(Long memberId, LocalDateTime now) {
-        return subscriptionRepository.findFirstByMember_UserIdAndStatusOrderByEndDateDesc(memberId, "ACTIVE").map(Subscription::getEndDate).filter(d -> d.isAfter(now)).orElse(now);
-    }
 }

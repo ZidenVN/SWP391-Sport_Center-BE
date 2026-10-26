@@ -74,7 +74,17 @@ public enum ErrorCode {
     IMAGE_REQUIRED(HttpStatus.BAD_REQUEST, "ERR_IMG_001", "Vui lòng chọn ảnh cho lớp học"),
     IMAGE_VALID_TYPE(HttpStatus.BAD_REQUEST, "ERR_IMG_002", "Chỉ hỗ trợ ảnh JPG, PNG, WEBP, HEIC!"),
     IMAGE_TOO_LARGE(HttpStatus.BAD_REQUEST, "ERR_IMG_003", "Ảnh tối đa 10MB!"),
-    IMAGE_UPLOAD_FAILED(HttpStatus.BAD_GATEWAY, "ERR_IMG_004", "Upload ảnh thất bại, vui lòng thử lại!")
+    IMAGE_UPLOAD_FAILED(HttpStatus.BAD_GATEWAY, "ERR_IMG_004", "Upload ảnh thất bại, vui lòng thử lại!"),
+    // Gói tập theo buổi
+    PACKAGE_NOT_ALLOW_CLASS(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_REGISTRATION_004", "Gói tự do không dùng để đăng ký lớp, vui lòng mua gói lớp!"),
+    SUBJECT_NOT_COVERED(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_REGISTRATION_005", "Gói của bạn không áp dụng cho môn của lớp này!"),
+    NO_SESSIONS_LEFT(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_REGISTRATION_006", "Gói của bạn đã hết buổi học!"),
+    FREE_PACKAGE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "ERR_PACKAGE_001", "Không được tạo gói tự do cho môn chỉ dành cho lớp (CLASS_ONLY)!"),
+    PACKAGE_SUBJECT_REQUIRED(HttpStatus.BAD_REQUEST, "ERR_PACKAGE_002", "Gói lớp phải áp dụng cho ít nhất 1 môn!"),
+    INVALID_PACKAGE_CONFIG(HttpStatus.BAD_REQUEST, "ERR_PACKAGE_003", "Gói tự do chỉ áp dụng cho tối đa 1 môn và không có số buổi!"),
+    PACKAGE_IN_USE(HttpStatus.CONFLICT, "ERR_PACKAGE_409", "Gói đã có người mua, chỉ được sửa tên, mô tả, giá, trạng thái!"),
+    SUBJECT_HAS_ACTIVE_FREE_PACKAGE(HttpStatus.CONFLICT, "ERR_SUB_410", "Môn đang có gói tự do còn bán, hãy ngừng bán các gói đó trước!"),
+    SUBJECT_HAS_ACTIVE_PACKAGE(HttpStatus.CONFLICT, "ERR_SUB_411", "Môn đang có gói còn bán, hãy ngừng bán các gói đó trước!")
 
 
 

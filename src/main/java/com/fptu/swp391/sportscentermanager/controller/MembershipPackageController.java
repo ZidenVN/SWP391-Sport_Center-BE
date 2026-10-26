@@ -11,7 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
+import com.fptu.swp391.sportscentermanager.dto.MembershipPackageRequestDTO;
 @RestController
 @RequestMapping("/api/v1/packages")
 @RequiredArgsConstructor
@@ -31,15 +31,15 @@ public class MembershipPackageController {
     @LogAudit(actionType = "CREATE", targetEntity = "MembershipPackage")
     @PreAuthorize("hasAuthority('MANAGE_PACKAGE')")
     @PostMapping
-    public ResponseEntity<MembershipPackage> createPackage(@Valid @RequestBody MembershipPackage membershipPackage) {
-        return ResponseEntity.ok(packageService.createPackage(membershipPackage));
+    public ResponseEntity<MembershipPackage> createPackage(@Valid @RequestBody MembershipPackageRequestDTO request) {
+        return ResponseEntity.ok(packageService.createPackage(request));
     }
 
     @LogAudit(actionType = "UPDATE", targetEntity = "MembershipPackage")
     @PreAuthorize("hasAuthority('MANAGE_PACKAGE')")
     @PutMapping("/{id}")
-    public ResponseEntity<MembershipPackage> updatePackage(@PathVariable Long id, @Valid @RequestBody MembershipPackage membershipPackage) {
-        return ResponseEntity.ok(packageService.updatePackage(id, membershipPackage));
+    public ResponseEntity<MembershipPackage> updatePackage(@PathVariable Long id, @Valid @RequestBody MembershipPackageRequestDTO request) {
+        return ResponseEntity.ok(packageService.updatePackage(id, request));
     }
 
     @LogAudit(actionType = "DELETE", targetEntity = "MembershipPackage")

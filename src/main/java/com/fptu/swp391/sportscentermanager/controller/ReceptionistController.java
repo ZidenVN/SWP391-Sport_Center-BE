@@ -76,8 +76,17 @@ public class ReceptionistController {
 
     @PreAuthorize("hasRole('RECEPTIONIST') and hasAuthority('MANAGE_SUBSCRIPTION')")
     @GetMapping("/{memberId}/subscriptions/current")
-    public ResponseEntity<SubscriptionResponseDTO> getMemberCurrentSubscription(
+    public ResponseEntity<List<SubscriptionResponseDTO>> getMemberCurrentSubscriptions(
         @PathVariable Long memberId) {
-        return ResponseEntity.ok(subscriptionService.getCurrentSubscription(memberId));
+        return ResponseEntity.ok(subscriptionService.getCurrentSubscriptions(memberId));
+    }
+
+    // BR-SUB-08: lễ tân bán tại quầy cũng thấy cảnh báo gói thừa
+    @PreAuthorize("hasRole('RECEPTIONIST') and hasAuthority('MANAGE_SUBSCRIPTION')")
+    @GetMapping("/{memberId}/subscriptions/preview")
+    public ResponseEntity<PurchasePreviewResponseDTO> previewPurchaseForMember(
+        @PathVariable Long memberId,
+        @RequestParam Long packageId) {
+        return ResponseEntity.ok(subscriptionService.previewPurchase(memberId, packageId));
     }
 }

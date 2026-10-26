@@ -3,6 +3,7 @@ package com.fptu.swp391.sportscentermanager.dto;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -18,4 +19,7 @@ public class CheckInResponseDTO {
     private String receptionistName;
     private String packageName;
     private LocalDateTime subscriptionEndDate;
+
+    // BR-CHK-02: mọi gói đang hiệu lực, kèm môn + areaAccess + số buổi còn lại
+    private List<SubscriptionResponseDTO> activeSubscriptions;
 }

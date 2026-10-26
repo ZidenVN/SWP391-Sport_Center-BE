@@ -24,7 +24,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-
+import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
 @Service
 @RequiredArgsConstructor
 public class SportClassServiceImpl implements SportClassService {
@@ -35,7 +35,7 @@ public class SportClassServiceImpl implements SportClassService {
     private final ClassRegistrationRepository classRegistrationRepository;
     private final NotificationService notificationService;
     private final ImageStorageService imageStorageService;
-
+    private final SubscriptionService subscriptionService;
     private static final int MAX_PAGE_SIZE = 100;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
 
@@ -205,6 +205,8 @@ public class SportClassServiceImpl implements SportClassService {
         for (ClassRegistration r : active) {
             r.setStatus("CANCELLED");
             r.setCancelledAt(now);
+            // BR-CAN-04: lớp bị trung tâm huỷ thì hoàn buổi, không xét cutoff
+            subscriptionService.refundSession(r);
             members.add(r.getMember());
         }
         classRegistrationRepository.saveAll(active);
@@ -283,6 +285,8 @@ public class SportClassServiceImpl implements SportClassService {
         for (ClassRegistration r : classRegistrationRepository.findActiveByClassId(id)) {
             r.setStatus("CANCELLED");
             r.setCancelledAt(now);
+            // BR-CAN-04: xoá lớp cũng hoàn buổi cho mọi member đang đăng ký
+            subscriptionService.refundSession(r);
         }
         sportClass.setStatus("INACTIVE");
         sportClassRepository.save(sportClass);
