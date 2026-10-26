@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 
 //TODO: Tìm hiểu lý do vì sao lại phải có @Service?
 @Service
@@ -56,7 +57,7 @@ public class MemberServiceImpl implements MemberService {
         Member member = findMember(memberId);
 
         // Chỉ kiểm tra trùng SĐT khi người dùng đổi sang số khác
-        if (!member.getPhone().equals(dto.getPhone())
+        if (!Objects.equals(member.getPhone(), dto.getPhone())
             && userRepository.existsByPhone(dto.getPhone())) {
             throw new AppException(ErrorCode.PHONE_ALREADY_TAKEN);
         }
