@@ -74,11 +74,12 @@ public enum ErrorCode {
     IMAGE_REQUIRED(HttpStatus.BAD_REQUEST, "ERR_IMG_001", "Vui lòng chọn ảnh cho lớp học"),
     IMAGE_VALID_TYPE(HttpStatus.BAD_REQUEST, "ERR_IMG_002", "Chỉ hỗ trợ ảnh JPG, PNG, WEBP, HEIC!"),
     IMAGE_TOO_LARGE(HttpStatus.BAD_REQUEST, "ERR_IMG_003", "Ảnh tối đa 10MB!"),
-    IMAGE_UPLOAD_FAILED(HttpStatus.BAD_GATEWAY, "ERR_IMG_004", "Upload ảnh thất bại, vui lòng thử lại!")
+    IMAGE_UPLOAD_FAILED(HttpStatus.BAD_GATEWAY, "ERR_IMG_004", "Upload ảnh thất bại, vui lòng thử lại!"),
 
-
-
-
+    AI_DAILY_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "ERR_AI_001", "Bạn đã dùng hết lượt hỏi AI hôm nay, vui lòng quay lại vào ngày mai!"),
+    AI_PROVIDER_BUSY(HttpStatus.SERVICE_UNAVAILABLE, "ERR_AI_002", "Trợ lý AI đang quá tải, vui lòng thử lại sau ít phút!"),
+    AI_UNAVAILABLE(HttpStatus.BAD_GATEWAY, "ERR_AI_003", "Trợ lý AI tạm thời không phản hồi, vui lòng thử lại!"),
+    AI_CONVERSATION_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_AI_004", "Cuộc trò chuyện không tồn tại!")
 
 
 
