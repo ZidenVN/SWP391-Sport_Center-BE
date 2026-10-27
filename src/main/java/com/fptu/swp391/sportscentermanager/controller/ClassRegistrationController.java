@@ -31,7 +31,7 @@ public class ClassRegistrationController {
         @AuthenticationPrincipal CustomUserDetails principal,
         @Valid @RequestBody ClassRegistrationRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(registrationService.register(principal.getUser().getUserId(), dto.getClassId()));
+            .body(registrationService.registerSelf(principal.getUser().getUserId(), dto.getClassId()));
     }
 
     @PreAuthorize("hasRole('MEMBER') and hasAuthority('REGISTER_CLASS')")
