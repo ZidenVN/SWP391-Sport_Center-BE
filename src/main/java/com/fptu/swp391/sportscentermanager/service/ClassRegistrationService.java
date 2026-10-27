@@ -9,6 +9,9 @@ public interface ClassRegistrationService {
     // Đăng ký lớp (Member tự đăng ký hoặc Lễ tân đăng ký giúp)
     ClassRegistrationResponseDTO register(Long memberId, Long classId);
 
+    // Member tự đăng ký: phải làm xong quiz trước (Lễ tân đăng ký giúp thì không cần)
+    ClassRegistrationResponseDTO registerSelf(Long memberId, Long classId);
+
     // Hủy đăng ký
     ClassRegistrationResponseDTO cancel(Long memberId, Long registrationId);
 
