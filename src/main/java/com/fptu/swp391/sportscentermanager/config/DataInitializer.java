@@ -2,11 +2,9 @@ package com.fptu.swp391.sportscentermanager.config;
 
 import com.fptu.swp391.sportscentermanager.entity.*;
 import com.fptu.swp391.sportscentermanager.enums.PermissionCode;
+import com.fptu.swp391.sportscentermanager.enums.QuestionType;
 import com.fptu.swp391.sportscentermanager.enums.UserStatus;
-import com.fptu.swp391.sportscentermanager.repository.PermissionRepository;
-import com.fptu.swp391.sportscentermanager.repository.RolePermissionRepository;
-import com.fptu.swp391.sportscentermanager.repository.RoleRepository;
-import com.fptu.swp391.sportscentermanager.repository.UserRepository;
+import com.fptu.swp391.sportscentermanager.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -24,6 +22,7 @@ public class DataInitializer implements CommandLineRunner {
     private final RolePermissionRepository rolePermissionRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final QuizQuestionRepository quizQuestionRepository;
 
     @Value("${app.init.manager.email:manager@sportcenter.com}")
     private String managerEmail;
@@ -85,6 +84,7 @@ public class DataInitializer implements CommandLineRunner {
         seedDefaultManager(roles.get("CENTER_MANAGER"));
         seedDefaultCoach(roles.get("COACH"));
         seedDefaultReceptionist(roles.get("RECEPTIONIST"));
+        seedQuizSystemQuestions();
     }
 
     private Map<String, Permission> seedPermissions() {
@@ -207,6 +207,50 @@ public class DataInitializer implements CommandLineRunner {
             .role(receptionistRole)
             .build());
         System.out.println("Đã tạo tài khoản Lễ tân mặc định: " + email);
+    }
+
+    private void seedQuizSystemQuestions() {
+        seedNumberQuestion("HEIGHT", "Chiều cao của bạn?", 120.0, 230.0, "cm", 1);
+        seedNumberQuestion("WEIGHT", "Cân nặng của bạn?", 30.0, 250.0, "kg", 2);
+
+        if (quizQuestionRepository.findByCode("TRAINING_GOAL").isPresent()) return;
+        QuizQuestion goal = QuizQuestion.builder()
+            .content("Mục tiêu tập luyện chính của bạn?")
+            .type(QuestionType.SINGLE)
+            .code("TRAINING_GOAL")
+            .displayOrder(3)
+            .systemQuestion(true)
+            .build();
+        String[][] options = {
+            {"LOSE", "Giảm cân, giảm mỡ"},
+            {"GAIN", "Tăng cơ, tăng sức mạnh"},
+            {"FLEX", "Dẻo dai, cải thiện tư thế"},
+            {"RELAX", "Giảm căng thẳng"},
+            {"HEALTH", "Duy trì sức khỏe"}
+        };
+        for (int i = 0; i < options.length; i++) {
+            goal.getOptions().add(QuizOption.builder()
+                .question(goal)
+                .code(options[i][0])
+                .content(options[i][1])
+                .displayOrder(i + 1)
+                .build());
+        }
+        quizQuestionRepository.save(goal);
+    }
+
+    private void seedNumberQuestion(String code, String content, Double min, Double max, String unit, int order) {
+        if (quizQuestionRepository.findByCode(code).isPresent()) return;
+        quizQuestionRepository.save(QuizQuestion.builder()
+            .content(content)
+            .type(QuestionType.NUMBER)
+            .code(code)
+            .minValue(min)
+            .maxValue(max)
+            .unit(unit)
+            .displayOrder(order)
+            .systemQuestion(true)
+            .build());
     }
 
 }

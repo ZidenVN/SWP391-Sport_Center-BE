@@ -39,6 +39,18 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
 
     @Override
     @Transactional
+    public ClassRegistrationResponseDTO registerSelf(Long memberId, Long classId) {
+        Member member = memberRepository.findById(memberId)
+            .orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
+        if (member.getQuizCompletedAt() == null) {
+            throw new AppException(ErrorCode.QUIZ_NOT_COMPLETED);
+        }
+        // Gọi trong cùng transaction; register vẫn khoá member + lớp bằng SELECT ... FOR UPDATE
+        return register(memberId, classId);
+    }
+
+    @Override
+    @Transactional
     public ClassRegistrationResponseDTO register(Long memberId, Long classId) {
         // tại sao trong hàm register lại dùng findByIdForUpdate để xử lí trường hợp có nhiều request đến cùng lúc.
         /* study case: lớp A còn 1 slot cuối cùng (19/20slot)

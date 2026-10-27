@@ -18,16 +18,16 @@ public enum ErrorCode {
     PHONE_ALREADY_TAKEN(HttpStatus.BAD_REQUEST, "ERR_USER_002", "Số điện thoại đã được sử dụng!"),
     CLASS_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_CLASS_404", "Lớp học không tồn tại!"),
 
-    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_MEMBER_404","Hội viên không tồn tại!"),
-    SUBSCRIPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_SUBSCRIPTION_404","Gói đăng ký không tồn tại!"),
-    REGISTRATION_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_REGISTRATION_404","Chưa đăng ký lớp này!"),
-    TICKET_NOT_FOUND(HttpStatus.NOT_FOUND,"ERR_TICKET_404","Yêu cầu hỗ trợ không tồn tại!"),
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_MEMBER_404", "Hội viên không tồn tại!"),
+    SUBSCRIPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_SUBSCRIPTION_404", "Gói đăng ký không tồn tại!"),
+    REGISTRATION_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_REGISTRATION_404", "Chưa đăng ký lớp này!"),
+    TICKET_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_TICKET_404", "Yêu cầu hỗ trợ không tồn tại!"),
 
-    NO_ACTIVE_SUBSCRIPTION(HttpStatus.UNPROCESSABLE_ENTITY,"ERR_SUBSCRIPTION_001","Hội viên chưa có gói tập còn hiệu lực!"),
-    SUBSCRIPTION_EXPIRED(HttpStatus.UNPROCESSABLE_ENTITY,"ERR_SUBSCRIPTION_002","Gói tập không còn hiệu lực vào ngày diễn ra lớp học"),
-    CLASS_FULL(HttpStatus.CONFLICT,"ERR_CLASS_001","Lớp học đã đủ số lượng!"),
-    ALREADY_REGISTERED(HttpStatus.CONFLICT,"ERR_CLASS_002","Bạn đã đăng ký lớp học này rồi!"),
-    CLASS_NOT_OPEN(HttpStatus.UNPROCESSABLE_ENTITY,"ERR_CLASS_003","Lớp học không còn mở đăng ký!"),
+    NO_ACTIVE_SUBSCRIPTION(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_SUBSCRIPTION_001", "Hội viên chưa có gói tập còn hiệu lực!"),
+    SUBSCRIPTION_EXPIRED(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_SUBSCRIPTION_002", "Gói tập không còn hiệu lực vào ngày diễn ra lớp học"),
+    CLASS_FULL(HttpStatus.CONFLICT, "ERR_CLASS_001", "Lớp học đã đủ số lượng!"),
+    ALREADY_REGISTERED(HttpStatus.CONFLICT, "ERR_CLASS_002", "Bạn đã đăng ký lớp học này rồi!"),
+    CLASS_NOT_OPEN(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_CLASS_003", "Lớp học không còn mở đăng ký!"),
     INVALID_CLASS_TIME(HttpStatus.BAD_REQUEST, "ERR_CLASS_004", "Giờ kết thúc phải sau giờ bắt đầu"),
     ROOM_SCHEDULE_CONFLICT(HttpStatus.CONFLICT, "ERR_CLASS_005", "Phòng đã có lớp khác trong khung giờ này!"),
     COACH_SCHEDULE_CONFLICT(HttpStatus.CONFLICT, "ERR_CLASS_006", "Huấn luyện viên đã có lớp khác trong khung giờ này!"),
@@ -38,10 +38,10 @@ public enum ErrorCode {
     CAPACITY_BELOW_REGISTERED(HttpStatus.BAD_REQUEST, "ERR_CLASS_008", "Sức chứa mới nhỏ hơn số học viên đã đăng ký!"),
 
 
-    ALREADY_CHECK_IN(HttpStatus.CONFLICT,"ERR_CHECKIN_001","Hội viên đã check-in rồi!"),
+    ALREADY_CHECK_IN(HttpStatus.CONFLICT, "ERR_CHECKIN_001", "Hội viên đã check-in rồi!"),
     MEMBER_NOT_IN_CLASS(HttpStatus.BAD_REQUEST, "ERR_ATTENDANCE_001", "Học viên không thuộc danh sách lớp học này!"),
-    REGISTRATION_ALREADY_CANCELLED(HttpStatus.CONFLICT,"ERR_REGISTRATION_001","Đăng ký này đã được hủy trước đó!"),
-    CANCEL_NOT_ALLOWED(HttpStatus.UNPROCESSABLE_ENTITY,"ERR_REGISTRATION_002","Đã quá hạn huỷ đăng ký lớp học này!"),
+    REGISTRATION_ALREADY_CANCELLED(HttpStatus.CONFLICT, "ERR_REGISTRATION_001", "Đăng ký này đã được hủy trước đó!"),
+    CANCEL_NOT_ALLOWED(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_REGISTRATION_002", "Đã quá hạn huỷ đăng ký lớp học này!"),
     PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_PAYMENT_404", "Giao dịch thanh toán không tồn tại!"),
 
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "ERR_REQUEST_001", "Yêu cầu không hợp lệ!"),
@@ -84,16 +84,25 @@ public enum ErrorCode {
     INVALID_PACKAGE_CONFIG(HttpStatus.BAD_REQUEST, "ERR_PACKAGE_003", "Gói tự do chỉ áp dụng cho tối đa 1 môn và không có số buổi!"),
     PACKAGE_IN_USE(HttpStatus.CONFLICT, "ERR_PACKAGE_409", "Gói đã có người mua, chỉ được sửa tên, mô tả, giá, trạng thái!"),
     SUBJECT_HAS_ACTIVE_FREE_PACKAGE(HttpStatus.CONFLICT, "ERR_SUB_410", "Môn đang có gói tự do còn bán, hãy ngừng bán các gói đó trước!"),
-    SUBJECT_HAS_ACTIVE_PACKAGE(HttpStatus.CONFLICT, "ERR_SUB_411", "Môn đang có gói còn bán, hãy ngừng bán các gói đó trước!")
-
-
+    SUBJECT_HAS_ACTIVE_PACKAGE(HttpStatus.CONFLICT, "ERR_SUB_411", "Môn đang có gói còn bán, hãy ngừng bán các gói đó trước!"),
 
 
     AI_DAILY_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "ERR_AI_001", "Bạn đã dùng hết lượt hỏi AI hôm nay, vui lòng quay lại vào ngày mai!"),
     AI_PROVIDER_BUSY(HttpStatus.SERVICE_UNAVAILABLE, "ERR_AI_002", "Trợ lý AI đang quá tải, vui lòng thử lại sau ít phút!"),
     AI_UNAVAILABLE(HttpStatus.BAD_GATEWAY, "ERR_AI_003", "Trợ lý AI tạm thời không phản hồi, vui lòng thử lại!"),
-    AI_CONVERSATION_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_AI_004", "Cuộc trò chuyện không tồn tại!")
+    AI_CONVERSATION_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_AI_004", "Cuộc trò chuyện không tồn tại!"),
 
+    QUIZ_QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_QUIZ_404", "Câu hỏi không tồn tại!"),
+    QUIZ_CODE_TAKEN(HttpStatus.BAD_REQUEST, "ERR_QUIZ_001", "Mã câu hỏi đã được sử dụng!"),
+    QUIZ_INVALID_OPTIONS(HttpStatus.BAD_REQUEST, "ERR_QUIZ_002", "Câu chọn 1/chọn nhiều cần ít nhất 2 lựa chọn; câu nhập số/văn bản không có lựa chọn!"),
+    QUIZ_INVALID_RANGE(HttpStatus.BAD_REQUEST, "ERR_QUIZ_003", "Giá trị nhỏ nhất phải nhỏ hơn hoặc bằng giá trị lớn nhất!"),
+    QUIZ_OPTION_NOT_FOUND(HttpStatus.BAD_REQUEST, "ERR_QUIZ_004", "Lựa chọn không thuộc câu hỏi này!"),
+    QUIZ_TYPE_LOCKED(HttpStatus.CONFLICT, "ERR_QUIZ_409", "Câu hỏi đã có hội viên trả lời, không được đổi loại câu!"),
+    QUIZ_SYSTEM_QUESTION_LOCKED(HttpStatus.CONFLICT, "ERR_QUIZ_410", "Câu hỏi hệ thống không được sửa hoặc ẩn!"),
+    QUIZ_MISSING_ANSWER(HttpStatus.BAD_REQUEST, "ERR_QUIZ_005", "Bạn cần trả lời tất cả câu hỏi!"),
+    QUIZ_INVALID_ANSWER(HttpStatus.BAD_REQUEST, "ERR_QUIZ_006", "Câu trả lời không hợp lệ, vui lòng tải lại bộ câu hỏi!"),
+    QUIZ_NUMBER_OUT_OF_RANGE(HttpStatus.BAD_REQUEST, "ERR_QUIZ_007", "Giá trị nhập nằm ngoài khoảng cho phép!"),
+    QUIZ_NOT_COMPLETED(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_QUIZ_008", "Bạn cần hoàn thành bài khảo sát trước khi đăng ký lớp!");
 
 
 
