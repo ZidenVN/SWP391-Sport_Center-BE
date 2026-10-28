@@ -27,4 +27,7 @@ public interface SubscriptionService {
 
     // BR-CAN-01, BR-CAN-04: hoàn 1 buổi vào đúng gói đã trừ cho đăng ký này
     void refundSession(ClassRegistration registration);
+
+    // BR-SUB-07: đã có gói ACTIVE cùng loại + cùng tập môn hết hạn sau gói này (đã gia hạn)
+    boolean hasRenewal(Subscription subscription);
 }

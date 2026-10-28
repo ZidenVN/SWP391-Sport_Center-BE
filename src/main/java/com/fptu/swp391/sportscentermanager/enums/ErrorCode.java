@@ -102,11 +102,17 @@ public enum ErrorCode {
     QUIZ_MISSING_ANSWER(HttpStatus.BAD_REQUEST, "ERR_QUIZ_005", "Bạn cần trả lời tất cả câu hỏi!"),
     QUIZ_INVALID_ANSWER(HttpStatus.BAD_REQUEST, "ERR_QUIZ_006", "Câu trả lời không hợp lệ, vui lòng tải lại bộ câu hỏi!"),
     QUIZ_NUMBER_OUT_OF_RANGE(HttpStatus.BAD_REQUEST, "ERR_QUIZ_007", "Giá trị nhập nằm ngoài khoảng cho phép!"),
-    QUIZ_NOT_COMPLETED(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_QUIZ_008", "Bạn cần hoàn thành bài khảo sát trước khi đăng ký lớp!");
+    QUIZ_NOT_COMPLETED(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_QUIZ_008", "Bạn cần hoàn thành bài khảo sát trước khi đăng ký lớp!"),
+    ATTENDANCE_TOO_EARLY(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_ATTENDANCE_003", "Chưa tới giờ điểm danh (mở trước giờ học 15 phút)!"),
+    ATTENDANCE_CLOSED(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_ATTENDANCE_004", "Đã quá thời gian điểm danh của lớp này!"),
+    ATTENDANCE_CLASS_NOT_ACTIVE(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_ATTENDANCE_005", "Lớp đã bị huỷ, không thể điểm danh!")
+
+
 
 
 
     ;
+
 
     private final HttpStatus httpStatus;
     private final String code;
