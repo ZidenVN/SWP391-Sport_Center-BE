@@ -1,6 +1,5 @@
 package com.fptu.swp391.sportscentermanager.service.impl;
 
-import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
 import com.fptu.swp391.sportscentermanager.dto.*;
 import com.fptu.swp391.sportscentermanager.entity.*;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
@@ -8,21 +7,14 @@ import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.*;
 import com.fptu.swp391.sportscentermanager.service.CoachService;
-import com.fptu.swp391.sportscentermanager.service.WorkoutResultService;
-import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
-
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 
 @Service
 @RequiredArgsConstructor
@@ -33,8 +25,29 @@ public class CoachServiceImpl implements CoachService {
     private final PasswordEncoder passwordEncoder;
     private final SportClassRepository sportClassRepository;
     private final ClassAttendanceRepository classAttendanceRepository;
-    private final MemberRepository memberRepository;
     private final ClassRegistrationRepository classRegistrationRepository;
+    @Value("${app.attendance.open-minutes-before}")
+    private long attendanceOpenMinutesBefore;
+
+    @Value("${app.attendance.close-hours-after}")
+    private long attendanceCloseHoursAfter;
+
+    // BE-TODO 8: chỉ điểm danh / sửa điểm danh từ 15 phút trước giờ học đến 24 giờ sau khi lớp kết thúc,
+    // lớp bị huỷ hoặc xoá mềm thì không điểm danh
+    private void ensureAttendanceWindow(SportClass sportClass, LocalDateTime now) {
+        String status = sportClass.getStatus();
+        if ("CANCELLED".equals(status) || "INACTIVE".equals(status)) {
+            throw new AppException(ErrorCode.ATTENDANCE_CLASS_NOT_ACTIVE);
+        }
+
+        if (now.isBefore(sportClass.getStartTime().minusMinutes(attendanceOpenMinutesBefore))) {
+            throw new AppException(ErrorCode.ATTENDANCE_TOO_EARLY);
+        }
+
+        if (now.isAfter(sportClass.getEndTime().plusHours(attendanceCloseHoursAfter))) {
+            throw new AppException(ErrorCode.ATTENDANCE_CLOSED);
+        }
+    }
 
     private SportClass getOwnedClassOrThrow(Long coachId, Long classId) {
         SportClass sportClass = sportClassRepository.findById(classId).orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
@@ -215,6 +228,9 @@ public class CoachServiceImpl implements CoachService {
     public List<AttendanceResponseDTO> takeAttendance(Long coachId, Long classId, TakeAttendanceRequestDTO requestDTO) {
         // check lop ton tai va co phai coach do phu trach khong
         SportClass sportClass = getOwnedClassOrThrow(coachId, classId);
+        LocalDateTime now = LocalDateTime.now();
+        ensureAttendanceWindow(sportClass, now);
+
         if (requestDTO.getRecords() == null || requestDTO.getRecords().isEmpty()) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
@@ -232,7 +248,6 @@ public class CoachServiceImpl implements CoachService {
 
         Set<Long> seen = new HashSet<>();
         List<ClassAttendance> toSave = new ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
         for (AttendanceRecordDTO record : requestDTO.getRecords()) {
             Long memberId = record.getMemberId();
             Member member = enrolledMembers.get(memberId);

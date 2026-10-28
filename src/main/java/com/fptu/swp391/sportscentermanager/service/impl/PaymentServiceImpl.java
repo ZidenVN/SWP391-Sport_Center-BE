@@ -190,15 +190,10 @@ public class PaymentServiceImpl implements PaymentService {
                 List<ClassRegistration> upcoming = classRegistrationRepository.findUpcoming(memberId, now);
                 List<ClassRegistration> toCancel = new ArrayList<>();
                 for (ClassRegistration reg : upcoming) {
-                    if (reg.getSportClass() != null && reg.getSportClass().getStartTime() != null) {
-                        LocalDateTime classStart = reg.getSportClass().getStartTime();
-                        boolean inSubRange = (sub.getStartDate() == null || !classStart.isBefore(sub.getStartDate()))
-                                && (sub.getEndDate() == null || !classStart.isAfter(sub.getEndDate()));
-                        if (inSubRange && !subscriptionRepository.existsActiveCovering(memberId, classStart)) {
-                            reg.setStatus("CANCELLED");
-                            reg.setCancelledAt(now);
-                            toCancel.add(reg);
-                        }
+                    if (shouldCancelOnRefund(reg, sub, memberId)) {
+                        reg.setStatus("CANCELLED");
+                        reg.setCancelledAt(now);
+                        toCancel.add(reg);
                     }
                 }
                 if (!toCancel.isEmpty()) {
@@ -293,5 +288,19 @@ public class PaymentServiceImpl implements PaymentService {
             .confirmedBy(fullName(p.getConfirmedBy()))
             .note(p.getNote())
             .build();
+    }
+
+    private boolean shouldCancelOnRefund(ClassRegistration reg, Subscription refund, Long memberId){
+        if (reg.getSubscription() != null){
+            return reg.getSubscription().getSubscriptionId().equals(refund.getSubscriptionId());
+        }
+        if (reg.getSportClass() == null || reg.getSportClass().getStartTime() == null){
+            return false;
+        }
+
+        LocalDateTime classStart = reg.getSportClass().getStartTime();
+        boolean isSubRange = (refund.getStartDate() == null || !classStart.isBefore(refund.getStartDate()))
+            && (refund.getEndDate() == null || !classStart.isAfter(refund.getEndDate()));
+        return isSubRange && !subscriptionRepository.existsActiveCovering(memberId, classStart);
     }
 }

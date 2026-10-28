@@ -9,6 +9,7 @@ import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.ClassRegistrationRepository;
 import com.fptu.swp391.sportscentermanager.repository.RoleRepository;
+import com.fptu.swp391.sportscentermanager.repository.SportClassRepository;
 import com.fptu.swp391.sportscentermanager.repository.UserRepository;
 import com.fptu.swp391.sportscentermanager.service.UserService;
 import jakarta.transaction.Transactional;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+
 import org.springframework.data.domain.Pageable;
 
 @Service
@@ -31,6 +33,7 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final ClassRegistrationRepository classRegistrationRepository;
+    private final SportClassRepository sportClassRepository;
 
     private UserResponseDTO toResponse(User user) {
         return UserResponseDTO.builder()
@@ -126,16 +129,16 @@ public class UserServiceImpl implements UserService {
     }
 
 
-
     @Override
     @Transactional
     public UserResponseDTO updateUserStatus(Long id, UserStatus newStatus) {
         User user = findUserOrThrow(id);
+        if (newStatus == UserStatus.INACTIVE)
+            ensureCoachCanBeLocked(user);
         user.setStatus(newStatus);
         userRepository.save(user);
-        if (newStatus == UserStatus.INACTIVE) {
+        if (newStatus == UserStatus.INACTIVE)
             cancelUpcomingRegistrationsIfMember(user);
-        }
         return toResponse(user);
     }
 
@@ -147,6 +150,9 @@ public class UserServiceImpl implements UserService {
         }
         User user = findUserOrThrow(id);
         UserStatus targetStatus = user.getStatus() == UserStatus.ACTIVE ? UserStatus.INACTIVE : UserStatus.ACTIVE;
+        if (targetStatus == UserStatus.INACTIVE) {
+            ensureCoachCanBeLocked(user);
+        }
         user.setStatus(targetStatus);
         userRepository.save(user);
         if (targetStatus == UserStatus.INACTIVE) {
@@ -156,7 +162,7 @@ public class UserServiceImpl implements UserService {
 
     private void cancelUpcomingRegistrationsIfMember(User user) {
         boolean isMember = (user instanceof Member)
-                || (user.getRole() != null && "MEMBER".equalsIgnoreCase(user.getRole().getRoleName()));
+            || (user.getRole() != null && "MEMBER".equalsIgnoreCase(user.getRole().getRoleName()));
         if (isMember) {
             LocalDateTime now = LocalDateTime.now();
             List<ClassRegistration> upcoming = classRegistrationRepository.findUpcoming(user.getUserId(), now);
@@ -214,5 +220,11 @@ public class UserServiceImpl implements UserService {
         if (user instanceof Receptionist) return "RECEPTIONIST";
         if (user instanceof Member) return "MEMBER";
         return null;
+    }
+
+    private void ensureCoachCanBeLocked(User user) {
+        if (user instanceof Coach && sportClassRepository.existsByCoach_UserIdAndStatusAndStartTimeAfter(user.getUserId(), "OPENING", LocalDateTime.now())) {
+            throw new AppException(ErrorCode.COACH_HAS_UPCOMING_CLASSES);
+        }
     }
 }

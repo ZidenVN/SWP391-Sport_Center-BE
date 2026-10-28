@@ -1,6 +1,5 @@
 package com.fptu.swp391.sportscentermanager.security;
 
-import com.fptu.swp391.sportscentermanager.entity.RolePermission;
 import com.fptu.swp391.sportscentermanager.entity.User;
 import com.fptu.swp391.sportscentermanager.repository.RolePermissionRepository;
 import com.fptu.swp391.sportscentermanager.repository.UserRepository;
@@ -28,9 +27,9 @@ public class CustomUserDetailsService implements UserDetailsService {
         List<String> permissionNames = new ArrayList<>();
 
         if (user.getRole() != null){
-            user.getRole().getRoleName();
-            List<RolePermission> rolePermissions = rolePermissionRepository.findAllByRole_RoleId(user.getRole().getRoleId());
-            permissionNames = rolePermissions.stream().map(rp -> rp.getPermission().getPermissionName()).toList();
+            user.getRole().getRoleName(); // nạp Role LAZY trong transaction
+            // BE-TODO 6: 1 câu SQL cho toàn bộ quyền thay vì 1 câu cho mỗi quyền
+            permissionNames = rolePermissionRepository.findPermissionNamesByRoleId(user.getRole().getRoleId());
         }
 
         return new CustomUserDetails(user, permissionNames);
