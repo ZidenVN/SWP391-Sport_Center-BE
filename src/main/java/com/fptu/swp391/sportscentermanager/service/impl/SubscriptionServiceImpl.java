@@ -169,6 +169,14 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     }
 
     @Override
+    public boolean hasRenewal(Subscription subscription) {
+        // findActiveNotEnded(member, time) = gói ACTIVE có endDate > time -> truyền endDate của gói đang xét
+        return subscriptionRepository.findActiveNotEnded(subscription.getMember().getUserId(), subscription.getEndDate())
+            .stream()
+            .anyMatch(n -> sameScope(n.getMembershipPackage(), subscription.getMembershipPackage()));
+    }
+
+    @Override
     @Transactional
     public List<SubscriptionResponseDTO> getSubscriptions(Long memberId) {
         return subscriptionRepository.findByMember_UserIdOrderByEndDateDesc(memberId)

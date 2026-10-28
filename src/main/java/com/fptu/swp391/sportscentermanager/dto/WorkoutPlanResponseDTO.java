@@ -17,6 +17,7 @@ public class WorkoutPlanResponseDTO {
     private String duration;
     private Long coachId;
     private String coachName;
+    private Long memberPlanId;
     private String targetType;
     private Long targetId;
     private String targetName;

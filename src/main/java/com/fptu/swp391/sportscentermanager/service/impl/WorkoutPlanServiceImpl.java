@@ -129,6 +129,7 @@ public class WorkoutPlanServiceImpl implements WorkoutPlanService {
                     .duration(wp.getDuration())
                     .coachId(c != null ? c.getUserId() : null)
                     .coachName(c != null ? c.getFirstName() + " " + c.getLastName() : "")
+                    .memberPlanId(mp.getMemberPlanId())
                     .targetType("INDIVIDUAL")
                     .targetId(memberId)
                     .targetName(m != null ? m.getFirstName() + " " + m.getLastName() : "")
