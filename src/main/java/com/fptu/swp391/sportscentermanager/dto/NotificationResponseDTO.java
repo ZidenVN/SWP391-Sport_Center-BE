@@ -16,4 +16,7 @@ public class NotificationResponseDTO {
     private String targetType;
     private LocalDateTime sendDate;
     private String targetName;
+    private boolean read;
+    private String senderName; // null == system
+    private String category;   // SYSTEM / STAFF
 }
