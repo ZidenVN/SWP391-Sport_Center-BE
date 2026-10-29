@@ -17,5 +17,6 @@ public class AuditLogResponseDTO {
     private String targetEntity;
     private Long targetEntityId;
     private String details;
+    private String description; // "19:00 ngày 29/10/2026 · Lễ tân Nguyễn A đã ..."
     private LocalDateTime createdAt;
 }

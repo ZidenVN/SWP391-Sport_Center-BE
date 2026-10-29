@@ -12,6 +12,7 @@ import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 @Service
 @RequiredArgsConstructor
 public class AuditLogServiceImpl implements AuditLogService {
@@ -47,7 +48,16 @@ public class AuditLogServiceImpl implements AuditLogService {
             .targetEntity(log.getTargetEntity())
             .targetEntityId(log.getTargetEntityId())
             .details(log.getDetails())
+            .description(buildDescription(log))
             .createdAt(log.getCreatedAt())
             .build();
+    }
+
+    private static final DateTimeFormatter DESC_TIME = DateTimeFormatter.ofPattern("HH:mm 'ngày' dd/MM/yyyy");
+
+    // log cũ (trước khi có cột description) thì hiện details kỹ thuật
+    private String buildDescription(AuditLog log) {
+        String what = log.getDescription() != null ? log.getDescription() : log.getDetails();
+        return log.getCreatedAt() != null ? log.getCreatedAt().format(DESC_TIME) + " · " + what : what;
     }
 }

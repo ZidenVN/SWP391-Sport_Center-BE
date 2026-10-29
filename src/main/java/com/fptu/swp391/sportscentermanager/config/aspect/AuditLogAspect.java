@@ -15,7 +15,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.GrantedAuthority;
 import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 @Aspect
 @Component
 @RequiredArgsConstructor
@@ -58,6 +63,11 @@ public class AuditLogAspect {
                 targetId = extractId(result, logAudit.targetEntity());
             }
 
+            // 2b. câu mô tả dễ hiểu: "<Vai trò> <Họ tên> đã ..."
+            String description = buildActor(user, auth) + " "
+                + AuditMessages.render(logAudit.actionType(), logAudit.targetEntity(),
+                    collectValues(result, paramNames, args, targetId, logAudit.targetEntity(), user));
+
             // 3. ghi vao audit log
             AuditLog auditLog = AuditLog.builder()
                 .user(user)
@@ -65,6 +75,7 @@ public class AuditLogAspect {
                 .targetEntity(logAudit.targetEntity())
                 .targetEntityId(targetId)
                 .details(details.toString())
+                .description(description)
                 .build();
             auditLogRepository.save(auditLog);
         } catch (Exception e){
@@ -92,5 +103,100 @@ public class AuditLogAspect {
             }
         }
         return null;
+    }
+
+    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
+
+    // Vai trò lấy từ quyền trong token (ROLE_xxx) để không phải tải Role LAZY ngoài transaction
+    private String buildActor(User user, Authentication auth) {
+        if (user == null) return "Khách";
+        String role = auth.getAuthorities().stream()
+            .map(GrantedAuthority::getAuthority)
+            .filter(a -> a.startsWith("ROLE_"))
+            .map(a -> AuditMessages.ROLES.getOrDefault(a.substring(5), ""))
+            .findFirst().orElse("");
+        return (role + " " + fullName(user.getFirstName(), user.getLastName())).trim();
+    }
+
+    // Gom giá trị cho mẫu câu: tham số trên URL + các field có tên trong body trả về
+    private static final java.util.Set<String> PERSON_ENTITIES = java.util.Set.of("User", "Member", "Coach", "Receptionist");
+
+    private Map<String, String> collectValues(Object result, String[] paramNames, Object[] args, Long targetId, String targetEntity, User actor) {
+        Map<String, String> v = new HashMap<>();
+        Long memberId = null;
+        for (int i = 0; paramNames != null && i < paramNames.length; i++) {
+            if (!isSimpleValue(args[i]) || paramNames[i].toLowerCase().contains("password")) continue;
+            v.put(paramNames[i], String.valueOf(args[i])); // vd status, reason
+            if (paramNames[i].equals("memberId") && args[i] instanceof Long l) memberId = l;
+        }
+        if (targetId != null) v.put("id", String.valueOf(targetId));
+
+        Object body = result instanceof ResponseEntity<?> re ? re.getBody() : result;
+        put(v, "package", read(body, "getPackageName"));
+        put(v, "member", read(body, "getMemberName"));
+        put(v, "subject", read(body, "getSubjectName"));
+        put(v, "room", read(body, "getRoomName"));
+        put(v, "coach", read(body, "getCoachName"));
+        put(v, "plan", read(body, "getPlanName"));
+        put(v, "title", read(body, "getTitle"));
+        put(v, "targetName", read(body, "getTargetName"));
+        put(v, "role", read(body, "getRoleName"));
+        Object content = read(body, "getContent");
+        if (content != null) v.put("content", shorten(content.toString()));
+        Object first = read(body, "getFirstName"), last = read(body, "getLastName");
+        if (first == null && last == null) {
+            // vd đăng ký tài khoản: body trả về không có tên -> lấy từ request body (không đọc mật khẩu)
+            for (Object arg : args) {
+                if (arg == null || isSimpleValue(arg)) continue;
+                first = read(arg, "getFirstName");
+                last = read(arg, "getLastName");
+                if (first != null || last != null) break;
+            }
+        }
+        if (first != null || last != null) v.put("name", fullName(first, last));
+        if (read(body, "getStartTime") instanceof LocalDateTime t) v.put("time", t.format(TIME_FMT));
+
+        String status = String.valueOf(read(body, "getStatus"));
+        v.put("toggle", "INACTIVE".equals(status) ? "khoá" : "ACTIVE".equals(status) ? "mở khoá" : "đổi trạng thái");
+
+        // tên hội viên luôn tra theo id để cùng một kiểu "Tên Họ" (DTO thanh toán ghép ngược thứ tự)
+        if (memberId == null && read(body, "getMemberId") instanceof Long l) memberId = l;
+        if (memberId != null) {
+            userRepository.findById(memberId).ifPresent(u -> v.put("member", fullName(u.getFirstName(), u.getLastName())));
+        }
+
+        // khoá / sửa tài khoản mà body không có tên (API trả chuỗi) -> tra theo id trên URL
+        if (v.get("name") == null && targetId != null && PERSON_ENTITIES.contains(targetEntity)) {
+            userRepository.findById(targetId).ifPresent(u -> {
+                v.put("name", fullName(u.getFirstName(), u.getLastName()));
+                if (u.getStatus() != null) {
+                    v.put("toggle", u.getStatus().name().equals("INACTIVE") ? "khoá" : "mở khoá");
+                }
+            });
+        }
+        // hội viên tự thao tác cho mình -> bỏ "cho hội viên X" để khỏi lặp tên
+        if (actor != null && memberId != null && memberId.equals(actor.getUserId())) v.remove("member");
+        return v;
+    }
+
+    private Object read(Object body, String getter) {
+        if (body == null || body instanceof String || body instanceof Iterable<?>) return null;
+        try {
+            return body.getClass().getMethod(getter).invoke(body);
+        } catch (Exception e) {
+            return null; // DTO không có field này
+        }
+    }
+
+    private void put(Map<String, String> v, String key, Object value) {
+        if (value != null && !value.toString().isBlank()) v.put(key, value.toString());
+    }
+
+    private String fullName(Object first, Object last) {
+        return ((first == null ? "" : first) + " " + (last == null ? "" : last)).trim();
+    }
+
+    private String shorten(String s) {
+        return s.length() > 60 ? s.substring(0, 57) + "..." : s;
     }
 }
