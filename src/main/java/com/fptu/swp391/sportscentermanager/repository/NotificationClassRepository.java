@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface NotificationClassRepository extends JpaRepository<NotificationClass,Long> {
     List<NotificationClass> findBySportClass_ClassIdOrderByNotification_SentDateDesc(Long classId);
-    List<NotificationClass> findBySportClass_ClassIdIn(List<Long> classId);
+    List<NotificationClass> findByNotification_NotificationIdIn(List<Long> notificationId);
 }
