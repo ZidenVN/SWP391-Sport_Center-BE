@@ -76,7 +76,7 @@ public class WorkoutPlanServiceImpl implements WorkoutPlanService {
         targetName = sportClass.getSubject() != null ? sportClass.getSubject().getSubjectName() : "Lớp " + sportClass.getClassId();
 
     } else {
-        throw new IllegalArgumentException("Loại đối tượng không hợp lệ! Chỉ chấp nhận INDIVIDUAL hoặc CLASS");
+        throw new AppException(ErrorCode.WORKOUT_PLAN_INVALID_TARGET);
     }
     return WorkoutPlanResponseDTO.builder()
         .planId(savedPlan.getPlanId())
@@ -180,7 +180,12 @@ public class WorkoutPlanServiceImpl implements WorkoutPlanService {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
-        memberPlan.setStatus(status.toUpperCase());
+        // chỉ nhận 2 trạng thái là IN_PROGRESS hoặc COMPLETED
+        String newStatus = status == null ? "" : status.trim().toUpperCase();
+        if (!newStatus.equals("IN_PROGRESS") && !newStatus.equals("COMPLETED")) {
+            throw new AppException(ErrorCode.WORKOUT_PLAN_INVALID_STATUS);
+        }
+        memberPlan.setStatus(newStatus);
         memberPlanRepository.save(memberPlan);
     }
 }

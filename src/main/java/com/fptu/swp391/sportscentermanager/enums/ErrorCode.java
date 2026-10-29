@@ -105,7 +105,9 @@ public enum ErrorCode {
     QUIZ_NOT_COMPLETED(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_QUIZ_008", "Bạn cần hoàn thành bài khảo sát trước khi đăng ký lớp!"),
     ATTENDANCE_TOO_EARLY(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_ATTENDANCE_003", "Chưa tới giờ điểm danh (mở trước giờ học 15 phút)!"),
     ATTENDANCE_CLOSED(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_ATTENDANCE_004", "Đã quá thời gian điểm danh của lớp này!"),
-    ATTENDANCE_CLASS_NOT_ACTIVE(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_ATTENDANCE_005", "Lớp đã bị huỷ, không thể điểm danh!")
+    ATTENDANCE_CLASS_NOT_ACTIVE(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_ATTENDANCE_005", "Lớp đã bị huỷ, không thể điểm danh!"),
+    WORKOUT_PLAN_INVALID_TARGET(HttpStatus.BAD_REQUEST, "ERR_PLAN_001", "Loại đối tượng không hợp lệ! Chỉ chấp nhận INDIVIDUAL hoặc CLASS"),
+    WORKOUT_PLAN_INVALID_STATUS(HttpStatus.BAD_REQUEST, "ERR_PLAN_002", "Trạng thái giáo án chỉ nhận IN_PROGRESS hoặc COMPLETED!")
 
 
 
