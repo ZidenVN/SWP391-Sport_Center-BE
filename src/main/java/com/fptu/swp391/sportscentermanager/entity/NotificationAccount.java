@@ -3,6 +3,8 @@ package com.fptu.swp391.sportscentermanager.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "notification_account")
 @NoArgsConstructor
@@ -21,4 +23,7 @@ public class NotificationAccount {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @Column(name = "read_at")
+    private LocalDateTime readAt;
 }

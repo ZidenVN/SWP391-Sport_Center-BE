@@ -1,8 +1,6 @@
 package com.fptu.swp391.sportscentermanager.enums;
 
-
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 @Getter
 
@@ -35,8 +33,8 @@ public enum PermissionCode {
     MANAGE_SUBSCRIPTION("Quản lý đăng ký gói tập của hội viên"), //Lễ tân bán hoặc gia hạn gói cho member
     SEARCH_MEMBER("Tìm kiếm thông tin hội viên"), //Lễ tân tìm member
     MANAGE_TICKET("Quản lý yêu cầu hỗ trợ"),//Lễ tân ghi nhận và xem yêu cầu hỗ trợ
-    MANAGE_QUIZ("Quản lý câu hỏi quiz hội viên")
-
+    MANAGE_QUIZ("Quản lý câu hỏi quiz hội viên"),
+    SEND_NOTIFICATION("Gửi thông báo cho hội viên")
 
 
 
