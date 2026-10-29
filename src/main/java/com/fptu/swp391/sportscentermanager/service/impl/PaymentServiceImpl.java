@@ -2,25 +2,23 @@ package com.fptu.swp391.sportscentermanager.service.impl;
 
 import com.fptu.swp391.sportscentermanager.dto.InvoiceResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.PaymentResponseDTO;
-import com.fptu.swp391.sportscentermanager.entity.Member;
-import com.fptu.swp391.sportscentermanager.entity.MembershipPackage;
-import com.fptu.swp391.sportscentermanager.entity.Payment;
-import com.fptu.swp391.sportscentermanager.entity.Subscription;
+import com.fptu.swp391.sportscentermanager.entity.*;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.MemberRepository;
 import com.fptu.swp391.sportscentermanager.repository.PaymentRepository;
+import com.fptu.swp391.sportscentermanager.service.NotificationService;
 import com.fptu.swp391.sportscentermanager.service.PaymentService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.ArrayList;
-import com.fptu.swp391.sportscentermanager.entity.ClassRegistration;
+
 import com.fptu.swp391.sportscentermanager.repository.ClassRegistrationRepository;
 import com.fptu.swp391.sportscentermanager.dto.ConfirmPaymentRequestDTO;
-import com.fptu.swp391.sportscentermanager.entity.User;
 import com.fptu.swp391.sportscentermanager.enums.PaymentMethod;
 import com.fptu.swp391.sportscentermanager.enums.PaymentStatus;
 import com.fptu.swp391.sportscentermanager.repository.SubscriptionRepository;
@@ -44,7 +42,9 @@ public class PaymentServiceImpl implements PaymentService {
     private final UserRepository userRepository;
     private final SubscriptionService subscriptionService;
     private final ClassRegistrationRepository classRegistrationRepository;
+    private final NotificationService notificationService;
 
+    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
     private static final int MAX_PAGE_SIZE = 100;
     // 'SUCCESS' là dữ liệu cũ, coi như đã thu
     private static final Set<String> PAID_STATUSES = Set.of(PaymentStatus.COMPLETED.name(), "SUCCESS");
@@ -199,6 +199,22 @@ public class PaymentServiceImpl implements PaymentService {
                 if (!toCancel.isEmpty()) {
                     classRegistrationRepository.saveAll(toCancel);
                 }
+
+                // BR-PAY-04: luôn báo cho member khi gói bị hoàn tiền, kèm các lớp bị huỷ theo (nếu có)
+                String packageName = sub.getMembershipPackage() != null ? sub.getMembershipPackage().getPackageName() : "Gói tập";
+                StringBuilder content = new StringBuilder(packageName + " của bạn đã được hoàn tiền và hết hiệu lực.");
+                if (reason != null && !reason.isBlank()) {
+                    content.append(" Lý do: ").append(reason.trim()).append(".");
+                }
+                if (!toCancel.isEmpty()) {
+                    content.append(" Các lớp đã bị huỷ theo:");
+                    for (ClassRegistration reg : toCancel) {
+                        SportClass c = reg.getSportClass();
+                        String subject = c.getSubject() != null ? c.getSubject().getSubjectName() : "Lớp học";
+                        content.append(" ").append(subject).append(" lúc ").append(c.getStartTime().format(TIME_FMT)).append(";");
+                    }
+                }
+                notificationService.notifyUsers(List.of(sub.getMember()), "Gói tập đã được hoàn tiền", content.toString(), "SUBSCRIPTION_REFUNDED");
             }
         }
 

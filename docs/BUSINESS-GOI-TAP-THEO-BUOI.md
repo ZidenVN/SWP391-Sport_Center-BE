@@ -158,7 +158,7 @@ Subject (Boxing)
 | **BR-PAY-01** | Manager hoàn tiền giao dịch đã thu → giao dịch `REFUNDED`, gói của giao dịch chuyển `CANCELLED`. |
 | **BR-PAY-02** | Các đăng ký lớp **sắp diễn ra** đã **trừ buổi vào đúng gói bị hoàn tiền** bị huỷ (`CANCELLED`), trả lại chỗ trong lớp. Đăng ký trừ vào gói khác của member không bị ảnh hưởng. |
 | **BR-PAY-03** | Đăng ký cũ không gắn gói (`subscription = null`): chỉ huỷ khi giờ học nằm trong thời hạn gói bị hoàn tiền **và** member không còn gói `ACTIVE` nào khác phủ giờ học đó. |
-| **BR-PAY-04** | Hoàn tiền **không** gửi thông báo cho member về các lớp bị huỷ (xem điểm 9.3). |
+| **BR-PAY-04** | Hoàn tiền **luôn** gửi 1 thông báo in-app cho member (`SUBSCRIPTION_REFUNDED`): tên gói, lý do hoàn tiền, và danh sách lớp bị huỷ theo (môn + giờ học) nếu có. Gói chưa đặt lớp nào vẫn nhận thông báo. |
 
 ### 3.6. Điểm danh
 
@@ -295,7 +295,7 @@ Với mỗi đăng ký lớp sắp diễn ra của member:
 | `SubscriptionController`, `ReceptionistController` | API preview cho member và lễ tân |
 | `ClassRegistrationServiceImpl` | `registerSelf` (BR-REG-09), `register` (kiểm tra gói, trừ buổi), `cancel` (hoàn buổi) |
 | `SportClassServiceImpl.cancelClass` / `deleteClass` | Hoàn buổi cho mọi đăng ký (BR-CAN-04) |
-| `PaymentServiceImpl.refundPayment` | Huỷ đăng ký theo gói bị hoàn tiền (BR-PAY-01…03) |
+| `PaymentServiceImpl.refundPayment` | Huỷ đăng ký theo gói bị hoàn tiền (BR-PAY-01…03), gửi thông báo cho member (BR-PAY-04) |
 | `UserServiceImpl.toggleUserStatus` / `updateUserStatus` | Khoá member → huỷ đăng ký sắp diễn ra, không hoàn buổi (BR-CAN-07) |
 | `CheckInServiceImpl` | Trả `activeSubscriptions` kèm `areaAccess` (BR-CHK-02) |
 | `ErrorCode` | `PACKAGE_NOT_ALLOW_CLASS`, `SUBJECT_NOT_COVERED`, `NO_SESSIONS_LEFT`, `FREE_PACKAGE_NOT_ALLOWED`, `PACKAGE_SUBJECT_REQUIRED`, `INVALID_PACKAGE_CONFIG`, `PACKAGE_IN_USE`, `SUBJECT_HAS_ACTIVE_FREE_PACKAGE`, `SUBJECT_HAS_ACTIVE_PACKAGE`, `QUIZ_NOT_COMPLETED` |
@@ -338,6 +338,8 @@ Với mỗi đăng ký lớp sắp diễn ra của member:
 | T29 | HLV điểm danh lớp bắt đầu sau 10 phút / đang diễn ra / kết thúc 2 giờ trước | 200 |
 | T30 | HLV điểm danh lớp kết thúc 2 ngày trước | 422 `ATTENDANCE_CLOSED` |
 | T31 | HLV điểm danh lớp đã bị huỷ | 422 `ATTENDANCE_CLASS_NOT_ACTIVE` |
+| T32 | Hoàn tiền gói có 2 lớp đã đặt | Member nhận 1 thông báo có tên gói, lý do, 2 lớp bị huỷ |
+| T33 | Hoàn tiền gói chưa đặt lớp nào | Member vẫn nhận thông báo (không có phần lớp) |
 
 ---
 
@@ -368,8 +370,8 @@ Hướng đề xuất: gói CLASS **không nối hạn**, thanh toán xong là b
 Gói CLASS có `sessionLimit = null` vẫn cho phép giữ chỗ nhiều lớp mà không tốn gì, tức vấn đề #2 ở mục 1 vẫn còn với loại gói này.
 Hướng đề xuất (chọn một): bắt buộc `sessionLimit > 0` cho gói CLASS; hoặc giới hạn số đăng ký sắp diễn ra mỗi member (ví dụ tối đa 5).
 
-### 9.3. Thông báo khi hoàn tiền (BR-PAY-04)
-Hoàn tiền gói làm huỷ các lớp member đã đặt nhưng hiện không gửi thông báo. Cân nhắc gửi thông báo in-app giống khi trung tâm huỷ lớp.
+### 9.3. Thông báo khi hoàn tiền (BR-PAY-04) — ✅ đã chốt 29/10/2026
+Đã làm: xem BR-PAY-04.
 
 ---
 
@@ -394,4 +396,4 @@ Hoàn tiền gói làm huỷ các lớp member đã đặt nhưng hiện không 
 - [x] BR-ATT-03: điểm danh từ 15 phút trước giờ học đến 24 giờ sau khi kết thúc, chặn lớp đã huỷ (chốt 28/10/2026)
 - [ ] 9.1: gói CLASS có nối hạn không
 - [ ] 9.2: có giữ gói CLASS không giới hạn buổi không
-- [ ] 9.3: có gửi thông báo khi hoàn tiền huỷ lớp không
+- [x] 9.3 / BR-PAY-04: hoàn tiền **luôn** gửi thông báo cho member, kèm lớp bị huỷ theo nếu có (chốt 29/10/2026)
