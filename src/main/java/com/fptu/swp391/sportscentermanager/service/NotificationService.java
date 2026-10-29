@@ -17,4 +17,6 @@ public interface NotificationService {
     // BE-16: gửi 1 thông báo hệ thống (in-app) tới nhiều tài khoản, vd khi lớp bị hủy / đổi lịch
     void notifyUsers(List<? extends User> users, String title, String content, String targetType);
 
+    // hàm này khác hàm ở trên là có người gửi nha, sender == null là tin hệ thống
+    void notifyUsers(List<? extends User> users, String title, String content, String targetType, User sender);
 }
