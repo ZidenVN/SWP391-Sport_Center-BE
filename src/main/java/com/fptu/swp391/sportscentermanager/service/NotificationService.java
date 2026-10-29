@@ -19,4 +19,7 @@ public interface NotificationService {
 
     // hàm này khác hàm ở trên là có người gửi nha, sender == null là tin hệ thống
     void notifyUsers(List<? extends User> users, String title, String content, String targetType, User sender);
+    long cntUnread(Long memberId);
+    void markAsRead(Long memberId, Long notificationId);
+    int markAllAsRead(Long memberId);
 }

@@ -18,6 +18,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/members")
@@ -85,6 +86,27 @@ public class MemberController {
         Long memberId = principal.getUser().getUserId();
         return ResponseEntity.ok(notificationService.getMyNotifications(memberId));
     }
+
+    @PreAuthorize("hasRole('MEMBER')")
+    @GetMapping("/me/notifications/unread-count")
+    public ResponseEntity<Map<String, Long>> getUnreadCount(@AuthenticationPrincipal CustomUserDetails principal) {
+        return ResponseEntity.ok(Map.of("count", notificationService.cntUnread(principal.getUser().getUserId())));
+    }
+
+    @PreAuthorize("hasRole('MEMBER')")
+    @PatchMapping("/me/notifications/{notificationId}/read")
+    public ResponseEntity<Void> markAsRead(@PathVariable Long notificationId, @AuthenticationPrincipal CustomUserDetails principal) {
+        notificationService.markAsRead(principal.getUser().getUserId(), notificationId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasRole('MEMBER')")
+    @PatchMapping("/me/notifications/read-all")
+    public ResponseEntity<Map<String, Integer>> markAllAsRead(@AuthenticationPrincipal CustomUserDetails principal) {
+       return ResponseEntity.ok(Map.of("updated", notificationService.markAllAsRead(principal.getUser().getUserId())));
+    }
+
+
 
     @PreAuthorize("hasRole('MEMBER')")
     @GetMapping("/me/attendances")
