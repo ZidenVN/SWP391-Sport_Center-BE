@@ -58,7 +58,8 @@ public class DataInitializer implements CommandLineRunner {
             PermissionCode.SEARCH_MEMBER,
             PermissionCode.MANAGE_SUBSCRIPTION,
             PermissionCode.MANAGE_TICKET,
-            PermissionCode.REGISTER_CLASS
+            PermissionCode.REGISTER_CLASS,
+            PermissionCode.SEND_NOTIFICATION
         ),
 
         "COACH", EnumSet.of(
