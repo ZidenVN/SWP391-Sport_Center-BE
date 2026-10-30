@@ -11,7 +11,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-
+import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 public interface MemberRepository extends JpaRepository<Member,Long> {
     @Query("""
         SELECT m FROM Member m
@@ -61,4 +61,7 @@ public interface MemberRepository extends JpaRepository<Member,Long> {
         ORDER BY dayLabel ASC
     """, nativeQuery = true)
     List<Object[]> countNewMembersByDay(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    // Lễ tân gửi thông báo cho tất cả member đang ACTIVE
+    List<Member> findByStatus(UserStatus status);
 }
