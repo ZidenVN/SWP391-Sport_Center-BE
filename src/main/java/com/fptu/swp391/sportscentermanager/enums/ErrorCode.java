@@ -113,6 +113,21 @@ public enum ErrorCode {
     NOTIFICATION_INVALID_TARGET(HttpStatus.BAD_REQUEST, "ERR_NOTI_002", "Kiểu người nhận không hợp lệ! Chỉ chấp nhận MEMBERS hoặc ALL_ACTIVE!"),
     NOTIFICATION_MEMBER_INVALID(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_NOTI_003", "Có hội viên không tồn tại hoặc đã bị khoá!"),
 
+    // ===== B: lớp / buổi / HLV =====
+    COACH_NOT_TEACH_SUBJECT(HttpStatus.BAD_REQUEST, "ERR_CLASS_400_COACH_SUBJECT", "Huấn luyện viên không có chuyên môn dạy môn học này!"),
+    CLASS_DURATION_INVALID(HttpStatus.BAD_REQUEST, "ERR_CLASS_400_DURATION", "Thời hạn khoá học không hợp lệ!"),
+    CLASS_SCHEDULE_CANNOT_MODIFY(HttpStatus.BAD_REQUEST, "ERR_CLASS_400_SCHEDULE_LOCKED", "Lớp đã có người đăng ký hoặc đã bắt đầu, không được sửa lịch học!"),
+    CLASS_CANNOT_MODIFY_STARTED(HttpStatus.BAD_REQUEST, "ERR_CLASS_400_STARTED", "Lớp đã bắt đầu, chỉ được sửa sĩ số và ảnh!"),
+    CLASS_ALREADY_STOPPED(HttpStatus.BAD_REQUEST, "ERR_CLASS_400_STOPPED", "Lớp học đã dừng hoặc đã kết thúc!"),
+    SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_SESSION_404", "Không tìm thấy buổi học!"),
+    SESSION_CANNOT_POSTPONE(HttpStatus.BAD_REQUEST, "ERR_SESSION_400_POSTPONE", "Chỉ được hoãn buổi học chưa diễn ra và đang được lên lịch!"),
+    SESSION_CANNOT_SUBSTITUTE(HttpStatus.BAD_REQUEST, "ERR_SESSION_400_SUBSTITUTE", "Chỉ được gán dạy thay cho buổi học chưa diễn ra!"),
+    MAKEUP_SESSION_INVALID(HttpStatus.BAD_REQUEST, "ERR_SESSION_400_MAKEUP", "Buổi học cần bù không hợp lệ hoặc chưa bị hoãn!"),
+    CLASS_START_DATE_INVALID(HttpStatus.BAD_REQUEST, "ERR_CLASS_400_START_DATE", "Ngày bắt đầu khoá học phải ở tương lai!"),
+    CLASS_DAYS_OF_WEEK_INVALID(HttpStatus.BAD_REQUEST, "ERR_CLASS_400_DAYS", "Thứ trong tuần không hợp lệ (ví dụ: MON,WED,FRI)!"),
+    SESSION_SCHEDULE_CONFLICT(HttpStatus.CONFLICT, "ERR_SESSION_409_CONFLICT", "Buổi học bị trùng lịch phòng hoặc trùng lịch HLV!"),
+
+
 
 
 
