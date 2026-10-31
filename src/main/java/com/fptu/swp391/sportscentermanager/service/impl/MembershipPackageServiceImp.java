@@ -102,7 +102,7 @@ public class MembershipPackageServiceImp implements MembershipPackageService {
     }
 
     @Override
-    public MembershipPackage getClassDurations(long subjectId) {
+    public List<Integer> getClassDurations(long subjectId) {
         return null;
     }
 
