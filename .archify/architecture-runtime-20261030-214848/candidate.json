@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Sports Center Manager Runtime",
+    "output": ".archify/architecture-runtime-20261030-214848/runtime.html",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/ZidenVN/SWP391-Sport_Center-BE",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "e7786a934607ab5eda8f0e9f0c93b237c35a4605"
+    }
+  },
+  "components": [
+    { "id": "client", "type": "frontend", "label": "Frontend SPA", "sublabel": "browser · CORS origins", "pos": [40, 260], "size": [140, 64],
+      "sources": [ { "path": "src/main/resources/application.properties", "line": 58, "end_line": 62, "label": "CORS + VNPay return URL" } ] },
+    { "id": "vnpay", "type": "external", "label": "VNPay Sandbox", "sublabel": "payment gateway", "pos": [40, 80], "size": [140, 64], "tag": "HMAC-SHA512",
+      "sources": [ { "path": "src/main/resources/application.properties", "line": 33, "end_line": 36 }, { "path": "src/main/java/com/fptu/swp391/sportscentermanager/controller/VNPayController.java", "line": 22, "end_line": 27 } ] },
+    { "id": "security", "type": "security", "label": "Spring Security", "sublabel": "JwtAuthFilter · stateless", "pos": [300, 260], "size": [140, 64],
+      "sources": [ { "path": "src/main/java/com/fptu/swp391/sportscentermanager/config/SecurityConfig.java", "line": 44, "end_line": 71 }, { "path": "src/main/java/com/fptu/swp391/sportscentermanager/security/JwtAuthFilter.java", "line": 27, "end_line": 55 } ] },
+    { "id": "controllers", "type": "backend", "label": "REST Controllers", "sublabel": "/api/v1 · @PreAuthorize", "pos": [540, 260], "size": [140, 64],
+      "sources": [ { "path": "src/main/java/com/fptu/swp391/sportscentermanager/controller/AiController.java", "line": 19, "end_line": 32 }, { "path": "src/main/java/com/fptu/swp391/sportscentermanager/controller/AuthController.java", "line": 108, "end_line": 147, "label": "Google sign-in" } ] },
+    { "id": "google", "type": "external", "label": "Google Identity", "sublabel": "ID token verifier", "pos": [540, 80], "size": [140, 64],
+      "sources": [ { "path": "src/main/java/com/fptu/swp391/sportscentermanager/controller/AuthController.java", "line": 112, "end_line": 119 } ] },
+    { "id": "services", "type": "backend", "label": "Service Layer", "sublabel": "@Transactional business logic", "pos": [780, 260], "size": [200, 64],
+      "sources": [ { "path": "src/main/java/com/fptu/swp391/sportscentermanager/service/impl/AiChatServiceImpl.java", "line": 85, "end_line": 106, "label": "AI tool loop" }, { "path": "src/main/java/com/fptu/swp391/sportscentermanager/service/impl/VNPayServiceImpl.java", "line": 127, "end_line": 156, "label": "VNPay signature check" }, { "path": "src/main/java/com/fptu/swp391/sportscentermanager/service/impl/NotificationServiceImpl.java", "line": 153, "end_line": 165, "label": "publish event" } ] },
+    { "id": "gemini", "type": "external", "label": "Google Gemini", "sublabel": "generateContent", "pos": [760, 80], "size": [120, 64], "tag": "fallback model",
+      "sources": [ { "path": "src/main/java/com/fptu/swp391/sportscentermanager/service/ai/GeminiClient.java", "line": 34, "end_line": 75 } ] },
+    { "id": "cloudinary", "type": "cloud", "label": "Cloudinary", "sublabel": "class images", "pos": [900, 80], "size": [120, 64],
+      "sources": [ { "path": "src/main/java/com/fptu/swp391/sportscentermanager/config/CloudinaryConfig.java", "line": 11, "end_line": 14 }, { "path": "src/main/java/com/fptu/swp391/sportscentermanager/service/impl/ImageStorageServiceImpl.java", "line": 27, "end_line": 38 } ] },
+    { "id": "mysql", "type": "database", "label": "MySQL", "sublabel": "sportcenter_db :3306", "pos": [1100, 260], "size": [120, 64], "tag": "ddl-auto=update",
+      "sources": [ { "path": "src/main/resources/application.properties", "line": 6, "end_line": 16 }, { "path": "src/main/java/com/fptu/swp391/sportscentermanager/repository/NotificationRepository.java", "line": 6 } ] },
+    { "id": "listener", "type": "backend", "label": "Push Listener", "sublabel": "after commit", "pos": [780, 440], "size": [120, 64],
+      "sources": [ { "path": "src/main/java/com/fptu/swp391/sportscentermanager/listener/NotificationPushListener.java", "line": 21, "end_line": 51 } ] },
+    { "id": "broker", "type": "messagebus", "label": "STOMP Broker", "sublabel": "/ws · /user/queue", "pos": [520, 440], "size": [140, 64], "tag": "JWT on CONNECT",
+      "sources": [ { "path": "src/main/java/com/fptu/swp391/sportscentermanager/config/WebSocketConfig.java", "line": 25, "end_line": 53 }, { "path": "src/main/java/com/fptu/swp391/sportscentermanager/security/StompAuthChannelInterceptor.java", "line": 25, "end_line": 74 } ] },
+    { "id": "scheduler", "type": "backend", "label": "Reminder Scheduler", "sublabel": "@Scheduled cron", "pos": [780, 600], "size": [120, 64],
+      "sources": [ { "path": "src/main/java/com/fptu/swp391/sportscentermanager/scheduler/ReminderScheduler.java", "line": 39, "end_line": 69 }, { "path": "src/main/java/com/fptu/swp391/sportscentermanager/SportsCenterManagerApplication.java", "line": 10, "end_line": 11 } ] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Spring Boot app :8080", "wraps": ["security", "controllers", "services", "listener", "broker", "scheduler"] }
+  ],
+  "connections": [
+    { "id": "client-api", "from": "client", "to": "security", "label": "HTTPS REST", "variant": "emphasis" },
+    { "id": "security-controllers", "from": "security", "to": "controllers", "label": "authorized", "variant": "emphasis" },
+    { "id": "controllers-services", "from": "controllers", "to": "services", "variant": "emphasis" },
+    { "id": "services-mysql", "from": "services", "to": "mysql", "label": "JPA / JDBC", "variant": "emphasis" },
+    { "id": "client-vnpay", "from": "client", "to": "vnpay", "label": "redirect to pay" },
+    { "id": "controllers-google", "from": "controllers", "to": "google", "label": "verify ID token", "variant": "security" },
+    { "id": "services-gemini", "from": "services", "to": "gemini", "label": "chat + tools" },
+    { "id": "services-cloudinary", "from": "services", "to": "cloudinary", "label": "upload" },
+    { "id": "services-listener", "from": "services", "to": "listener", "label": "event", "variant": "dashed" },
+    { "id": "listener-broker", "from": "listener", "to": "broker", "label": "push to user" },
+    { "id": "broker-client", "from": "broker", "to": "client", "label": "STOMP push", "variant": "dashed" },
+    { "id": "scheduler-services", "from": "scheduler", "to": "services", "label": "notifyUsers", "fromSide": "right", "toSide": "bottom" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "Request path", "items": ["Stateless JWT; token version + lock checked per request", "Public: /auth/**, VNPay callback, Swagger, /ws handshake", "Method security via @PreAuthorize on controllers"] },
+    { "dot": "violet", "title": "Realtime notifications", "items": ["Notification rows saved, then NotificationCreatedEvent", "Listener pushes after commit to /user/{email}/queue/notifications", "Reminders: subscription daily 08:00, classes every 15 min"] },
+    { "dot": "amber", "title": "Not drawn as nodes", "items": ["AuditLogAspect: @LogAudit controller methods write audit_log", "DataInitializer seeds roles and default accounts at startup", "AI tools read the member's own data via repositories"] }
+  ]
+}

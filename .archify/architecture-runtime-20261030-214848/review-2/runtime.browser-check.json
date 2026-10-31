@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "browser-check",
+  "evidenceKind": "automated-browser",
+  "status": "fail",
+  "visualReview": "not-requested",
+  "provenance": "unsupported",
+  "deliveryReceiptId": "d7799d10-18c8-4397-b0ec-e45e947ceca2",
+  "artifact": {
+    "path": "/Users/dungotruong/Documents/Learning/SWP391/sports-center-manager/.archify/architecture-runtime-20261030-214848/runtime.html",
+    "sha256": "85483cd513cb1fd5f5ce1860545bf3a5a34872d6bc850d3fa1ea2a76f23ccd41",
+    "bytes": 861240
+  },
+  "state": {
+    "detail": "read",
+    "motion": "still"
+  },
+  "chrome": {
+    "status": "available",
+    "executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  },
+  "diagnostics": [
+    {
+      "code": "delivery/provenance-hardlink-unsupported",
+      "severity": "error",
+      "message": "Delivery provenance is hard-linked and cannot prove that every linked name was updated atomically.",
+      "subject": {
+        "artifact": "/Users/dungotruong/Documents/Learning/SWP391/sports-center-manager/.archify/architecture-runtime-20261030-214848/runtime.html",
+        "provenance": "/Users/dungotruong/Documents/Learning/SWP391/sports-center-manager/.archify/architecture-runtime-20261030-214848/runtime.delivery.json"
+      },
+      "evidence": {
+        "links": "2"
+      },
+      "supportedFixes": [
+        "remove extra hard links to the provenance sidecar, then rerun deliver"
+      ]
+    }
+  ],
+  "containment": {
+    "status": "fail",
+    "policy": "fit-or-reader-declared-readable-vertical-scroll",
+    "viewports": []
+  },
+  "themeStates": {
+    "status": "fail",
+    "viewports": []
+  },
+  "readability": {
+    "status": "fail",
+    "minimumProjectedNodeTextPx": 6,
+    "viewports": []
+  },
+  "viewerChrome": {
+    "status": "fail",
+    "viewports": []
+  },
+  "captures": {
+    "status": "not-requested",
+    "screenshots": [],
+    "contactSheet": null
+  },
+  "sidecars": {
+    "directory": "/Users/dungotruong/Documents/Learning/SWP391/sports-center-manager/.archify/architecture-runtime-20261030-214848/review-2",
+    "receipt": "runtime.browser-check.json",
+    "files": []
+  },
+  "error": "Delivery provenance is hard-linked and cannot prove that every linked name was updated atomically."
+}
