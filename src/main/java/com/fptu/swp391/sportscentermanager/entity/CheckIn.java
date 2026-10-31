@@ -33,4 +33,7 @@ public class CheckIn {
     @Builder.Default
     private CheckInType type = CheckInType.FACILITY;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "class_session_id")
+    private ClassSession session;
 }
