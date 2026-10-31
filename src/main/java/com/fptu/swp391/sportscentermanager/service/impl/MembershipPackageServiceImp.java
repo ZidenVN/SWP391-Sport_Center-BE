@@ -101,6 +101,11 @@ public class MembershipPackageServiceImp implements MembershipPackageService {
         packageRepository.save(existingPackage);
     }
 
+    @Override
+    public MembershipPackage getClassDurations(long subjectId) {
+        return null;
+    }
+
     // BR-PKG-02, BR-PKG-03, BR-PKG-05, BR-SUBJ-02
     private void validateRules(PackageType type, Integer sessionLimit, Set<Subject> subjects) {
         if (type == PackageType.CLASS) {
