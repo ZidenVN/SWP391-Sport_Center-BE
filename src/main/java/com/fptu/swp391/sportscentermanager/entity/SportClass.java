@@ -2,12 +2,11 @@ package com.fptu.swp391.sportscentermanager.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.time.LocalDateTime;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import org.springframework.stereotype.Component;
 
 @Entity
 @Table(name = "classes")
@@ -46,26 +45,4 @@ public class SportClass {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subject_id")
     private Subject subject;
-
-    @Column(name = "start_date")
-    private LocalDate startDate;
-
-    @Column(name = "end_date")
-    private LocalDate endDate;
-
-    @Column(name = "duration_days")
-    private Integer durationDays;
-
-    @Column(name = "day_of_week", length = 30)
-    private String dayOfWeek;
-
-    @Column(name = "start_clock")
-    private LocalTime startClock;
-
-    @Column(name = "end_clock")
-    private LocalTime endClock;
-
-    @Column(name="first_session_at")
-    private LocalDateTime firstSessionAt;
-
 }

@@ -159,22 +159,6 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
         return registrationRepository.findUpcoming(memberId, LocalDateTime.now())
             .stream().map(this::toResponse).toList();
     }
-
-    @Override
-    public void releaseForCancelledClass(Long classId) {
-
-    }
-
-    @Override
-    public void stopRegistrations(Long classId) {
-
-    }
-
-    @Override
-    public void cancelBySubscription(Subscription classPackage) {
-
-    }
-
     // Thứ tự báo lỗi khi không có gói hợp lệ (bảng mục 3.3)
     private ErrorCode noValidSubscriptionReason(Long memberId, Long subjectId, LocalDateTime classTime, LocalDateTime now) {
         List<Subscription> covering = subscriptionRepository.findCovering(memberId, classTime);
