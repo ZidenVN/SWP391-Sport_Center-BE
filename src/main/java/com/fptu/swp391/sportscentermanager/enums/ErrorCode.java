@@ -112,7 +112,10 @@ public enum ErrorCode {
     NOTIFICATION_NO_RECIPIENT(HttpStatus.BAD_REQUEST, "ERR_NOTI_001", "Cần chọn ít nhất 1 hội viên nhận thông báo!"),
     NOTIFICATION_INVALID_TARGET(HttpStatus.BAD_REQUEST, "ERR_NOTI_002", "Kiểu người nhận không hợp lệ! Chỉ chấp nhận MEMBERS hoặc ALL_ACTIVE!"),
     NOTIFICATION_MEMBER_INVALID(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_NOTI_003", "Có hội viên không tồn tại hoặc đã bị khoá!"),
-    COACH_SUBJECT_MISMATCH(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_COACH_001", "Huấn luyện viên không có chuyên môn môn học này!"),
+
+
+
+
 
 
     ;

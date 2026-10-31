@@ -1,7 +1,11 @@
 package com.fptu.swp391.sportscentermanager.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import com.fptu.swp391.sportscentermanager.enums.PackageType;
@@ -47,7 +51,6 @@ public class MembershipPackage {
 
     // BR-PKG-05: null = không giới hạn số buổi. Gói FREE luôn null
     @Column(name = "session_limit")
-    @Deprecated
     private Integer sessionLimit;
 
     // Môn áp dụng. FREE không có môn = gói toàn trung tâm (chỉ khu OPEN)
@@ -56,11 +59,6 @@ public class MembershipPackage {
         joinColumns = @JoinColumn(name = "package_id"),
         inverseJoinColumns = @JoinColumn(name = "subject_id"))
     @Builder.Default
-    @Deprecated
     private Set<Subject> subjects = new HashSet<>();
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subject_id")
-    private Subject subject;
 
 }

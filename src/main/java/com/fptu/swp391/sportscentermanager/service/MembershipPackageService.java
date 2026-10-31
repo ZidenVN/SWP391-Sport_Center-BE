@@ -10,5 +10,4 @@ public interface MembershipPackageService {
     MembershipPackage createPackage(MembershipPackageRequestDTO request);
     MembershipPackage updatePackage(Long id, MembershipPackageRequestDTO request);
    void deletePackage(Long id);
-   List<Integer> getClassDurations(long subjectId);
 }

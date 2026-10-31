@@ -1,7 +1,6 @@
 package com.fptu.swp391.sportscentermanager.service;
 
 import com.fptu.swp391.sportscentermanager.dto.ClassRegistrationResponseDTO;
-import com.fptu.swp391.sportscentermanager.entity.Subscription;
 
 import java.util.List;
 
@@ -21,9 +20,4 @@ public interface ClassRegistrationService {
 
     // Lịch cá nhân sắp tới
     List<ClassRegistrationResponseDTO> getUpcomingSchedule(Long memberId);
-
-    void releaseForCancelledClass(Long classId);
-    void stopRegistrations(Long classId);
-    void cancelBySubscription(Subscription classPackage);
-
 }
