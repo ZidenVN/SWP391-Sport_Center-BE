@@ -26,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -174,6 +175,26 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         return subscriptionRepository.findActiveNotEnded(subscription.getMember().getUserId(), subscription.getEndDate())
             .stream()
             .anyMatch(n -> sameScope(n.getMembershipPackage(), subscription.getMembershipPackage()));
+    }
+
+    @Override
+    public void activateClassPackage(Subscription classPackage, LocalDateTime classEndDate) {
+
+    }
+
+    @Override
+    public void activateMembershipIfWaiting(Long memberId, LocalDate now) {
+
+    }
+
+    @Override
+    public void releaseClassPackage(Subscription classPackage) {
+
+    }
+
+    @Override
+    public void extendClassPackages(Long classId, LocalDate newEndDate) {
+
     }
 
     @Override

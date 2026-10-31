@@ -34,9 +34,11 @@ public enum PermissionCode {
     SEARCH_MEMBER("Tìm kiếm thông tin hội viên"), //Lễ tân tìm member
     MANAGE_TICKET("Quản lý yêu cầu hỗ trợ"),//Lễ tân ghi nhận và xem yêu cầu hỗ trợ
     MANAGE_QUIZ("Quản lý câu hỏi quiz hội viên"),
-    SEND_NOTIFICATION("Gửi thông báo cho hội viên")
-
-
+    SEND_NOTIFICATION("Gửi thông báo cho hội viên"),
+    MANAGE_CLASS_SESSION("Quản lý buổi học: dạy thay, bảo lưu, buổi bù"),
+    SWITCH_CLASS_REGISTRATION("Đổi lớp giúp hội viên"),
+    SUBMIT_ISSUE_REPORT("Gửi report sự cố"),
+    HANDLE_ISSUE_REPORT("Xử lý report sự cố")
 
     ;
     private final String description;
