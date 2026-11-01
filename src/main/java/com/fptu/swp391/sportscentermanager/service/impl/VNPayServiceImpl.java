@@ -8,6 +8,7 @@ import com.fptu.swp391.sportscentermanager.entity.MembershipPackage;
 import com.fptu.swp391.sportscentermanager.entity.Payment;
 import com.fptu.swp391.sportscentermanager.entity.Subscription;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
+import com.fptu.swp391.sportscentermanager.enums.SubscriptionStatus;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.MemberRepository;
 import com.fptu.swp391.sportscentermanager.repository.MembershipPackageRepository;
@@ -45,6 +46,8 @@ public class VNPayServiceImpl implements VNPayService {
 
         LocalDateTime now = LocalDateTime.now();
 
+        subscriptionService.requireMembershipForClass(memberId, pkg, now);
+
         // Không cho tạo nhiều giao dịch chờ thanh toán cùng lúc
         for (Subscription pending : subscriptionRepository.findByMember_UserIdAndStatus(memberId, "PENDING")) {
             Payment pendingPayment = paymentRepository.findFirstBySubscription_SubscriptionIdOrderByPaymentDateDesc(pending.getSubscriptionId()).orElse(null);
@@ -59,10 +62,8 @@ public class VNPayServiceImpl implements VNPayService {
         }
 
 
-        LocalDateTime startDate = subscriptionService.calculateStartDate(memberId, pkg, now);
-        LocalDateTime endDate = startDate.plusDays(pkg.getDurationDays());
 
-        Subscription subscription = subscriptionRepository.save(Subscription.builder().member(member).membershipPackage(pkg).startDate(startDate).endDate(endDate).status("PENDING").build());
+        Subscription subscription = subscriptionRepository.save(Subscription.builder().member(member).membershipPackage(pkg).status(SubscriptionStatus.PENDING.name()).build());
 
         // tao payemnt o trang thai pending
         Payment payment = paymentRepository.save(Payment.builder().subscription(subscription).amount(BigDecimal.valueOf(pkg.getPrice())).paymentMethod("VNPAY").paymentDate(now).status("PENDING").build());
@@ -183,7 +184,7 @@ public class VNPayServiceImpl implements VNPayService {
             payment.setTransactionRef(transactionNo);
             paymentRepository.save(payment);
 
-            subscriptionService.activate(payment.getSubscription(), paidAt);
+            subscriptionService.markPaid(payment.getSubscription(), paidAt);
 
             return VNPayCallBackResponseDTO.builder()
                 .success(true)

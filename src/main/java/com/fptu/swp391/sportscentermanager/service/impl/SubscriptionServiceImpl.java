@@ -11,9 +11,7 @@ import com.fptu.swp391.sportscentermanager.entity.MembershipPackage;
 import com.fptu.swp391.sportscentermanager.entity.Payment;
 import com.fptu.swp391.sportscentermanager.entity.Subject;
 import com.fptu.swp391.sportscentermanager.entity.Subscription;
-import com.fptu.swp391.sportscentermanager.enums.AreaAccess;
-import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
-import com.fptu.swp391.sportscentermanager.enums.PackageType;
+import com.fptu.swp391.sportscentermanager.enums.*;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.MemberRepository;
 import com.fptu.swp391.sportscentermanager.repository.MembershipPackageRepository;
@@ -35,8 +33,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.fptu.swp391.sportscentermanager.enums.PaymentMethod;
-import com.fptu.swp391.sportscentermanager.enums.PaymentStatus;
 @Service
 @RequiredArgsConstructor
 public class SubscriptionServiceImpl implements SubscriptionService {
@@ -58,8 +54,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             .orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND));
 
         LocalDateTime now = LocalDateTime.now();
+        requireMembershipForClass(memberId, pkg, now);
 
-        // BE-17/D-10: không cho mở thêm giao dịch khi member còn 1 giao dịch đang chờ thu tiền
         for (Subscription pending : subscriptionRepository.findByMember_UserIdAndStatus(memberId, "PENDING")) {
             Payment pendingPayment = latestPayment(pending);
             if (pendingPayment == null || !PaymentStatus.PENDING.name().equals(pendingPayment.getStatus())) continue;
@@ -69,23 +65,16 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 throw new AppException(ErrorCode.PAYMENT_PENDING_EXISTS);
             }
             // Link VNPay đã hết hạn: hủy để không treo mãi
-            pending.setStatus("CANCELLED");
+            pending.setStatus(SubscriptionStatus.CANCELLED.name());
             pendingPayment.setStatus(PaymentStatus.CANCELLED.name());
         }
 
-        // Ngày dự kiến (tính lại lúc xác nhận thu tiền, xem activate)
-        LocalDateTime startDate = calculateStartDate(memberId, pkg, now);
-        LocalDateTime endDate = startDate.plusDays(pkg.getDurationDays());
-
-        // Gói chỉ ACTIVE sau khi lễ tân xác nhận đã thu tiền: PATCH /api/v1/receptionist/payments/{paymentId}/confirm
-
         Subscription subscription = subscriptionRepository.save(Subscription.builder()
-            .member(member)
-            .membershipPackage(pkg)
-            .startDate(startDate)
-            .endDate(endDate)
-            .status("PENDING")
+                .member(member)
+                .membershipPackage(pkg)
+                .status(SubscriptionStatus.PENDING.name())
             .build());
+
 
         // Process Payment (include): ghi nhận giao dịch, chưa phải thực thu
 
@@ -101,16 +90,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         return toResponse(subscription, payment);
     }
 
-    @Override
-    @Transactional
-    public void activate(Subscription subscription, LocalDateTime paidAt) {
-        LocalDateTime startDate = calculateStartDate(subscription.getMember().getUserId(),
-            subscription.getMembershipPackage(), paidAt);
-        subscription.setStartDate(startDate);
-        subscription.setEndDate(startDate.plusDays(subscription.getMembershipPackage().getDurationDays()));
-        subscription.setStatus("ACTIVE");
-        subscriptionRepository.save(subscription);
-    }
+
 
     // BR-SUB-05: chỉ nối sau gói ACTIVE cùng loại + cùng tập môn, còn hạn và còn buổi.
     // Không có gói như vậy thì bắt đầu ngay.
@@ -196,6 +176,20 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             throw new AppException(ErrorCode.NO_ACTIVE_SUBSCRIPTION);
         }
         return current;
+    }
+
+    @Override
+    public void markPaid(Subscription subscription, LocalDateTime paidAt) {
+        subscription.setStatus(SubscriptionStatus.WAITING_ACTIVATION.name());
+        subscription.setPaidAt(paidAt);
+        subscriptionRepository.save(subscription);
+    }
+
+    @Override
+    public void requireMembershipForClass(Long memberId, MembershipPackage pkg, LocalDateTime now) {
+        if (pkg.getPackageType() == PackageType.CLASS && !subscriptionRepository.existsUsableMembership(memberId, now)) {
+            throw new AppException(ErrorCode.MEMBERSHIP_REQUIRED_FOR_CLASS);
+        }
     }
 
     // Cùng loại + cùng tập môn (FREE toàn trung tâm: cả 2 đều không có môn)

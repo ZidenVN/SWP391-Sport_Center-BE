@@ -16,8 +16,9 @@ public interface SubscriptionService {
     // Mọi gói đang hiệu lực (member được có nhiều gói cùng lúc, BR-SUB-02)
     List<SubscriptionResponseDTO> getCurrentSubscriptions(Long memberId);
 
-    // BE-17: kích hoạt gói khi giao dịch đã thu tiền (nối tiếp sau gói ACTIVE còn hạn)
-    void activate(Subscription subscription, LocalDateTime paidAt);
+    void markPaid(Subscription subscription, LocalDateTime paidAt);
+
+    void requireMembershipForClass(Long memberId, MembershipPackage pkg, LocalDateTime now);
 
     // BR-SUB-05: ngày bắt đầu của gói mới, chỉ nối sau gói cùng loại + cùng môn
     LocalDateTime calculateStartDate(Long memberId, MembershipPackage pkg, LocalDateTime now);
