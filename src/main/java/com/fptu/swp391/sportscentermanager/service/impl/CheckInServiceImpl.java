@@ -2,22 +2,24 @@ package com.fptu.swp391.sportscentermanager.service.impl;
 
 import com.fptu.swp391.sportscentermanager.dto.CheckInResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.*;
+import com.fptu.swp391.sportscentermanager.enums.CheckInType;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
+import com.fptu.swp391.sportscentermanager.enums.PackageType;
 import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
-import com.fptu.swp391.sportscentermanager.repository.CheckInRepository;
-import com.fptu.swp391.sportscentermanager.repository.MemberRepository;
-import com.fptu.swp391.sportscentermanager.repository.ReceptionistRepository;
-import com.fptu.swp391.sportscentermanager.repository.SubscriptionRepository;
+import com.fptu.swp391.sportscentermanager.repository.*;
 import com.fptu.swp391.sportscentermanager.service.CheckInService;
+import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class CheckInServiceImpl implements CheckInService {
@@ -27,6 +29,11 @@ public class CheckInServiceImpl implements CheckInService {
     private final CheckInRepository checkInRepository;
     private final ReceptionistRepository receptionistRepository;
     private final SubscriptionService subscriptionService;
+    private final ClassSessionRepository classSessionRepository;
+
+    @Value("${app.checkin.class-open-minutes-before:30}")
+    private long classOpenMinutesBefore;
+
     @Override
     @Transactional
     public CheckInResponseDTO checkIn(Long memberId, Long receptionistId) {
@@ -36,33 +43,54 @@ public class CheckInServiceImpl implements CheckInService {
         }
 
         LocalDateTime now = LocalDateTime.now();
-        Subscription current = subscriptionRepository.findCurrent(memberId, now).stream().findFirst().orElseThrow(() -> new AppException((ErrorCode.NO_ACTIVE_SUBSCRIPTION)));
-
         LocalDateTime startOfDay = now.toLocalDate().atStartOfDay();
         if (checkInRepository.existsByMember_UserIdAndCheckInTimeBetween(memberId, startOfDay, startOfDay.plusDays(1))) {
             throw new AppException(ErrorCode.ALREADY_CHECK_IN);
         }
-        CheckIn saved = checkInRepository.save(CheckIn.builder()
-                .member(member)
-                .receptionist(receptionistRepository.getReferenceById(receptionistId))
-                .checkInTime(now)
-            .build());
+
+        // membership đang chờ active thì active luôn
+
+        subscriptionService.activateMembershipIfWaiting(memberId, now);
+
+        List<Subscription> current = subscriptionRepository.findCurrent(memberId, now);
+        Optional<Subscription> membership = current.stream().filter(s -> s.getMembershipPackage().getPackageType() == PackageType.MEMBERSHIP).findFirst();
+
+        CheckIn checkIn = CheckIn.builder().member(member).receptionist(receptionistRepository.getReferenceById(receptionistId))
+            .checkInTime(now)
+            .type(CheckInType.FACILITY)
+            .build();
+        Subscription shown;
+
+        if (membership.isPresent()) {
+            shown = membership.get();
+        } else {
+            Optional<Subscription> classPackage = current.stream().filter(s -> s.getMembershipPackage().getPackageType() == PackageType.CLASS).findFirst();
+            ClassSession session = classSessionRepository.findMemberSessionAround(memberId, now, now.plusMinutes(classOpenMinutesBefore)).stream().findFirst().orElseThrow(() -> new AppException(classPackage.isPresent() ? ErrorCode.CHECKIN_OUTSIDE_CLASS_TIME : ErrorCode.NO_ACTIVE_SUBSCRIPTION));
+            checkIn.setType(CheckInType.CLASS);
+            checkIn.setSession(session);
+            shown = classPackage.orElse(null);
+        }
+
+        CheckIn saved = checkInRepository.save(checkIn);
         CheckInResponseDTO dto = toResponse(saved);
-        dto.setPackageName(current.getMembershipPackage().getPackageName());
-        dto.setSubscriptionEndDate(current.getEndDate());
-        // BR-CHK-02: trả hết gói đang hiệu lực (gói CLASS hết buổi vẫn có, BR-SUB-03)
+        if (shown != null) {
+            dto.setPackageName(shown.getMembershipPackage().getPackageName());
+            dto.setSubscriptionEndDate(shown.getEndDate());
+        }
+
         dto.setActiveSubscriptions(subscriptionService.getCurrentSubscriptions(memberId));
         return dto;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<CheckInResponseDTO> getCheckIns(LocalDate date){
+    public List<CheckInResponseDTO> getCheckIns(LocalDate date) {
         LocalDateTime from = date.atStartOfDay();
         return checkInRepository.findInRange(from, from.plusDays(1)).stream().map(this::toResponse).toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<CheckInResponseDTO> getMemberCheckIns(Long memberId) {
         if (!memberRepository.existsById(memberId)) {
             throw new AppException(ErrorCode.MEMBER_NOT_FOUND);
@@ -82,6 +110,16 @@ public class CheckInServiceImpl implements CheckInService {
             .checkInTime(ci.getCheckInTime())
             .receptionistName(r != null ? r.getLastName() + " " + r.getFirstName() : null)
             .build();
+
+        dto.setCheckInType(ci.getType());
+        if (ci.getSession() != null) {
+            ClassSession s = ci.getSession();
+            dto.setClassSessionId(s.getSessionId());
+
+            dto.setClassName(s.getSportClass().getSubject().getSubjectName());
+
+            dto.setSessionStartTime(s.getStartTime());
+        }
 
         subscriptionRepository.findCurrent(m.getUserId(), ci.getCheckInTime())
             .stream().findFirst().ifPresent(sub -> {
