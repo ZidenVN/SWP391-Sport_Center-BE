@@ -25,4 +25,5 @@ public interface SportClassService {
     // BE-16: vòng đời lớp
     SportClassResponseDTO cancelClass(Long id, String reason);
     SportClassResponseDTO completeClass(Long id);
+    SportClassResponseDTO stopClass(Long id, String reason);
 }

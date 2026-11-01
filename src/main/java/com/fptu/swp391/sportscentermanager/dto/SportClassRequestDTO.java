@@ -1,33 +1,37 @@
 package com.fptu.swp391.sportscentermanager.dto;
 
-import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Getter @Setter
 @Builder @NoArgsConstructor @AllArgsConstructor
 public class SportClassRequestDTO {
-    @NotNull
-    @Min(1)
+    @NotNull(message = "Sĩ số tối đa không được để trống")
+    @Min(value = 1, message = "Sĩ số tối đa phải lớn hơn 0")
     private Integer maxCapacity;
 
-    @NotNull(message = "Giờ bắt đầu không được để trống")
-    @Future(message = "Thời gian học phải ở trong tương lai")
-    private LocalDateTime startTime;
+    // Các trường mới dành cho mô hình khoá học lặp lịch cố định
+    private LocalDate startDate;
+    private Integer durationDays; // 30, 60, 90 ngày
+    private String daysOfWeek;   // ví dụ: "MON,WED,FRI"
+    private LocalTime startClock; // ví dụ: 08:00
+    private LocalTime endClock;   // ví dụ: 09:30
 
-    @NotNull(message = "Giờ kết thúc không được để trống")
-    @Future(message = "Giờ kết thúc phải ở trong tương lai")
+    // Giữ lại để tương thích ngược nếu payload cũ gửi startTime / endTime
+    private LocalDateTime startTime;
     private LocalDateTime endTime;
 
-    @NotNull
+    @NotNull(message = "Huấn luyện viên không được để trống")
     private Long coachId;
 
-    @NotNull
+    @NotNull(message = "Phòng học không được để trống")
     private Long roomId;
 
-    @NotNull
+    @NotNull(message = "Môn học không được để trống")
     private Long subjectId;
 }

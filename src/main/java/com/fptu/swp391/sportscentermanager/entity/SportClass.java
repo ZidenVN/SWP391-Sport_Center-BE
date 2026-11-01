@@ -3,7 +3,9 @@ package com.fptu.swp391.sportscentermanager.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import org.springframework.stereotype.Component;
@@ -23,6 +25,27 @@ public class SportClass {
     private Long classId;
 
     private Integer maxCapacity;
+
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
+
+    @Column(name = "duration_days")
+    private Integer durationDays;
+
+    @Column(name = "days_of_week")
+    private String daysOfWeek; // e.g. "MON,WED,FRI"
+
+    @Column(name = "start_clock")
+    private LocalTime startClock;
+
+    @Column(name = "end_clock")
+    private LocalTime endClock;
+
+    @Column(name = "first_session_at")
+    private LocalDateTime firstSessionAt;
 
     @Column(name = "start_time", nullable = false)
     private LocalDateTime startTime;

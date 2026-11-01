@@ -1,23 +1,24 @@
 package com.fptu.swp391.sportscentermanager.controller;
 
 import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
+import com.fptu.swp391.sportscentermanager.dto.ClassCancelRequestDTO;
+import com.fptu.swp391.sportscentermanager.dto.ClassStopRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.SportClassRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.SportClassResponseDTO;
 import com.fptu.swp391.sportscentermanager.service.SportClassService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import com.fptu.swp391.sportscentermanager.dto.ClassCancelRequestDTO;
-import org.springframework.data.domain.Page;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/classes")
 @RequiredArgsConstructor
@@ -28,7 +29,7 @@ public class SportClassController {
     @PreAuthorize("hasAuthority('MANAGE_CLASS')")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<SportClassResponseDTO> createClass(@Valid @RequestPart("data") SportClassRequestDTO requestDTO, @RequestPart(value = "image", required = false) MultipartFile image) {
-        return   ResponseEntity.ok(sportClassService.createClass(requestDTO, image));
+        return ResponseEntity.ok(sportClassService.createClass(requestDTO, image));
     }
 
     @PreAuthorize("hasAuthority('VIEW_CLASS')")
@@ -70,7 +71,7 @@ public class SportClassController {
 
     @LogAudit(actionType = "UPDATE", targetEntity = "SportClass")
     @PreAuthorize("hasAuthority('MANAGE_CLASS')")
-    @PutMapping(value = "/{id}", consumes =  MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<SportClassResponseDTO> updateClass(@PathVariable Long id,
                                                              @Valid @RequestPart("data") SportClassRequestDTO requestDTO,
                                                              @RequestPart(value = "image", required = false) MultipartFile image){
@@ -84,6 +85,15 @@ public class SportClassController {
     public ResponseEntity<SportClassResponseDTO> cancelClass(@PathVariable Long id,
                                                              @Valid @RequestBody(required = false) ClassCancelRequestDTO requestDTO) {
         return ResponseEntity.ok(sportClassService.cancelClass(id, requestDTO != null ? requestDTO.getReason() : null));
+    }
+
+    // Dừng lớp học khẩn cấp (Role B): chuyển STOPPED + huỷ các buổi tương lai + thông báo học viên
+    @LogAudit(actionType = "STOP", targetEntity = "SportClass")
+    @PreAuthorize("hasAuthority('MANAGE_CLASS')")
+    @PatchMapping("/{id}/stop")
+    public ResponseEntity<SportClassResponseDTO> stopClass(@PathVariable Long id,
+                                                           @Valid @RequestBody(required = false) ClassStopRequestDTO requestDTO) {
+        return ResponseEntity.ok(sportClassService.stopClass(id, requestDTO != null ? requestDTO.getReason() : null));
     }
 
     // BE-16: đánh dấu lớp đã diễn ra xong
@@ -101,6 +111,4 @@ public class SportClassController {
         sportClassService.deleteClass(id);
         return ResponseEntity.ok("Đã xóa lớp học thành công!");
     }
-
-
 }
