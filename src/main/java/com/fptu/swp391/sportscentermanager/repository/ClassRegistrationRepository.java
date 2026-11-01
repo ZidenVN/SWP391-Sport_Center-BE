@@ -29,6 +29,8 @@ public interface ClassRegistrationRepository extends JpaRepository<ClassRegistra
         LEFT JOIN FETCH c.room
         LEFT JOIN FETCH c.subject
         LEFT JOIN FETCH c.coach
+        LEFT JOIN FETCH r.subscription sub
+        LEFT JOIN FETCH sub.membershipPackage
         WHERE r.member.userId = :memberId
         ORDER BY r.registeredAt DESC
         """)
@@ -141,4 +143,14 @@ public interface ClassRegistrationRepository extends JpaRepository<ClassRegistra
             and c.startTime > :now                                and c.startTime <= :deadline
         """)
     List<ClassRegistration> findUpcomingWithoutReminder(@Param("now") LocalDateTime now, @Param("deadline") LocalDateTime deadline);
+
+
+    // Phần C: các đăng ký của 1 lớp theo trạng thái (huỷ lớp, dừng lớp)
+    @Query("""
+        SELECT r FROM ClassRegistration r
+        JOIN FETCH r.member
+        LEFT JOIN FETCH r.subscription
+        WHERE r.sportClass.classId = :classId AND r.status = :status
+        """)
+    List<ClassRegistration> findByClassAndStatus(@Param("classId") Long classId, @Param("status") String status);
 }

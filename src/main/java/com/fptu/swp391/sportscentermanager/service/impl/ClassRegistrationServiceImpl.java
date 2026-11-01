@@ -1,175 +1,60 @@
 package com.fptu.swp391.sportscentermanager.service.impl;
 
 import com.fptu.swp391.sportscentermanager.dto.ClassRegistrationResponseDTO;
+import com.fptu.swp391.sportscentermanager.dto.EligibleClassResponseDTO;
+import com.fptu.swp391.sportscentermanager.dto.MemberSessionResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.ClassRegistration;
+import com.fptu.swp391.sportscentermanager.entity.ClassSession;
+import com.fptu.swp391.sportscentermanager.entity.Coach;
 import com.fptu.swp391.sportscentermanager.entity.Member;
+import com.fptu.swp391.sportscentermanager.entity.MembershipPackage;
 import com.fptu.swp391.sportscentermanager.entity.SportClass;
+import com.fptu.swp391.sportscentermanager.entity.Subscription;
+import com.fptu.swp391.sportscentermanager.entity.User;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
+import com.fptu.swp391.sportscentermanager.enums.PackageType;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.ClassRegistrationRepository;
 import com.fptu.swp391.sportscentermanager.repository.MemberRepository;
+import com.fptu.swp391.sportscentermanager.repository.ScheduleQueryRepository;
 import com.fptu.swp391.sportscentermanager.repository.SportClassRepository;
 import com.fptu.swp391.sportscentermanager.repository.SubscriptionRepository;
+import com.fptu.swp391.sportscentermanager.repository.UserRepository;
 import com.fptu.swp391.sportscentermanager.service.ClassRegistrationService;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.transaction.annotation.Transactional;
+import com.fptu.swp391.sportscentermanager.service.NotificationService;
+import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.fptu.swp391.sportscentermanager.entity.Subscription;
-import com.fptu.swp391.sportscentermanager.enums.PackageType;
-import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
-import com.fptu.swp391.sportscentermanager.dto.EligibleClassResponseDTO;
-import com.fptu.swp391.sportscentermanager.dto.MemberSessionResponseDTO;
-import com.fptu.swp391.sportscentermanager.entity.ClassSession;
-import com.fptu.swp391.sportscentermanager.entity.Coach;
-import com.fptu.swp391.sportscentermanager.entity.MembershipPackage;
-import com.fptu.swp391.sportscentermanager.entity.User;
-import com.fptu.swp391.sportscentermanager.repository.ScheduleQueryRepository;
+import java.util.Objects;
+
 @Service
 @RequiredArgsConstructor
 public class ClassRegistrationServiceImpl implements ClassRegistrationService {
 
     private static final String REGISTERED = "REGISTERED";
+    private static final String SWITCHED = "SWITCHED";
     private static final String CANCELLED = "CANCELLED";
+    private static final String STOPPED = "STOPPED";
+    // Hội viên tự đổi lớp khi buổi đầu còn hơn 12 tiếng
+    private static final long SELF_SWITCH_HOURS = 12;
+    private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final ClassRegistrationRepository registrationRepository;
     private final SportClassRepository sportClassRepository;
     private final MemberRepository memberRepository;
+    private final UserRepository userRepository;
     private final SubscriptionRepository subscriptionRepository;
-    private final SubscriptionService subscriptionService;
     private final ScheduleQueryRepository scheduleQueryRepository;
-    @Value("${app.booking.cancel-cutoff-hours}")
-    private long cancelCutoffHours;
-
-    @Override
-    @Transactional
-    public ClassRegistrationResponseDTO registerSelf(Long memberId, Long classId) {
-        Member member = memberRepository.findById(memberId)
-            .orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
-        if (member.getQuizCompletedAt() == null) {
-            throw new AppException(ErrorCode.QUIZ_NOT_COMPLETED);
-        }
-        // Gọi trong cùng transaction; register vẫn khoá member + lớp bằng SELECT ... FOR UPDATE
-        return register(memberId, classId);
-    }
-
-    @Override
-    @Transactional
-    public ClassRegistrationResponseDTO register(Long memberId, Long classId) {
-        // tại sao trong hàm register lại dùng findByIdForUpdate để xử lí trường hợp có nhiều request đến cùng lúc.
-        /* study case: lớp A còn 1 slot cuối cùng (19/20slot)
-        - An và Bình cùng nhấn đăng kí cùng một giây, 2 request chạy song song.
-        - để giải quyết case này thì phải sử dụng kỹ thuật PESSIMICTIC LOCKING - nghĩa là khi đọc dòng dòng đó trong DB thì khoá luôn dòng đó lại, request khác muốn đọc thì phải đợi request trước xong.
-        - Cách nó hoạt động: Khoá member + lớp (Pessimistic Locking) để các request đăng ký xếp hàng, tránh race condition.
-         */
-        Member member = memberRepository.findByIdForUpdate(memberId)
-            .orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
-
-        // Khóa dòng của lớp để việc đếm chỗ + ghi đăng ký là một khối không bị chen ngang
-        SportClass sportClass = sportClassRepository.findByIdForUpdate(classId)
-            .orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
-
-        LocalDateTime now = LocalDateTime.now();
-
-        // 1. Lớp phải còn mở và chưa diễn ra
-        if (!"OPENING".equals(sportClass.getStatus())
-            || sportClass.getStartTime() == null
-            || !sportClass.getStartTime().isAfter(now)) {
-            throw new AppException(ErrorCode.CLASS_NOT_OPEN);
-        }
-
-        // 2. Check Membership Status (include): phải có gói CLASS đúng môn, còn hạn, còn buổi (BR-REG-02)
-        // Danh sách đã sắp gói hết hạn sớm nhất lên đầu (BR-REG-04)
-        Long subjectId = sportClass.getSubject() != null ? sportClass.getSubject().getSubjectId() : null;
-        List<Long> validSubscriptionIds = subscriptionRepository
-            .findValidIdsForClass(memberId, subjectId, sportClass.getStartTime());
-        if (validSubscriptionIds.isEmpty()) {
-            throw new AppException(noValidSubscriptionReason(memberId, subjectId, sportClass.getStartTime(), now));
-        }
-
-        // 3. Không đăng ký trùng
-        ClassRegistration existing = registrationRepository
-            .findByMember_UserIdAndSportClass_ClassId(memberId, classId)
-            .orElse(null);
-        if (existing != null && REGISTERED.equals(existing.getStatus())) {
-            throw new AppException(ErrorCode.ALREADY_REGISTERED);
-        }
-
-        if (registrationRepository.existsMemberScheduleConflict(memberId, classId, sportClass.getStartTime(), sportClass.getEndTime())) {
-            throw new AppException(ErrorCode.MEMBER_SCHEDULE_CONFLICT);
-        }
-
-        // 4. Còn chỗ không
-        long taken = registrationRepository.countBySportClass_ClassIdAndStatus(classId, REGISTERED);
-        if (taken >= sportClass.getMaxCapacity()) {
-            throw new AppException(ErrorCode.CLASS_FULL);
-        }
-
-        // 5. Trừ 1 buổi của gói đã chọn (BR-REG-05). Khoá dòng gói để không bị trừ/hoàn chen ngang (BR-REG-08)
-        Subscription subscription = subscriptionRepository.findByIdForUpdate(validSubscriptionIds.get(0))
-            .orElseThrow(() -> new AppException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
-        if (!subscription.hasSessionLeft()) {
-            throw new AppException(ErrorCode.NO_SESSIONS_LEFT);
-        }
-        subscription.setUsedSessions(subscription.getUsedSessions() + 1);
-        subscriptionRepository.save(subscription);
-
-        // 6. Ghi đăng ký (dùng lại dòng cũ nếu trước đó đã hủy)
-        ClassRegistration registration = (existing != null) ? existing
-            : ClassRegistration.builder().member(member).sportClass(sportClass).build();
-        registration.setStatus(REGISTERED);
-        registration.setRegisteredAt(now);
-        registration.setCancelledAt(null);
-        registration.setSubscription(subscription);
-
-        return toResponse(registrationRepository.save(registration));
-    }
-
-    @Override
-    @Transactional
-    public ClassRegistrationResponseDTO cancel(Long memberId, Long registrationId) {
-        ClassRegistration registration = registrationRepository
-            .findByRegistrationIdAndMember_UserId(registrationId, memberId)
-            .orElseThrow(() -> new AppException(ErrorCode.REGISTRATION_NOT_FOUND));
-
-        // huỷ lần 2: trả về trạng thái hiện tại, không báo lỗi idempotent
-        if (CANCELLED.equals(registration.getStatus())) {
-            return toResponse(registration);
-        }
-
-        LocalDateTime start = registration.getSportClass().getStartTime();
-        if (start == null || LocalDateTime.now().isAfter(start.minusHours(cancelCutoffHours))) {
-            throw new AppException(ErrorCode.CANCEL_NOT_ALLOWED);
-        }
-
-        registration.setStatus(CANCELLED);
-        registration.setCancelledAt(LocalDateTime.now());
-        // BR-CAN-01: huỷ trước cutoff thì hoàn 1 buổi vào đúng gói đã trừ
-        subscriptionService.refundSession(registration);
-        return toResponse(registrationRepository.save(registration));
-    }
-
-    @Override
-    @Transactional
-    public List<ClassRegistrationResponseDTO> getHistory(Long memberId) {
-        requireMember(memberId);
-        return registrationRepository.findHistory(memberId).stream().map(this::toResponse).toList();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<MemberSessionResponseDTO> getUpcomingSchedule(Long memberId) {
-        requireMember(memberId);
-        return scheduleQueryRepository.findMemberUpcomingSessions(memberId, LocalDateTime.now())
-            .stream().map(this::toSessionResponse).toList();
-    }
+    private final SubscriptionService subscriptionService;
+    private final NotificationService notificationService;
 
     // ---------- Trạng thái gói (Subscription của A; nếu A đổi status sang enum thì chỉ sửa 2 hàm này) ----------
     private boolean isWaiting(Subscription sub) {
@@ -186,7 +71,7 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
     public List<EligibleClassResponseDTO> getEligibleClasses(Long memberId, Long subscriptionId) {
         Subscription sub = requireOwnedClassPackage(memberId, subscriptionId);
         if (!isWaiting(sub) && !isActive(sub)) {
-            throw new AppException(ErrorCode.NO_ACTIVE_SUBSCRIPTION);
+            throw new AppException(ErrorCode.REGISTRATION_PACKAGE_NOT_WAITING);
         }
         MembershipPackage pkg = sub.getMembershipPackage();
 
@@ -209,19 +94,288 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
         return result;
     }
 
-    // Gói phải của chính hội viên và là gói lớp có đủ môn + thời hạn
-    private Subscription requireOwnedClassPackage(Long memberId, Long subscriptionId) {
-        Subscription sub = subscriptionRepository.findById(subscriptionId)
-            .orElseThrow(() -> new AppException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
-        if (!sub.getMember().getUserId().equals(memberId)) {
+    // ---------- Đăng ký ----------
+    @Override
+    @Transactional
+    public ClassRegistrationResponseDTO registerSelf(Long memberId, Long classId, Long subscriptionId) {
+        Member member = memberRepository.findById(memberId)
+            .orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
+        if (member.getQuizCompletedAt() == null) {
+            throw new AppException(ErrorCode.QUIZ_NOT_COMPLETED);
+        }
+        // Gọi trong cùng transaction; register vẫn khoá member + lớp + gói bằng SELECT ... FOR UPDATE
+        return register(memberId, classId, subscriptionId);
+    }
+
+    @Override
+    @Transactional
+    public ClassRegistrationResponseDTO register(Long memberId, Long classId, Long subscriptionId) {
+        // Khoá member + lớp + gói (pessimistic lock) để các request đăng ký xếp hàng, tránh tranh chỗ cuối
+        Member member = memberRepository.findByIdForUpdate(memberId)
+            .orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
+        SportClass sportClass = sportClassRepository.findByIdForUpdate(classId)
+            .orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
+        Subscription sub = lockOwnedClassPackage(memberId, subscriptionId);
+        LocalDateTime now = LocalDateTime.now();
+
+        // Gói lớp đang chờ mới đăng ký được; gói đã có lớp thì phải đổi lớp
+        if (!isWaiting(sub)) {
+            throw new AppException(ErrorCode.REGISTRATION_PACKAGE_NOT_WAITING);
+        }
+        requireJoinable(sportClass, sub.getMembershipPackage(), now);
+
+        ClassRegistration existing = registrationRepository
+            .findByMember_UserIdAndSportClass_ClassId(memberId, classId).orElse(null);
+        if (existing != null && REGISTERED.equals(existing.getStatus())) {
+            throw new AppException(ErrorCode.ALREADY_REGISTERED);
+        }
+        requireNoConflictAndSeat(memberId, sportClass, -1L);
+
+        ClassRegistration registration = saveRegistered(existing, member, sportClass, sub, now);
+
+        // Gói lớp ACTIVE tới ngày lớp kết thúc; membership đang chờ thì kích hoạt luôn
+        subscriptionService.activateClassPackage(sub, sportClass.getEndDate());
+        subscriptionService.activateMembershipIfWaiting(memberId, now);
+        return toResponse(registration);
+    }
+
+    // ---------- Huỷ đăng ký ----------
+    @Override
+    @Transactional
+    public ClassRegistrationResponseDTO cancel(Long memberId, Long registrationId) {
+        ClassRegistration registration = registrationRepository
+            .findByRegistrationIdAndMember_UserId(registrationId, memberId)
+            .orElseThrow(() -> new AppException(ErrorCode.REGISTRATION_NOT_FOUND));
+
+        // huỷ lần 2: trả về trạng thái hiện tại, không báo lỗi (idempotent)
+        if (CANCELLED.equals(registration.getStatus())) {
+            return toResponse(registration);
+        }
+        if (!REGISTERED.equals(registration.getStatus())) {
+            throw new AppException(ErrorCode.REGISTRATION_NOT_ACTIVE);
+        }
+        LocalDateTime now = LocalDateTime.now();
+        if (hasStarted(registration.getSportClass(), now)) {
+            throw new AppException(ErrorCode.REGISTRATION_CLASS_STARTED);
+        }
+
+        registration.setStatus(CANCELLED);
+        registration.setCancelledAt(now);
+        // Gói lớp quay về chờ, membership đã kích hoạt thì giữ nguyên
+        if (registration.getSubscription() != null) {
+            subscriptionService.releaseClassPackage(registration.getSubscription());
+        }
+        return toResponse(registrationRepository.save(registration));
+    }
+
+    // ---------- Đổi lớp ----------
+    @Override
+    @Transactional
+    public ClassRegistrationResponseDTO switchSelf(Long memberId, Long registrationId, Long newClassId) {
+        ClassRegistration current = registrationRepository
+            .findByRegistrationIdAndMember_UserId(registrationId, memberId)
+            .orElseThrow(() -> new AppException(ErrorCode.REGISTRATION_NOT_FOUND));
+        if (!REGISTERED.equals(current.getStatus())) {
+            throw new AppException(ErrorCode.REGISTRATION_NOT_ACTIVE);
+        }
+        LocalDateTime now = LocalDateTime.now();
+        if (!canSelfSwitch(current.getSportClass(), now)) {
+            throw new AppException(ErrorCode.REGISTRATION_SELF_SWITCH_CLOSED);
+        }
+        User actor = userRepository.findById(memberId)
+            .orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
+        return doSwitch(current, newClassId, actor, false, now);
+    }
+
+    @Override
+    @Transactional
+    public ClassRegistrationResponseDTO switchByReceptionist(Long receptionistId, Long registrationId, Long newClassId) {
+        ClassRegistration current = registrationRepository.findById(registrationId)
+            .orElseThrow(() -> new AppException(ErrorCode.REGISTRATION_NOT_FOUND));
+        LocalDateTime now = LocalDateTime.now();
+
+        boolean countTurn;
+        boolean classStopped = STOPPED.equals(current.getSportClass().getStatus());
+        if (STOPPED.equals(current.getStatus()) || (REGISTERED.equals(current.getStatus()) && classStopped)) {
+            // Lớp bị dừng: chuyển lớp không tính lượt
+            countTurn = false;
+        } else if (REGISTERED.equals(current.getStatus())) {
+            // Hội viên còn tự đổi được thì lễ tân đổi giúp không tính lượt; quá mốc 12 tiếng thì tính 1 lượt
+            countTurn = !canSelfSwitch(current.getSportClass(), now);
+        } else {
+            throw new AppException(ErrorCode.REGISTRATION_NOT_ACTIVE);
+        }
+        User actor = userRepository.findById(receptionistId)
+            .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        ClassRegistrationResponseDTO result = doSwitch(current, newClassId, actor, countTurn, now);
+
+        notificationService.notifyUsers(List.of(current.getMember()), "Đổi lớp thành công",
+            "Lễ tân đã chuyển bạn sang lớp " + result.getSubjectName()
+                + " bắt đầu " + result.getStartDate().format(DATE) + ".", "CLASS_SWITCHED");
+        return result;
+    }
+
+    private ClassRegistrationResponseDTO doSwitch(ClassRegistration current, Long newClassId, User actor,
+                                                  boolean countTurn, LocalDateTime now) {
+        Long oldClassId = current.getSportClass().getClassId();
+        if (oldClassId.equals(newClassId)) {
+            throw new AppException(ErrorCode.REGISTRATION_SAME_CLASS);
+        }
+        Long memberId = current.getMember().getUserId();
+        Member member = memberRepository.findByIdForUpdate(memberId)
+            .orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
+        SportClass newClass = sportClassRepository.findByIdForUpdate(newClassId)
+            .orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
+        if (current.getSubscription() == null) {
             throw new AppException(ErrorCode.SUBSCRIPTION_NOT_FOUND);
         }
+        Subscription sub = lockOwnedClassPackage(memberId, current.getSubscription().getSubscriptionId());
+
+        if (countTurn) {
+            int used = sub.getReceptionistSwitchCount() == null ? 0 : sub.getReceptionistSwitchCount();
+            if (used >= 1) {
+                throw new AppException(ErrorCode.REGISTRATION_SWITCH_LIMIT);
+            }
+            sub.setReceptionistSwitchCount(used + 1);
+        }
+
+        // Lớp mới: cùng môn, cùng thời hạn, đang mở, chưa bắt đầu, còn chỗ, không trùng lịch (bỏ qua lớp cũ)
+        requireJoinable(newClass, sub.getMembershipPackage(), now);
+        ClassRegistration existing = registrationRepository
+            .findByMember_UserIdAndSportClass_ClassId(memberId, newClassId).orElse(null);
+        if (existing != null && REGISTERED.equals(existing.getStatus())) {
+            throw new AppException(ErrorCode.ALREADY_REGISTERED);
+        }
+        requireNoConflictAndSeat(memberId, newClass, oldClassId);
+
+        // Đăng ký cũ giữ lại làm lịch sử
+        current.setStatus(SWITCHED);
+        current.setSwitchedAt(now);
+        current.setSwitchedBy(actor);
+        registrationRepository.save(current);
+
+        ClassRegistration registration = saveRegistered(existing, member, newClass, sub, now);
+        subscriptionRepository.save(sub);
+        // Hạn gói lớp chuyển theo lớp mới
+        subscriptionService.activateClassPackage(sub, newClass.getEndDate());
+        return toResponse(registration);
+    }
+
+    // ---------- Lịch ----------
+    @Override
+    @Transactional(readOnly = true)
+    public List<ClassRegistrationResponseDTO> getHistory(Long memberId) {
+        requireMember(memberId);
+        return registrationRepository.findHistory(memberId).stream().map(this::toResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MemberSessionResponseDTO> getUpcomingSchedule(Long memberId) {
+        requireMember(memberId);
+        return scheduleQueryRepository.findMemberUpcomingSessions(memberId, LocalDateTime.now())
+            .stream().map(this::toSessionResponse).toList();
+    }
+
+    // ---------- Hàm cho B gọi (A hoàn tiền tự xử lý đăng ký trong PaymentServiceImpl) ----------
+    @Override
+    @Transactional
+    public void releaseForCancelledClass(Long classId) {
+        LocalDateTime now = LocalDateTime.now();
+        for (ClassRegistration r : registrationRepository.findByClassAndStatus(classId, REGISTERED)) {
+            r.setStatus(CANCELLED);
+            r.setCancelledAt(now);
+            if (r.getSubscription() != null) {
+                subscriptionService.releaseClassPackage(r.getSubscription());
+            }
+        }
+    }
+
+    @Override
+    @Transactional
+    public void stopRegistrations(Long classId) {
+        // Hội viên chọn sau: lễ tân chuyển lớp (không tính lượt) hoặc Manager hoàn tiền theo số buổi chưa học
+        for (ClassRegistration r : registrationRepository.findByClassAndStatus(classId, REGISTERED)) {
+            r.setStatus(STOPPED);
+        }
+    }
+
+    // ---------- Hàm phụ ----------
+
+    // Gói phải thuộc hội viên và là gói lớp có đủ môn + thời hạn
+    private Subscription requireOwnedClassPackage(Long memberId, Long subscriptionId) {
+        Subscription sub = subscriptionRepository.findById(subscriptionId)
+            .filter(s -> s.getMember().getUserId().equals(memberId))
+            .orElseThrow(() -> new AppException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
+        checkClassPackage(sub);
+        return sub;
+    }
+
+    private Subscription lockOwnedClassPackage(Long memberId, Long subscriptionId) {
+        Subscription sub = subscriptionRepository.findByIdForUpdate(subscriptionId)
+            .filter(s -> s.getMember().getUserId().equals(memberId))
+            .orElseThrow(() -> new AppException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
+        checkClassPackage(sub);
+        return sub;
+    }
+
+    private void checkClassPackage(Subscription sub) {
         MembershipPackage pkg = sub.getMembershipPackage();
         if (pkg == null || pkg.getPackageType() != PackageType.CLASS
             || pkg.getSubject() == null || pkg.getDurationDays() == null) {
-            throw new AppException(ErrorCode.PACKAGE_NOT_ALLOW_CLASS);
+            throw new AppException(ErrorCode.REGISTRATION_PACKAGE_NOT_CLASS);
         }
-        return sub;
+    }
+
+    // Lớp chưa có buổi đầu (dữ liệu cũ) coi như đã bắt đầu
+    private boolean hasStarted(SportClass c, LocalDateTime now) {
+        return c.getFirstSessionAt() == null || !c.getFirstSessionAt().isAfter(now);
+    }
+
+    private boolean canSelfSwitch(SportClass c, LocalDateTime now) {
+        return c.getFirstSessionAt() != null && c.getFirstSessionAt().minusHours(SELF_SWITCH_HOURS).isAfter(now);
+    }
+
+    // Lớp đăng ký được với gói này: đang mở, chưa bắt đầu, cùng môn, cùng thời hạn
+    private void requireJoinable(SportClass c, MembershipPackage pkg, LocalDateTime now) {
+        if (!"OPENING".equals(c.getStatus())) {
+            throw new AppException(ErrorCode.CLASS_NOT_OPEN);
+        }
+        if (hasStarted(c, now)) {
+            throw new AppException(ErrorCode.REGISTRATION_CLASS_STARTED);
+        }
+        if (c.getSubject() == null || !c.getSubject().getSubjectId().equals(pkg.getSubject().getSubjectId())) {
+            throw new AppException(ErrorCode.REGISTRATION_SUBJECT_MISMATCH);
+        }
+        if (!Objects.equals(c.getDurationDays(), pkg.getDurationDays())) {
+            throw new AppException(ErrorCode.REGISTRATION_DURATION_MISMATCH);
+        }
+    }
+
+    // Không trùng lịch với lớp khác đang học (bỏ qua ignoreClassId), lớp còn chỗ. Gọi sau khi đã khoá dòng lớp
+    private void requireNoConflictAndSeat(Long memberId, SportClass c, Long ignoreClassId) {
+        if (scheduleQueryRepository.existsMemberSessionConflict(memberId, c.getClassId(), ignoreClassId)) {
+            throw new AppException(ErrorCode.MEMBER_SCHEDULE_CONFLICT);
+        }
+        long taken = registrationRepository.countBySportClass_ClassIdAndStatus(c.getClassId(), REGISTERED);
+        if (taken >= c.getMaxCapacity()) {
+            throw new AppException(ErrorCode.CLASS_FULL);
+        }
+    }
+
+    // Ghi đăng ký REGISTERED, dùng lại dòng cũ của cặp (member, lớp) nếu có
+    private ClassRegistration saveRegistered(ClassRegistration existing, Member member, SportClass c,
+                                             Subscription sub, LocalDateTime now) {
+        ClassRegistration registration = (existing != null) ? existing
+            : ClassRegistration.builder().member(member).sportClass(c).build();
+        registration.setStatus(REGISTERED);
+        registration.setRegisteredAt(now);
+        registration.setCancelledAt(null);
+        registration.setSwitchedAt(null);
+        registration.setSwitchedBy(null);
+        registration.setReminderSentAt(null);
+        registration.setSubscription(sub);
+        return registrationRepository.save(registration);
     }
 
     // Đếm chỗ đã giữ của nhiều lớp bằng 1 câu SQL
@@ -233,6 +387,12 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
             taken.put((Long) row[0], (Long) row[1]);
         }
         return taken;
+    }
+
+    private void requireMember(Long memberId) {
+        if (!memberRepository.existsById(memberId)) {
+            throw new AppException(ErrorCode.MEMBER_NOT_FOUND);
+        }
     }
 
     private String fullName(User u) {
@@ -277,32 +437,10 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
             .note(s.getNote())
             .build();
     }
-    // Thứ tự báo lỗi khi không có gói hợp lệ (bảng mục 3.3)
-    private ErrorCode noValidSubscriptionReason(Long memberId, Long subjectId, LocalDateTime classTime, LocalDateTime now) {
-        List<Subscription> covering = subscriptionRepository.findCovering(memberId, classTime);
-        if (covering.isEmpty()) {
-            boolean hasCurrent = !subscriptionRepository.findCurrent(memberId, now).isEmpty();
-            return hasCurrent ? ErrorCode.SUBSCRIPTION_EXPIRED : ErrorCode.NO_ACTIVE_SUBSCRIPTION;
-        }
-        List<Subscription> classPackages = covering.stream()
-            .filter(s -> s.getMembershipPackage().getPackageType() == PackageType.CLASS)
-            .toList();
-        if (classPackages.isEmpty()) {
-            return ErrorCode.PACKAGE_NOT_ALLOW_CLASS;
-        }
-        boolean subjectCovered = classPackages.stream()
-            .anyMatch(s -> s.getMembershipPackage().getSubjects().stream()
-                .anyMatch(sub -> sub.getSubjectId().equals(subjectId)));
-        return subjectCovered ? ErrorCode.NO_SESSIONS_LEFT : ErrorCode.SUBJECT_NOT_COVERED;
-    }
-    private void requireMember(Long memberId) {
-        if (!memberRepository.existsById(memberId)) {
-            throw new AppException(ErrorCode.MEMBER_NOT_FOUND);
-        }
-    }
 
     private ClassRegistrationResponseDTO toResponse(ClassRegistration r) {
         SportClass c = r.getSportClass();
+        Subscription sub = r.getSubscription();
         return ClassRegistrationResponseDTO.builder()
             .registrationId(r.getRegistrationId())
             .memberId(r.getMember().getUserId())
@@ -310,18 +448,23 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
             .imageUrl(c.getImageUrl())
             .subjectName(c.getSubject() != null ? c.getSubject().getSubjectName() : null)
             .roomName(c.getRoom() != null ? c.getRoom().getRoomName() : null)
-            .coachName(c.getCoach() != null
-                ? c.getCoach().getFirstName() + " " + c.getCoach().getLastName() : "Chưa có HLV")
+            .coachName(c.getCoach() != null ? fullName(c.getCoach()) : "Chưa có HLV")
             .startTime(c.getStartTime())
             .endTime(c.getEndTime())
+            .startDate(c.getStartDate())
+            .endDate(c.getEndDate())
+            .daysOfWeek(c.getDaysOfWeek())
+            .startClock(c.getStartClock())
+            .endClock(c.getEndClock())
+            .firstSessionAt(c.getFirstSessionAt())
+            .classStatus(c.getStatus())
             .status(r.getStatus())
             .registeredAt(r.getRegisteredAt())
             .cancelledAt(r.getCancelledAt())
-            .subscriptionId(r.getSubscription() != null ? r.getSubscription().getSubscriptionId() : null)
-            .usedSessions(r.getSubscription() != null ? r.getSubscription().getUsedSessions() : null)
-            .remainingSessions(r.getSubscription() != null ? r.getSubscription().remainingSessions() : null)
+            .switchedAt(r.getSwitchedAt())
+            .subscriptionId(sub != null ? sub.getSubscriptionId() : null)
+            .packageName(sub != null && sub.getMembershipPackage() != null ? sub.getMembershipPackage().getPackageName() : null)
+            .receptionistSwitchCount(sub != null ? sub.getReceptionistSwitchCount() : null)
             .build();
     }
-
-
 }

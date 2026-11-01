@@ -53,7 +53,10 @@ final class AuditMessages {
         Map.entry("UPDATE:QuizQuestion", "đã sửa câu hỏi khảo sát[ \"{content}\"]"),
         Map.entry("DELETE:QuizQuestion", "đã ẩn câu hỏi khảo sát[ #{id}]"),
 
-        Map.entry("MARK_ATTENDANCE:ClassAttendance", "đã điểm danh lớp[ #{id}]"),
+        Map.entry("MARK_ATTENDANCE:ClassAttendance", "đã điểm danh buổi học[ #{id}]"),
+        Map.entry("REGISTER_CLASS:ClassRegistration", "đã đăng ký lớp[ {subject}][ cho hội viên {member}]"),
+        Map.entry("SWITCH_CLASS:ClassRegistration", "đã đổi lớp[ cho hội viên {member}][ sang lớp {subject}]"),
+        Map.entry("CANCEL_REGISTRATION:ClassRegistration", "đã huỷ đăng ký lớp[ {subject}][ của hội viên {member}]"),
         Map.entry("ASSIGN_WORKOUT_PLAN:WorkoutPlan", "đã giao giáo án[ \"{plan}\"][ cho {targetName}]"),
         Map.entry("UPDATE_PLAN_STATUS:MemberPlan", "đã cập nhật tiến độ giáo án[ #{id}][ thành {status}]"),
         Map.entry("RECORD_WORKOUT_RESULT:WorkoutResult", "đã ghi kết quả tập luyện[ cho hội viên {member}]"),
