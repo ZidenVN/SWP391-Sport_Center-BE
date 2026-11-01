@@ -137,7 +137,7 @@ public class PaymentServiceImpl implements PaymentService {
         paymentRepository.save(payment);
 
         // Thu tiền xong mới kích hoạt gói
-        subscriptionService.activate(payment.getSubscription(), now);
+        subscriptionService.markPaid(payment.getSubscription(), now);
 
         return toResponse(payment);
     }

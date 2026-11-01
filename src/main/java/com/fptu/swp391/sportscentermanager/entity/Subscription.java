@@ -36,6 +36,7 @@ public class Subscription {
     @Column(name = "used_sessions", nullable = false)
     @ColumnDefault("0")
     @Builder.Default
+    @Deprecated
     private Integer usedSessions = 0;
 
     // Số buổi còn lại, null = không giới hạn (gói CLASS không giới hạn hoặc gói FREE)
@@ -48,5 +49,16 @@ public class Subscription {
         Integer remaining = remainingSessions();
         return remaining == null || remaining > 0;
     }
+
+    @Column(name = "paid_at")
+    private LocalDateTime paidAt;
+
+    @Column(name = "activated_at")
+    private LocalDateTime activatedAt;
+
+    @Column(name = "receptionist_switch_count", nullable = false)
+    @ColumnDefault("0")
+    @Builder.Default
+    private Integer receptionistSwitchCount = 0;
 
 }

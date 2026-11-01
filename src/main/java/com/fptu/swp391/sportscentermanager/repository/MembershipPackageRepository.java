@@ -12,16 +12,16 @@ public interface MembershipPackageRepository extends JpaRepository<MembershipPac
     Optional<MembershipPackage> findByPackageIdAndStatus(Long packageId, String status);
     // BR-PKG-08: còn gói ACTIVE nào áp dụng cho môn này không
     @Query("""
-        SELECT COUNT(p) > 0 FROM MembershipPackage p JOIN p.subjects s
-        WHERE s.subjectId = :subjectId AND p.status = 'ACTIVE'
+        SELECT COUNT(p) > 0 FROM MembershipPackage p
+        WHERE p.subject.subjectId = :subjectId AND p.status = 'ACTIVE'
         """)
     boolean existsActiveBySubject(@Param("subjectId") Long subjectId);
 
-    // BR-SUBJ-03: còn gói FREE ACTIVE nào của môn này không
     @Query("""
-        SELECT COUNT(p) > 0 FROM MembershipPackage p JOIN p.subjects s
-        WHERE s.subjectId = :subjectId AND p.status = 'ACTIVE'
-          AND p.packageType = com.fptu.swp391.sportscentermanager.enums.PackageType.FREE
+        SELECT DISTINCT p.durationDays FROM MembershipPackage p
+        WHERE p.subject.subjectId = :subjectId AND p.status = 'ACTIVE'
+          AND p.packageType = com.fptu.swp391.sportscentermanager.enums.PackageType.CLASS
+        ORDER BY p.durationDays
         """)
-    boolean existsActiveFreeBySubject(@Param("subjectId") Long subjectId);
+    List<Integer> findActiveClassDurations(@Param("subjectId") Long subjectId);
 }

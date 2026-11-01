@@ -59,21 +59,26 @@ public class DataInitializer implements CommandLineRunner {
             PermissionCode.MANAGE_SUBSCRIPTION,
             PermissionCode.MANAGE_TICKET,
             PermissionCode.REGISTER_CLASS,
-            PermissionCode.SEND_NOTIFICATION
+            PermissionCode.SEND_NOTIFICATION,
+            PermissionCode.SWITCH_CLASS_REGISTRATION,
+            PermissionCode.SUBMIT_ISSUE_REPORT,
+            PermissionCode.HANDLE_ISSUE_REPORT
         ),
 
         "COACH", EnumSet.of(
             PermissionCode.VIEW_CLASS, PermissionCode.VIEW_ROOM, PermissionCode.VIEW_SUBJECT,
             PermissionCode.MARK_ATTENDANCE, PermissionCode.VIEW_ATTENDANCE,
             PermissionCode.VIEW_OWN_PROFILE, PermissionCode.UPDATE_OWN_PROFILE,
-            PermissionCode.VIEW_OWN_SCHEDULE
+            PermissionCode.VIEW_OWN_SCHEDULE,
+            PermissionCode.SUBMIT_ISSUE_REPORT
         ),
 
         "MEMBER", EnumSet.of(
             PermissionCode.VIEW_PACKAGE, PermissionCode.VIEW_CLASS, PermissionCode.REGISTER_CLASS,
             PermissionCode.VIEW_OWN_PROFILE, PermissionCode.UPDATE_OWN_PROFILE,
             PermissionCode.VIEW_OWN_SCHEDULE,
-            PermissionCode.SUBSCRIBE_PACKAGE
+            PermissionCode.SUBSCRIBE_PACKAGE,
+            PermissionCode.SUBMIT_ISSUE_REPORT
         )
     );
 
