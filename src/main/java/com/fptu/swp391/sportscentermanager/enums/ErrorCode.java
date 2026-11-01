@@ -130,8 +130,9 @@ public enum ErrorCode {
     PACKAGE_TYPE_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "ERR_PACKAGE_005", "Chỉ hỗ trợ gói MEMBERSHIP hoặc CLASS!"),
     MEMBERSHIP_REQUIRED_FOR_CLASS(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_SUBSCRIPTION_003", "Bạn cần có gói membership trước khi mua gói lớp!"),
     CLASS_PACKAGE_NOT_USABLE(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_SUBSCRIPTION_004", "Gói lớp không hợp lệ hoặc chưa được thanh toán!"),
-    CHECKIN_OUTSIDE_CLASS_TIME(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_CHECKIN_003", "Membership đã hết hạn, chỉ được vào trong khung giờ học của lớp (từ 30 phút trước giờ học tới hết giờ)!")
+    CHECKIN_OUTSIDE_CLASS_TIME(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_CHECKIN_003", "Membership đã hết hạn, chỉ được vào trong khung giờ học của lớp (từ 30 phút trước giờ học tới hết giờ)!"),
 
+    REFUND_PACKAGE_ALREADY_USED(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_PAYMENT_005", "Gói đã được kích hoạt hoặc lớp đã bắt đầu, không thể hoàn tiền!")
 
 
 

@@ -3,34 +3,30 @@ package com.fptu.swp391.sportscentermanager.service.impl;
 import com.fptu.swp391.sportscentermanager.dto.InvoiceResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.PaymentResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.*;
-import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
+import com.fptu.swp391.sportscentermanager.enums.*;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
-import com.fptu.swp391.sportscentermanager.repository.MemberRepository;
-import com.fptu.swp391.sportscentermanager.repository.PaymentRepository;
+import com.fptu.swp391.sportscentermanager.repository.*;
 import com.fptu.swp391.sportscentermanager.service.NotificationService;
 import com.fptu.swp391.sportscentermanager.service.PaymentService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.ArrayList;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.NumberFormat;
+import java.util.*;
 
-import com.fptu.swp391.sportscentermanager.repository.ClassRegistrationRepository;
 import com.fptu.swp391.sportscentermanager.dto.ConfirmPaymentRequestDTO;
-import com.fptu.swp391.sportscentermanager.enums.PaymentMethod;
-import com.fptu.swp391.sportscentermanager.enums.PaymentStatus;
-import com.fptu.swp391.sportscentermanager.repository.SubscriptionRepository;
-import com.fptu.swp391.sportscentermanager.repository.UserRepository;
 import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Set;
+
 @Service
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
@@ -41,10 +37,8 @@ public class PaymentServiceImpl implements PaymentService {
     private final SubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;
     private final SubscriptionService subscriptionService;
-    private final ClassRegistrationRepository classRegistrationRepository;
     private final NotificationService notificationService;
 
-    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
     private static final int MAX_PAGE_SIZE = 100;
     // 'SUCCESS' là dữ liệu cũ, coi như đã thu
     private static final Set<String> PAID_STATUSES = Set.of(PaymentStatus.COMPLETED.name(), "SUCCESS");
@@ -52,6 +46,7 @@ public class PaymentServiceImpl implements PaymentService {
     private static final Set<String> INVOICEABLE_STATUSES = Set.of(PaymentStatus.COMPLETED.name(), "SUCCESS",
         PaymentStatus.REFUNDED.name());
     private final MemberRepository memberRepository;
+    private final ClassSessionRepository classSessionRepository;
 
     @Override
     @Transactional
@@ -165,59 +160,33 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public PaymentResponseDTO refundPayment(Long paymentId, String reason) {
-        Payment payment = paymentRepository.findByIdForUpdate(paymentId)
-            .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
+
+        Payment payment = paymentRepository.findByIdForUpdate(paymentId).orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
         if (!PAID_STATUSES.contains(payment.getStatus())) {
             throw new AppException(ErrorCode.REFUND_NOT_ALLOWED);
         }
 
-        // Không còn tính doanh thu vì các báo cáo chỉ đếm COMPLETED
+        LocalDateTime now = LocalDateTime.now();
+        Subscription sub = payment.getSubscription();
+        Optional<ClassRegistration> registration = sub != null ? subscriptionRepository.findLiveRegistration(sub.getSubscriptionId()) : Optional.empty();
+
+        // ko hoan tien dc thi nem loi ngay
+        BigDecimal refundAmount = calculateRefundAmount(payment, sub, registration, now);
         payment.setStatus(PaymentStatus.REFUNDED.name());
+        payment.setRefundAmount(refundAmount);
         payment.setNote(reason);
         paymentRepository.save(payment);
 
-        // Gói của giao dịch này hết hiệu lực
-        Subscription sub = payment.getSubscription();
         if (sub != null) {
-            sub.setStatus("CANCELLED");
+            sub.setStatus(SubscriptionStatus.REFUNDED.name());
             subscriptionRepository.save(sub);
+            registration.ifPresent(r -> {
+                r.setStatus("CANCELLED");
+                r.setCancelledAt(now);
+            });
 
-            // Mục 11: Huỷ các đăng ký lớp chưa diễn ra trong thời gian của gói
-            // nếu không còn gói ACTIVE nào khác phủ thời điểm đó
-            if (sub.getMember() != null) {
-                Long memberId = sub.getMember().getUserId();
-                LocalDateTime now = LocalDateTime.now();
-                List<ClassRegistration> upcoming = classRegistrationRepository.findUpcoming(memberId, now);
-                List<ClassRegistration> toCancel = new ArrayList<>();
-                for (ClassRegistration reg : upcoming) {
-                    if (shouldCancelOnRefund(reg, sub, memberId)) {
-                        reg.setStatus("CANCELLED");
-                        reg.setCancelledAt(now);
-                        toCancel.add(reg);
-                    }
-                }
-                if (!toCancel.isEmpty()) {
-                    classRegistrationRepository.saveAll(toCancel);
-                }
-
-                // BR-PAY-04: luôn báo cho member khi gói bị hoàn tiền, kèm các lớp bị huỷ theo (nếu có)
-                String packageName = sub.getMembershipPackage() != null ? sub.getMembershipPackage().getPackageName() : "Gói tập";
-                StringBuilder content = new StringBuilder(packageName + " của bạn đã được hoàn tiền và hết hiệu lực.");
-                if (reason != null && !reason.isBlank()) {
-                    content.append(" Lý do: ").append(reason.trim()).append(".");
-                }
-                if (!toCancel.isEmpty()) {
-                    content.append(" Các lớp đã bị huỷ theo:");
-                    for (ClassRegistration reg : toCancel) {
-                        SportClass c = reg.getSportClass();
-                        String subject = c.getSubject() != null ? c.getSubject().getSubjectName() : "Lớp học";
-                        content.append(" ").append(subject).append(" lúc ").append(c.getStartTime().format(TIME_FMT)).append(";");
-                    }
-                }
-                notificationService.notifyUsers(List.of(sub.getMember()), "Gói tập đã được hoàn tiền", content.toString(), "SUBSCRIPTION_REFUNDED");
-            }
+            notifyRefund(sub, refundAmount, reason);
         }
-
         return toResponse(payment);
     }
 
@@ -266,7 +235,7 @@ public class PaymentServiceImpl implements PaymentService {
         if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
             throw new AppException(ErrorCode.INVALID_DATE_RANGE);
         }
-        return new LocalDateTime[] {
+        return new LocalDateTime[]{
             fromDate != null ? fromDate.atStartOfDay() : null,
             toDate != null ? toDate.atTime(LocalTime.MAX) : null
         };
@@ -306,17 +275,46 @@ public class PaymentServiceImpl implements PaymentService {
             .build();
     }
 
-    private boolean shouldCancelOnRefund(ClassRegistration reg, Subscription refund, Long memberId){
-        if (reg.getSubscription() != null){
-            return reg.getSubscription().getSubscriptionId().equals(refund.getSubscriptionId());
-        }
-        if (reg.getSportClass() == null || reg.getSportClass().getStartTime() == null){
-            return false;
-        }
+    private BigDecimal calculateRefundAmount(Payment payment, Subscription sub, Optional<ClassRegistration> registration, LocalDateTime now) {
+         BigDecimal paid = payment.getAmount();
+         if (sub == null || SubscriptionStatus.WAITING_ACTIVATION.name().equals(sub.getStatus())) {
+             return paid;
+         }
 
-        LocalDateTime classStart = reg.getSportClass().getStartTime();
-        boolean isSubRange = (refund.getStartDate() == null || !classStart.isBefore(refund.getStartDate()))
-            && (refund.getEndDate() == null || !classStart.isAfter(refund.getEndDate()));
-        return isSubRange && !subscriptionRepository.existsActiveCovering(memberId, classStart);
+         boolean activeClassPackage = SubscriptionStatus.ACTIVE.name().equals(sub.getStatus()) && sub.getMembershipPackage().getPackageType() == PackageType.CLASS;
+         if (!activeClassPackage || registration.isEmpty()) {
+             throw new AppException(ErrorCode.REFUND_PACKAGE_ALREADY_USED);
+         }
+
+         SportClass sportClass = registration.get().getSportClass();
+         if ("STOPPED".equals(sportClass.getStatus())) {
+             return proratedForStoppedClass(paid, sportClass.getClassId());
+         }
+
+         if (sportClass.getFirstSessionAt() != null && sportClass.getFirstSessionAt().isAfter(now)){
+             return paid;
+         }
+
+         throw new AppException(ErrorCode.REFUND_PACKAGE_ALREADY_USED);
+    }
+
+    // lớp dừng giữa khoá = (giá tiền x buổi chưa học) / tổng buổi
+
+    private BigDecimal proratedForStoppedClass(BigDecimal paid, Long classId) {
+        long total = classSessionRepository.countBySportClass_ClassId(classId) - classSessionRepository.countBySportClass_ClassIdAndStatus(classId, SessionStatus.POSTPONED);
+        long notStudied = classSessionRepository.countBySportClass_ClassIdAndStatus(classId, SessionStatus.CANCELLED);
+        if (total <= 0){
+            return paid;
+        }
+        return paid.multiply(BigDecimal.valueOf(notStudied)).divide(BigDecimal.valueOf(total), 0, RoundingMode.HALF_UP);
+    }
+
+    private void notifyRefund(Subscription sub, BigDecimal amount, String reason){
+        String money = NumberFormat.getInstance(Locale.of("vi", "VN")).format(amount) + "đ";
+        StringBuilder content = new StringBuilder(sub.getMembershipPackage().getPackageName() + " của bạn đã được hoàn " + money + " và hết hiệu lực.");
+        if(reason != null && !reason.isBlank()){
+            content.append(" Lý do: ").append(reason.trim()).append(".");
+        }
+        notificationService.notifyUsers(List.of(sub.getMember()), "Gói tập đã được hoàn tiền", content.toString(), "SUBSCRIPTION_REFUNDED");
     }
 }
