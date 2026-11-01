@@ -128,7 +128,9 @@ public enum ErrorCode {
     SESSION_SCHEDULE_CONFLICT(HttpStatus.CONFLICT, "ERR_SESSION_409_CONFLICT", "Buổi học bị trùng lịch phòng hoặc trùng lịch HLV!"),
     MEMBERSHIP_PACKAGE_HAS_SUBJECT(HttpStatus.BAD_REQUEST, "ERR_PACKAGE_004", "Gói membership dùng toàn bộ cơ sở vật chất, không gắn môn học!"),
     PACKAGE_TYPE_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "ERR_PACKAGE_005", "Chỉ hỗ trợ gói MEMBERSHIP hoặc CLASS!"),
-    MEMBERSHIP_REQUIRED_FOR_CLASS(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_SUBSCRIPTION_001", "Bạn cần có gói membership trước khi mua gói lớp!"),
+    MEMBERSHIP_REQUIRED_FOR_CLASS(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_SUBSCRIPTION_003", "Bạn cần có gói membership trước khi mua gói lớp!"),
+    CLASS_PACKAGE_NOT_USABLE(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_SUBSCRIPTION_004", "Gói lớp không hợp lệ hoặc chưa được thanh toán!"),
+    CHECKIN_OUTSIDE_CLASS_TIME(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_CHECKIN_003", "Membership đã hết hạn, chỉ được vào trong khung giờ học của lớp (từ 30 phút trước giờ học tới hết giờ)!")
 
 
 

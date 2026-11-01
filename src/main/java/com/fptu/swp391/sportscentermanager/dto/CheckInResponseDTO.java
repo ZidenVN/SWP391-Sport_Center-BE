@@ -1,5 +1,6 @@
 package com.fptu.swp391.sportscentermanager.dto;
 
+import com.fptu.swp391.sportscentermanager.enums.CheckInType;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -19,6 +20,11 @@ public class CheckInResponseDTO {
     private String receptionistName;
     private String packageName;
     private LocalDateTime subscriptionEndDate;
+
+    private CheckInType checkInType;
+    private Long classSessionId;
+    private String className;
+    private LocalDateTime sessionStartTime;
 
     // BR-CHK-02: mọi gói đang hiệu lực, kèm môn + areaAccess + số buổi còn lại
     private List<SubscriptionResponseDTO> activeSubscriptions;

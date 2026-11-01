@@ -8,8 +8,10 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.Lock;
+
 public interface SubscriptionRepository extends JpaRepository<Subscription, Long> {
 
     // Lịch sử đăng ký, mới nhất trước
@@ -43,12 +45,12 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
 
     // BR-SUB-07: mọi gói sắp hết hạn chưa nhắc; gói đã gia hạn được lọc ở SubscriptionService.hasRenewal
     @Query("""
-        select s from Subscription s
-        join fetch s.member join fetch s.membershipPackage
-        where s.status = 'ACTIVE'
-       and s.expiryReminderSentAt is null
-       and s.endDate > :now
-       and s.endDate <= :deadline
+         select s from Subscription s
+         join fetch s.member join fetch s.membershipPackage
+         where s.status = 'ACTIVE'
+        and s.expiryReminderSentAt is null
+        and s.endDate > :now
+        and s.endDate <= :deadline
         """)
     List<Subscription> findExpiringWithoutReminder(@Param("now") LocalDateTime now, @Param("deadline") LocalDateTime deadline);
 
@@ -119,4 +121,45 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
                OR (s.status = 'ACTIVE' AND s.endDate > :now))
         """)
     List<Subscription> findOwnedNotEnded(@Param("memberId") Long memberId, @Param("now") LocalDateTime now);
+
+    // Membership đang dùng được tại thời điểm now
+    @Query("""
+        select count(s) > 0 from Subscription s
+                where s.member.userId = :memberId
+                        and s.status = 'ACTIVE'
+                                and s.membershipPackage.packageType = com.fptu.swp391.sportscentermanager.enums.PackageType.MEMBERSHIP
+                                        and s.startDate <= :now and s.endDate > :now
+        """)
+    boolean existsCurrentMembership(@Param("memberId") Long memberId, @Param("now") LocalDateTime now);
+
+    // Membership chờ kích hoạt của member, trả tiền trước đứng trước
+    @Query("""
+        SELECT s FROM Subscription s
+        JOIN FETCH s.membershipPackage p
+        WHERE s.member.userId = :memberId
+          AND s.status = 'WAITING_ACTIVATION'
+          AND p.packageType = com.fptu.swp391.sportscentermanager.enums.PackageType.MEMBERSHIP
+        ORDER BY s.paidAt ASC
+        """)
+    List<Subscription> findWaitingMemberships(@Param("memberId") Long memberId);
+
+    // Membership đã trả tiền trước mốc cutoff mà vẫn chưa kích hoạt (scheduler 14 ngày)
+    @Query("""
+        SELECT s FROM Subscription s
+        JOIN FETCH s.member
+        JOIN FETCH s.membershipPackage p
+        WHERE s.status = 'WAITING_ACTIVATION'
+          AND p.packageType = com.fptu.swp391.sportscentermanager.enums.PackageType.MEMBERSHIP
+          AND s.paidAt <= :cutoff
+        """)
+    List<Subscription> findWaitingMembershipsPaidBefore(@Param("cutoff") LocalDateTime cutoff);
+
+    // Gói lớp của các member đang học lớp này
+    @Query("""
+        SELECT r.subscription FROM ClassRegistration r
+        WHERE r.sportClass.classId = :classId
+          AND r.status = 'REGISTERED'
+          AND r.subscription IS NOT NULL
+        """)
+    List<Subscription> findClassPackagesOfClass(@Param("classId") Long classId);
 }
