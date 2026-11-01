@@ -126,9 +126,9 @@ public enum ErrorCode {
     CLASS_START_DATE_INVALID(HttpStatus.BAD_REQUEST, "ERR_CLASS_400_START_DATE", "Ngày bắt đầu khoá học phải ở tương lai!"),
     CLASS_DAYS_OF_WEEK_INVALID(HttpStatus.BAD_REQUEST, "ERR_CLASS_400_DAYS", "Thứ trong tuần không hợp lệ (ví dụ: MON,WED,FRI)!"),
     SESSION_SCHEDULE_CONFLICT(HttpStatus.CONFLICT, "ERR_SESSION_409_CONFLICT", "Buổi học bị trùng lịch phòng hoặc trùng lịch HLV!"),
-
-
-
+    MEMBERSHIP_PACKAGE_HAS_SUBJECT(HttpStatus.BAD_REQUEST, "ERR_PACKAGE_004", "Gói membership dùng toàn bộ cơ sở vật chất, không gắn môn học!"),
+    PACKAGE_TYPE_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "ERR_PACKAGE_005", "Chỉ hỗ trợ gói MEMBERSHIP hoặc CLASS!"),
+    MEMBERSHIP_REQUIRED_FOR_CLASS(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_SUBSCRIPTION_001", "Bạn cần có gói membership trước khi mua gói lớp!"),
 
 
 

@@ -43,8 +43,8 @@ public class MembershipPackageServiceImp implements MembershipPackageService {
     @Override
     @Transactional
     public MembershipPackage createPackage(MembershipPackageRequestDTO request) {
-        Set<Subject> subjects = loadActiveSubjects(request.getSubjectIds());
-        validateRules(request.getPackageType(), request.getSessionLimit(), subjects);
+        Subject subject = resolveSubject(request.getPackageType(),
+            request.getSubjectId());
 
         MembershipPackage newPackage = MembershipPackage.builder()
             .packageName(request.getPackageName())
@@ -52,10 +52,8 @@ public class MembershipPackageServiceImp implements MembershipPackageService {
             .price(request.getPrice())
             .durationDays(request.getDurationDays())
             .packageType(request.getPackageType())
-            .sessionLimit(request.getSessionLimit())
-            .subjects(subjects)
-            .status(isBlank(request.getStatus()) ? "ACTIVE" : request.getStatus())
-            .build();
+            .subject(subject)
+            .status(isBlank(request.getStatus()) ? "ACTIVE" : request.getStatus()).build();
         return packageRepository.save(newPackage);
     }
 
@@ -66,14 +64,13 @@ public class MembershipPackageServiceImp implements MembershipPackageService {
         MembershipPackage existingPackage = packageRepository.findById(id)
             .orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND));
 
-        Set<Subject> subjects = loadActiveSubjects(request.getSubjectIds());
-        validateRules(request.getPackageType(), request.getSessionLimit(), subjects);
+        Subject subject =  resolveSubject(request.getPackageType(),
+            request.getSubjectId());
 
-        // BR-PKG-06: gói đã có người mua thì không được đổi loại, môn, số buổi, hạn dùng
         boolean coreChanged = existingPackage.getPackageType() != request.getPackageType()
-            || !Objects.equals(existingPackage.getSessionLimit(), request.getSessionLimit())
             || !Objects.equals(existingPackage.getDurationDays(), request.getDurationDays())
-            || !subjectIds(existingPackage.getSubjects()).equals(subjectIds(subjects));
+            || !Objects.equals(subjectIdOf(existingPackage.getSubject()), subjectIdOf(subject));
+
         if (coreChanged && subscriptionRepository.existsByMembershipPackage_PackageId(id)) {
             throw new AppException(ErrorCode.PACKAGE_IN_USE);
         }
@@ -83,8 +80,7 @@ public class MembershipPackageServiceImp implements MembershipPackageService {
         existingPackage.setPrice(request.getPrice());
         existingPackage.setDurationDays(request.getDurationDays());
         existingPackage.setPackageType(request.getPackageType());
-        existingPackage.setSessionLimit(request.getSessionLimit());
-        existingPackage.setSubjects(subjects);
+        existingPackage.setSubject(subject);
         if (!isBlank(request.getStatus())) {
             existingPackage.setStatus(request.getStatus());
         }
@@ -101,35 +97,31 @@ public class MembershipPackageServiceImp implements MembershipPackageService {
         packageRepository.save(existingPackage);
     }
 
-    // BR-PKG-02, BR-PKG-03, BR-PKG-05, BR-SUBJ-02
-    private void validateRules(PackageType type, Integer sessionLimit, Set<Subject> subjects) {
-        if (type == PackageType.CLASS) {
-            if (subjects.isEmpty()) {
-                throw new AppException(ErrorCode.PACKAGE_SUBJECT_REQUIRED);
+    @Override
+    @Transactional(readOnly = true)
+    public List<Integer> getClassDurations(Long subjectId) {
+        return packageRepository.findActiveClassDurations(subjectId);
+    }
+
+    private Subject resolveSubject(PackageType type, Long subjectId) {
+        if (type == PackageType.MEMBERSHIP) {
+            if (subjectId != null) {
+                throw new AppException(ErrorCode.MEMBERSHIP_PACKAGE_HAS_SUBJECT);
             }
-            return;
+            return null;
         }
-        // FREE: không có số buổi, tối đa 1 môn (trống = toàn trung tâm), môn phải OPEN
-        if (sessionLimit != null || subjects.size() > 1) {
-            throw new AppException(ErrorCode.INVALID_PACKAGE_CONFIG);
+
+        if (type != PackageType.CLASS)
+            throw new AppException(ErrorCode.PACKAGE_TYPE_NOT_SUPPORTED);
+
+        if (subjectId == null) {
+            throw new AppException((ErrorCode.PACKAGE_SUBJECT_REQUIRED));
         }
-        if (subjects.stream().anyMatch(s -> s.getAreaAccess() == AreaAccess.CLASS_ONLY)) {
-            throw new AppException(ErrorCode.FREE_PACKAGE_NOT_ALLOWED);
-        }
+        return subjectRepository.findBySubjectIdAndStatus(subjectId, "ACTIVE").orElseThrow(() -> new AppException(ErrorCode.SUBJECT_NOT_FOUND));
     }
 
-    private Set<Subject> loadActiveSubjects(Set<Long> ids) {
-        Set<Subject> result = new HashSet<>();
-        if (ids == null) return result;
-        for (Long subjectId : ids) {
-            result.add(subjectRepository.findBySubjectIdAndStatus(subjectId, "ACTIVE")
-                .orElseThrow(() -> new AppException(ErrorCode.SUBJECT_NOT_FOUND)));
-        }
-        return result;
-    }
-
-    private Set<Long> subjectIds(Set<Subject> subjects) {
-        return subjects.stream().map(Subject::getSubjectId).collect(Collectors.toSet());
+    private Long subjectIdOf(Subject subject) {
+        return subject != null ? subject.getSubjectId() : null;
     }
 
     private boolean isBlank(String s) {

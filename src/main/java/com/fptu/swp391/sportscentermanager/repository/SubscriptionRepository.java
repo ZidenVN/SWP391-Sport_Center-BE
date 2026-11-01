@@ -99,6 +99,24 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
         """)
     List<Subscription> findActiveNotEnded(@Param("memberId") Long memberId, @Param("now") LocalDateTime now);
 
-    // BR-PKG-06: gói đã có người mua chưa
     boolean existsByMembershipPackage_PackageId(Long packageId);
+
+    @Query("""
+        SELECT COUNT(s) > 0 FROM Subscription s
+        WHERE s.member.userId = :memberId
+          AND s.membershipPackage.packageType = com.fptu.swp391.sportscentermanager.enums.PackageType.MEMBERSHIP
+          AND (s.status = 'WAITING_ACTIVATION'
+               OR (s.status = 'ACTIVE' AND s.endDate > :now))
+        """)
+    boolean existsUsableMembership(@Param("memberId") Long memberId, @Param("now") LocalDateTime now);
+
+    // Gói đã trả tiền mà chưa hết: chờ kích hoạt, hoặc ACTIVE còn hạn (cảnh báo mua trùng)
+    @Query("""
+        SELECT s FROM Subscription s
+        JOIN FETCH s.membershipPackage
+        WHERE s.member.userId = :memberId
+          AND (s.status = 'WAITING_ACTIVATION'
+               OR (s.status = 'ACTIVE' AND s.endDate > :now))
+        """)
+    List<Subscription> findOwnedNotEnded(@Param("memberId") Long memberId, @Param("now") LocalDateTime now);
 }

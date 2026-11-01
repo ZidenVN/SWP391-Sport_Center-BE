@@ -47,3 +47,5 @@ $RECYCLE.BIN/
 
 ### Local secrets ###
 application-local.properties
+
+.archify/
