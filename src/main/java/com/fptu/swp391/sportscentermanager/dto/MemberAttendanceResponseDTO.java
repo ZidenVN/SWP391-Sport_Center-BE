@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 public class MemberAttendanceResponseDTO {
     private Long attendanceId;
     private Long classId;
+    private Long sessionId;
     private String subjectName;
     private String coachName;
     private String roomName;
