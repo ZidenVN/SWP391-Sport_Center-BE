@@ -46,4 +46,7 @@ public class Payment {
     // Ghi chú: lý do hủy / hoàn tiền
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
+
+    @Column(name = "refund_amount")
+    private BigDecimal refundAmount;
 }

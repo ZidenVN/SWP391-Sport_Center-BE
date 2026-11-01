@@ -1,5 +1,6 @@
 package com.fptu.swp391.sportscentermanager.repository;
 
+import com.fptu.swp391.sportscentermanager.entity.ClassRegistration;
 import com.fptu.swp391.sportscentermanager.entity.Subscription;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -162,4 +163,12 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
           AND r.subscription IS NOT NULL
         """)
     List<Subscription> findClassPackagesOfClass(@Param("classId") Long classId);
+
+    @Query("""
+            select r from ClassRegistration r
+            join fetch r.sportClass
+            where r.subscription.subscriptionId = :subscriptionId
+            and r.status in ('REGISTERED', 'STOPPED')
+        """)
+    Optional<ClassRegistration> findLiveRegistration(@Param("subscriptionId") Long subscriptionId);
 }
