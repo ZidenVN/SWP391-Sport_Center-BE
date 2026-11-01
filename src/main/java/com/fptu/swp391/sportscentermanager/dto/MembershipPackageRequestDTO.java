@@ -7,9 +7,6 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.*;
 
-import java.util.HashSet;
-import java.util.Set;
-
 @Getter
 @Setter
 @Builder
@@ -26,6 +23,8 @@ public class MembershipPackageRequestDTO {
     @PositiveOrZero
     private Double price;
 
+    private Long subjectId;
+
     // BR-PKG-04: mọi gói đều có hạn dùng
     @NotNull
     @Positive
@@ -33,14 +32,6 @@ public class MembershipPackageRequestDTO {
 
     @NotNull
     private PackageType packageType;
-
-    // BR-PKG-05: null = không giới hạn (CLASS). FREE phải để null
-    @Positive
-    private Integer sessionLimit;
-
-    // CLASS: ít nhất 1 môn. FREE: 1 môn OPEN hoặc để trống = toàn trung tâm
-    @Builder.Default
-    private Set<Long> subjectIds = new HashSet<>();
 
     // ACTIVE | INACTIVE, bỏ trống = ACTIVE
     private String status;

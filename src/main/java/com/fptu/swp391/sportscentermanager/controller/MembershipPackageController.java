@@ -28,6 +28,11 @@ public class MembershipPackageController {
         return ResponseEntity.ok(packageService.getPackageById(id));
     }
 
+    @GetMapping("/class-durations")
+    public ResponseEntity<List<Integer>> getClassDurations(@RequestParam Long subjectId) {
+        return ResponseEntity.ok(packageService.getClassDurations(subjectId));
+    }
+
     @LogAudit(actionType = "CREATE", targetEntity = "MembershipPackage")
     @PreAuthorize("hasAuthority('MANAGE_PACKAGE')")
     @PostMapping
