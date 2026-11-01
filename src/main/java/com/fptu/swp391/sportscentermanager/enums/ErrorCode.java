@@ -129,6 +129,7 @@ public enum ErrorCode {
     MEMBERSHIP_PACKAGE_HAS_SUBJECT(HttpStatus.BAD_REQUEST, "ERR_PACKAGE_004", "Gói membership dùng toàn bộ cơ sở vật chất, không gắn môn học!"),
     PACKAGE_TYPE_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "ERR_PACKAGE_005", "Chỉ hỗ trợ gói MEMBERSHIP hoặc CLASS!"),
     MEMBERSHIP_REQUIRED_FOR_CLASS(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_SUBSCRIPTION_001", "Bạn cần có gói membership trước khi mua gói lớp!"),
+    CLASS_PACKAGE_NOT_USABLE(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_SUBSCRIPTION_002", "Gói lớp không hợp lệ hoặc chưa được thanh toán!")
 
 
 

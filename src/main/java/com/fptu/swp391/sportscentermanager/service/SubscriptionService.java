@@ -4,6 +4,7 @@ import com.fptu.swp391.sportscentermanager.dto.PurchasePreviewResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.SubscriptionRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.SubscriptionResponseDTO;
 
+import java.time.LocalDate;
 import java.util.List;
 import com.fptu.swp391.sportscentermanager.entity.ClassRegistration;
 import com.fptu.swp391.sportscentermanager.entity.MembershipPackage;
@@ -32,4 +33,14 @@ public interface SubscriptionService {
 
     // BR-SUB-07: đã có gói ACTIVE cùng loại + cùng tập môn hết hạn sau gói này (đã gia hạn)
     boolean hasRenewal(Subscription subscription);
+
+    void activateMembershipIfWaiting(Long memberId, LocalDateTime now);
+
+    void activateClassPackage(Subscription classPackage, LocalDate classEndDate);
+
+    void releaseClassPackage(Subscription classPackage);
+
+    void extendClassPackages(Long classId, LocalDate newEndDate);
+
+    List<Subscription> autoActivateWaitingMemberships(LocalDateTime now, int waitDays);
 }
