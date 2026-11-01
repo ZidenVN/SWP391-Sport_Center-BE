@@ -18,10 +18,20 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import com.fptu.swp391.sportscentermanager.entity.Subscription;
 import com.fptu.swp391.sportscentermanager.enums.PackageType;
 import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
+import com.fptu.swp391.sportscentermanager.dto.EligibleClassResponseDTO;
+import com.fptu.swp391.sportscentermanager.dto.MemberSessionResponseDTO;
+import com.fptu.swp391.sportscentermanager.entity.ClassSession;
+import com.fptu.swp391.sportscentermanager.entity.Coach;
+import com.fptu.swp391.sportscentermanager.entity.MembershipPackage;
+import com.fptu.swp391.sportscentermanager.entity.User;
+import com.fptu.swp391.sportscentermanager.repository.ScheduleQueryRepository;
 @Service
 @RequiredArgsConstructor
 public class ClassRegistrationServiceImpl implements ClassRegistrationService {
@@ -34,6 +44,7 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
     private final MemberRepository memberRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final SubscriptionService subscriptionService;
+    private final ScheduleQueryRepository scheduleQueryRepository;
     @Value("${app.booking.cancel-cutoff-hours}")
     private long cancelCutoffHours;
 
@@ -153,11 +164,118 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
     }
 
     @Override
-    @Transactional
-    public List<ClassRegistrationResponseDTO> getUpcomingSchedule(Long memberId) {
+    @Transactional(readOnly = true)
+    public List<MemberSessionResponseDTO> getUpcomingSchedule(Long memberId) {
         requireMember(memberId);
-        return registrationRepository.findUpcoming(memberId, LocalDateTime.now())
-            .stream().map(this::toResponse).toList();
+        return scheduleQueryRepository.findMemberUpcomingSessions(memberId, LocalDateTime.now())
+            .stream().map(this::toSessionResponse).toList();
+    }
+
+    // ---------- Trạng thái gói (Subscription của A; nếu A đổi status sang enum thì chỉ sửa 2 hàm này) ----------
+    private boolean isWaiting(Subscription sub) {
+        return "WAITING_ACTIVATION".equals(String.valueOf(sub.getStatus()));
+    }
+
+    private boolean isActive(Subscription sub) {
+        return "ACTIVE".equals(String.valueOf(sub.getStatus()));
+    }
+
+    // ---------- Lớp đăng ký được ----------
+    @Override
+    @Transactional(readOnly = true)
+    public List<EligibleClassResponseDTO> getEligibleClasses(Long memberId, Long subscriptionId) {
+        Subscription sub = requireOwnedClassPackage(memberId, subscriptionId);
+        if (!isWaiting(sub) && !isActive(sub)) {
+            throw new AppException(ErrorCode.NO_ACTIVE_SUBSCRIPTION);
+        }
+        MembershipPackage pkg = sub.getMembershipPackage();
+
+        // Gói đang có lớp (ACTIVE) thì đây là danh sách để đổi lớp: bỏ lớp đang học, bỏ qua trùng lịch với nó
+        Long currentClassId = scheduleQueryRepository.findRegisteredClassIdsBySubscription(subscriptionId)
+            .stream().findFirst().orElse(-1L);
+
+        List<SportClass> classes = scheduleQueryRepository.findJoinableClasses(
+            pkg.getSubject().getSubjectId(), pkg.getDurationDays(), LocalDateTime.now());
+        Map<Long, Long> taken = countTaken(classes);
+
+        List<EligibleClassResponseDTO> result = new ArrayList<>();
+        for (SportClass c : classes) {
+            long registered = taken.getOrDefault(c.getClassId(), 0L);
+            if (c.getClassId().equals(currentClassId)) continue;
+            if (registered >= c.getMaxCapacity()) continue;
+            if (scheduleQueryRepository.existsMemberSessionConflict(memberId, c.getClassId(), currentClassId)) continue;
+            result.add(toEligible(c, registered));
+        }
+        return result;
+    }
+
+    // Gói phải của chính hội viên và là gói lớp có đủ môn + thời hạn
+    private Subscription requireOwnedClassPackage(Long memberId, Long subscriptionId) {
+        Subscription sub = subscriptionRepository.findById(subscriptionId)
+            .orElseThrow(() -> new AppException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
+        if (!sub.getMember().getUserId().equals(memberId)) {
+            throw new AppException(ErrorCode.SUBSCRIPTION_NOT_FOUND);
+        }
+        MembershipPackage pkg = sub.getMembershipPackage();
+        if (pkg == null || pkg.getPackageType() != PackageType.CLASS
+            || pkg.getSubject() == null || pkg.getDurationDays() == null) {
+            throw new AppException(ErrorCode.PACKAGE_NOT_ALLOW_CLASS);
+        }
+        return sub;
+    }
+
+    // Đếm chỗ đã giữ của nhiều lớp bằng 1 câu SQL
+    private Map<Long, Long> countTaken(List<SportClass> classes) {
+        Map<Long, Long> taken = new HashMap<>();
+        if (classes.isEmpty()) return taken;
+        List<Long> ids = classes.stream().map(SportClass::getClassId).toList();
+        for (Object[] row : registrationRepository.countActiveByClassIds(ids)) {
+            taken.put((Long) row[0], (Long) row[1]);
+        }
+        return taken;
+    }
+
+    private String fullName(User u) {
+        return u == null ? null : u.getFirstName() + " " + u.getLastName();
+    }
+
+    private EligibleClassResponseDTO toEligible(SportClass c, long registered) {
+        return EligibleClassResponseDTO.builder()
+            .classId(c.getClassId())
+            .subjectName(c.getSubject() != null ? c.getSubject().getSubjectName() : null)
+            .coachName(c.getCoach() != null ? fullName(c.getCoach()) : "Chưa có HLV")
+            .roomName(c.getRoom() != null ? c.getRoom().getRoomName() : null)
+            .imageUrl(c.getImageUrl())
+            .startDate(c.getStartDate())
+            .endDate(c.getEndDate())
+            .durationDays(c.getDurationDays())
+            .daysOfWeek(c.getDaysOfWeek())
+            .startClock(c.getStartClock())
+            .endClock(c.getEndClock())
+            .firstSessionAt(c.getFirstSessionAt())
+            .maxCapacity(c.getMaxCapacity())
+            .registeredCount(registered)
+            .build();
+    }
+
+    private MemberSessionResponseDTO toSessionResponse(ClassSession s) {
+        SportClass c = s.getSportClass();
+        Coach main = c.getCoach();
+        Coach teacher = s.getCoach();
+        return MemberSessionResponseDTO.builder()
+            .sessionId(s.getSessionId())
+            .classId(c.getClassId())
+            .subjectName(c.getSubject() != null ? c.getSubject().getSubjectName() : null)
+            .roomName(s.getRoom() != null ? s.getRoom().getRoomName() : null)
+            .coachName(teacher != null ? fullName(teacher) : "Chưa có HLV")
+            .substitute(teacher != null && main != null && !teacher.getUserId().equals(main.getUserId()))
+            .mainCoachName(fullName(main))
+            .type(s.getType().name())
+            .status(s.getStatus().name())
+            .startTime(s.getStartTime())
+            .endTime(s.getEndTime())
+            .note(s.getNote())
+            .build();
     }
     // Thứ tự báo lỗi khi không có gói hợp lệ (bảng mục 3.3)
     private ErrorCode noValidSubscriptionReason(Long memberId, Long subjectId, LocalDateTime classTime, LocalDateTime now) {

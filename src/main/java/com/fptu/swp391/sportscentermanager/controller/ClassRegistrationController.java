@@ -13,7 +13,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
+import com.fptu.swp391.sportscentermanager.dto.EligibleClassResponseDTO;
+import com.fptu.swp391.sportscentermanager.dto.MemberSessionResponseDTO;
 /**
  * Member tự đăng ký / hủy lớp và xem lịch cá nhân.
  * memberId luôn lấy từ token (principal), KHÔNG nhận từ client -> member không thể thao tác thay người khác.
@@ -42,7 +43,15 @@ public class ClassRegistrationController {
         return ResponseEntity.ok(
             registrationService.cancel(principal.getUser().getUserId(), registrationId));
     }
-
+    // Các lớp mà 1 gói lớp đăng ký / đổi sang được
+    @PreAuthorize("hasRole('MEMBER') and hasAuthority('REGISTER_CLASS')")
+    @GetMapping("/subscriptions/{subscriptionId}/eligible-classes")
+    public ResponseEntity<List<EligibleClassResponseDTO>> eligibleClasses(
+        @AuthenticationPrincipal CustomUserDetails principal,
+        @PathVariable Long subscriptionId) {
+        return ResponseEntity.ok(
+            registrationService.getEligibleClasses(principal.getUser().getUserId(), subscriptionId));
+    }
     // Lịch sử đăng ký (cả đã hủy)
     @PreAuthorize("hasRole('MEMBER') and hasAuthority('VIEW_OWN_SCHEDULE')")
     @GetMapping("/registrations")
@@ -54,7 +63,7 @@ public class ClassRegistrationController {
     // Lịch tập sắp tới
     @PreAuthorize("hasRole('MEMBER') and hasAuthority('VIEW_OWN_SCHEDULE')")
     @GetMapping("/schedule")
-    public ResponseEntity<List<ClassRegistrationResponseDTO>> schedule(
+    public ResponseEntity<List<MemberSessionResponseDTO>> schedule(
         @AuthenticationPrincipal CustomUserDetails principal) {
         return ResponseEntity.ok(
             registrationService.getUpcomingSchedule(principal.getUser().getUserId()));
