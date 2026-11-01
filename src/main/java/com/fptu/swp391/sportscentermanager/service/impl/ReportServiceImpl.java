@@ -17,7 +17,9 @@ import java.util.ArrayList;
 import java.util.List;
 import com.fptu.swp391.sportscentermanager.enums.ClassStatus;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
+import com.fptu.swp391.sportscentermanager.enums.SessionStatus;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
+import com.fptu.swp391.sportscentermanager.repository.ClassSessionRepository;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -27,6 +29,7 @@ public class ReportServiceImpl implements ReportService {
     private final SportClassRepository sportClassRepository;
     private final ClassRegistrationRepository classRegistrationRepository;
     private final PaymentRepository paymentRepository;
+    private final ClassSessionRepository classSessionRepository;
 
     @Override
     public DashboardOverviewDTO getDashboardOverview() {
@@ -41,7 +44,9 @@ public class ReportServiceImpl implements ReportService {
         long newMembersThisMonth = memberRepository.countNewMembersBetween(startOfMonth, endOfMonth);
         BigDecimal revThisMonth = paymentRepository.sumReveneBetween(startOfMonth, endOfMonth);
         BigDecimal revLastMonth = paymentRepository.sumReveneBetween(startOfLastMonth, endOfLastMonth);
-        long classesToday = sportClassRepository.countByStatusAndStartTimeBetween(ClassStatus.OPENING.name(),
+        long sessionsToday = classSessionRepository.countByStatusAndStartTimeBetween(SessionStatus.SCHEDULED,
+            LocalDate.now().atStartOfDay(), LocalDate.now().atTime(LocalTime.MAX));
+        long classesToday = sessionsToday > 0 ? sessionsToday : sportClassRepository.countByStatusAndStartTimeBetween(ClassStatus.OPENING.name(),
             LocalDate.now().atStartOfDay(), LocalDate.now().atTime(LocalTime.MAX));
         double growthRate = 0.0;
         if (revLastMonth != null && revLastMonth.compareTo(BigDecimal.ZERO) > 0) {

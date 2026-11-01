@@ -1,6 +1,6 @@
 package com.fptu.swp391.sportscentermanager.enums;
 
-public enum ClassSessionStatus {
+public enum SessionStatus {
     SCHEDULED,
     POSTPONED,
     DONE,

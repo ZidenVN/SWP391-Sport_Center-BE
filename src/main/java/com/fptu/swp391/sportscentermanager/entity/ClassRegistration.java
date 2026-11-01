@@ -45,11 +45,4 @@ public class ClassRegistration {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subscription_id")
     private Subscription subscription;
-
-    @Column(name = "switched_at")
-    private LocalDateTime switchedAt;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "switched_by")
-    private User switchedBy;
 }

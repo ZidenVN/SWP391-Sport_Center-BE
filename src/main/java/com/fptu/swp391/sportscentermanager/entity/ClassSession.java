@@ -1,27 +1,22 @@
 package com.fptu.swp391.sportscentermanager.entity;
 
-import com.fptu.swp391.sportscentermanager.enums.ClassSessionStatus;
-import com.fptu.swp391.sportscentermanager.enums.ClassSessionType;
+import com.fptu.swp391.sportscentermanager.enums.SessionStatus;
+import com.fptu.swp391.sportscentermanager.enums.SessionType;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "class_sessions", indexes = {
-    @Index(name = "idx_session_class_time", columnList = "class_id, start_time"),
-    @Index(name = "idx_session_room_time", columnList = "room_id, start_time"),
-    @Index(name = "idx_session_coach_time", columnList = "coach_id, start_time")
-})
-@Getter
-@Setter
+@Table(name = "class_sessions")
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
 public class ClassSession {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "session_id")
     private Long sessionId;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -35,31 +30,25 @@ public class ClassSession {
     private LocalDateTime endTime;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "coach_id")
+    @JoinColumn(name = "coach_id", nullable = false)
     private Coach coach;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_id")
+    @JoinColumn(name = "room_id", nullable = false)
     private Room room;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false, length = 20)
-    @ColumnDefault("'REGULAR'")
-    @Builder.Default
-    private ClassSessionType type = ClassSessionType.REGULAR;
+    @Column(name = "type", nullable = false)
+    private SessionType type;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
-    @ColumnDefault("'SCHEDULED'")
-    @Builder.Default
-    private ClassSessionStatus status = ClassSessionStatus.SCHEDULED;
+    @Column(name = "status", nullable = false)
+    private SessionStatus status;
 
-    // Buổi bù: trỏ tới buổi bị bảo lưu
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="makeup_for_id")
+    @JoinColumn(name = "makeup_for_id")
     private ClassSession makeupFor;
 
-    @Column(name = "note", length = 255)
+    @Column(name = "note", length = 500)
     private String note;
-
 }
