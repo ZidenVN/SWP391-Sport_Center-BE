@@ -63,9 +63,6 @@ public class SubjectServiceImpl implements SubjectService {
         // BR-SUBJ-03: đổi OPEN -> CLASS_ONLY khi còn gói FREE đang bán thì chặn
         AreaAccess newAccess = requestDTO.getAreaAccess();
         if (newAccess != null && newAccess != existingSubject.getAreaAccess()) {
-            if (newAccess == AreaAccess.CLASS_ONLY && packageRepository.existsActiveFreeBySubject(id)) {
-                throw new AppException(ErrorCode.SUBJECT_HAS_ACTIVE_FREE_PACKAGE);
-            }
             existingSubject.setAreaAccess(newAccess);
         }
 

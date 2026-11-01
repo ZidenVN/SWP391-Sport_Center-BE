@@ -17,14 +17,6 @@ public interface MembershipPackageRepository extends JpaRepository<MembershipPac
         """)
     boolean existsActiveBySubject(@Param("subjectId") Long subjectId);
 
-    // BR-SUBJ-03: còn gói FREE ACTIVE nào của môn này không
-    @Query("""
-        SELECT COUNT(p) > 0 FROM MembershipPackage p JOIN p.subjects s
-        WHERE s.subjectId = :subjectId AND p.status = 'ACTIVE'
-          AND p.packageType = com.fptu.swp391.sportscentermanager.enums.PackageType.FREE
-        """)
-    boolean existsActiveFreeBySubject(@Param("subjectId") Long subjectId);
-
     @Query("""
         SELECT DISTINCT p.durationDays FROM MembershipPackage p
         WHERE p.subject.subjectId = :subjectId AND p.status = 'ACTIVE'

@@ -19,18 +19,14 @@ import com.fptu.swp391.sportscentermanager.repository.PaymentRepository;
 import com.fptu.swp391.sportscentermanager.repository.SubjectRepository;
 import com.fptu.swp391.sportscentermanager.repository.SubscriptionRepository;
 import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;  import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -98,14 +94,13 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     public LocalDateTime calculateStartDate(Long memberId, MembershipPackage pkg, LocalDateTime now) {
         return subscriptionRepository.findActiveNotEnded(memberId, now).stream()
             .filter(s -> sameScope(s.getMembershipPackage(), pkg))
-            .filter(Subscription::hasSessionLeft)
             .map(Subscription::getEndDate)
             .max(Comparator.naturalOrder())
             .orElse(now);
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public PurchasePreviewResponseDTO previewPurchase(Long memberId, Long packageId) {
         if (!memberRepository.existsById(memberId)) {
             throw new AppException(ErrorCode.MEMBER_NOT_FOUND);
@@ -114,23 +109,19 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             .orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND));
 
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startDate = calculateStartDate(memberId, pkg, now);
-        LocalDateTime endDate = startDate.plusDays(pkg.getDurationDays());
+        requireMembershipForClass(memberId, pkg, now);
 
-        // BR-SUB-08: gói đang có (kể cả chưa bắt đầu) trùng thời gian và vào được cùng khu với gói mới
-        Set<Long> newArea = areaSubjectIds(pkg);
-        List<PurchaseWarningDTO> warnings = subscriptionRepository.findActiveNotEnded(memberId, now).stream()
-            .filter(s -> s.getStartDate().isBefore(endDate) && s.getEndDate().isAfter(startDate))
-            .filter(s -> !Collections.disjoint(areaSubjectIds(s.getMembershipPackage()), newArea))
-            .map(s -> toWarning(s, pkg, now))
+        // BR-SUB-08: cảnh báo gói cùng loại (CLASS: cùng môn) đang chờ kích hoạt hoặc còn hạn
+        List<PurchaseWarningDTO> warnings = subscriptionRepository.findOwnedNotEnded(memberId, now).stream()
+            .filter(s -> sameScope(s.getMembershipPackage(), pkg))
+            .map(s -> toWarning(s, now))
             .toList();
 
         return PurchasePreviewResponseDTO.builder()
             .packageId(pkg.getPackageId())
             .packageName(pkg.getPackageName())
             .packageType(pkg.getPackageType())
-            .startDate(startDate)
-            .endDate(endDate)
+            .activationNote(activationNote(pkg))
             .warnings(warnings)
             .build();
     }
@@ -192,53 +183,44 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         }
     }
 
-    // Cùng loại + cùng tập môn (FREE toàn trung tâm: cả 2 đều không có môn)
+    // Cùng loại gói; gói CLASS phải cùng môn
     private boolean sameScope(MembershipPackage a, MembershipPackage b) {
         return a.getPackageType() == b.getPackageType()
-            && subjectIds(a).equals(subjectIds(b));
+            && Objects.equals(subjectIdOf(a), subjectIdOf(b));
     }
 
-    private Set<Long> subjectIds(MembershipPackage pkg) {
-        return pkg.getSubjects().stream().map(Subject::getSubjectId).collect(Collectors.toSet());
+    private Long subjectIdOf(MembershipPackage pkg) {
+        return pkg.getSubject() != null ? pkg.getSubject().getSubjectId() : null;
     }
 
-    // Các môn mà gói cho vào khu tự tập. FREE toàn trung tâm = mọi môn OPEN (BR-PKG-03)
-    private Set<Long> areaSubjectIds(MembershipPackage pkg) {
-        if (pkg.getPackageType() == PackageType.FREE && pkg.getSubjects().isEmpty()) {
-            return subjectRepository.findByStatusAndAreaAccess("ACTIVE", AreaAccess.OPEN).stream()
-                .map(Subject::getSubjectId).collect(Collectors.toSet());
+    private String activationNote(MembershipPackage pkg) {
+        if (pkg.getPackageType() == PackageType.CLASS) {
+            return "Gói kích hoạt khi bạn đăng ký lớp, hết hạn theo ngày kết thúc của lớp.";
         }
-        return subjectIds(pkg);
+        return "Gói kích hoạt khi bạn check-in hoặc đăng ký lớp lần đầu, chậm nhất 14 ngày sau khi thanh toán.";
     }
 
-    private PurchaseWarningDTO toWarning(Subscription s, MembershipPackage newPkg, LocalDateTime now) {
+    private PurchaseWarningDTO toWarning(Subscription s, LocalDateTime now) {
         MembershipPackage owned = s.getMembershipPackage();
-        long daysLeft = Math.max(0, ChronoUnit.DAYS.between(now.toLocalDate(), s.getEndDate().toLocalDate()));
-        String until = s.getEndDate().format(DATE_FMT) + " (còn " + daysLeft + " ngày)";
+        boolean waiting = SubscriptionStatus.WAITING_ACTIVATION.name().equals(s.getStatus());
 
+        Long daysLeft = null;
         String message;
-        if (owned.getPackageType() == PackageType.CLASS && newPkg.getPackageType() == PackageType.FREE) {
-            message = "Gói " + owned.getPackageName() + " đã bao gồm quyền tự tập đến " + until;
-        } else if (owned.getPackageType() == PackageType.FREE && newPkg.getPackageType() == PackageType.CLASS) {
-            message = "Bạn đang có gói " + owned.getPackageName() + " đến " + until
-                + ". Gói lớp mới đã bao gồm quyền tự tập";
-        } else if (owned.getPackageType() == PackageType.FREE && owned.getSubjects().isEmpty()) {
-            message = "Gói toàn trung tâm " + owned.getPackageName() + " đã bao gồm khu này đến " + until;
+        if (waiting) {
+            message = "Bạn đang có gói " + owned.getPackageName() + " đã thanh toán nhưng chưa kích hoạt";
         } else {
-            message = "Bạn đang có gói " + owned.getPackageName() + " vào được cùng khu đến " + until;
-        }
-        Integer remaining = s.remainingSessions();
-        if (owned.getPackageType() == PackageType.CLASS && remaining != null) {
-            message += ", còn " + remaining + " buổi";
+            daysLeft = Math.max(0, ChronoUnit.DAYS.between(now.toLocalDate(), s.getEndDate().toLocalDate()));
+            message = "Bạn đang có gói " + owned.getPackageName() + " còn hạn đến "
+                + s.getEndDate().format(DATE_FMT) + " (còn " + daysLeft + " ngày)";
         }
 
         return PurchaseWarningDTO.builder()
             .subscriptionId(s.getSubscriptionId())
             .packageName(owned.getPackageName())
             .packageType(owned.getPackageType())
+            .status(s.getStatus())
             .endDate(s.getEndDate())
             .daysLeft(daysLeft)
-            .remainingSessions(remaining)
             .message(message)
             .build();
     }
@@ -260,17 +242,10 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         dto.setEndDate(s.getEndDate());
         dto.setStatus(s.getStatus());
         dto.setPackageType(pkg.getPackageType());
-        dto.setWholeCenter(pkg.getPackageType() == PackageType.FREE && pkg.getSubjects().isEmpty());
-        dto.setSubjects(pkg.getSubjects().stream()
-            .map(sub -> SubjectAccessDTO.builder()
-                .subjectId(sub.getSubjectId())
-                .subjectName(sub.getSubjectName())
-                .areaAccess(sub.getAreaAccess())
-                .build())
-            .toList());
-        dto.setSessionLimit(pkg.getSessionLimit());
-        dto.setUsedSessions(s.getUsedSessions());
-        dto.setRemainingSessions(s.remainingSessions());
+        dto.setSubjectId(subjectIdOf(pkg));
+        dto.setSubjectName(pkg.getSubject() != null ? pkg.getSubject().getSubjectName() : null);
+        dto.setPaidAt(s.getPaidAt());
+        dto.setActivatedAt(s.getActivatedAt());
         if (p != null) {
             dto.setPaymentId(p.getPaymentId());
             dto.setAmount(p.getAmount());

@@ -109,4 +109,14 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
                OR (s.status = 'ACTIVE' AND s.endDate > :now))
         """)
     boolean existsUsableMembership(@Param("memberId") Long memberId, @Param("now") LocalDateTime now);
+
+    // Gói đã trả tiền mà chưa hết: chờ kích hoạt, hoặc ACTIVE còn hạn (cảnh báo mua trùng)
+    @Query("""
+        SELECT s FROM Subscription s
+        JOIN FETCH s.membershipPackage
+        WHERE s.member.userId = :memberId
+          AND (s.status = 'WAITING_ACTIVATION'
+               OR (s.status = 'ACTIVE' AND s.endDate > :now))
+        """)
+    List<Subscription> findOwnedNotEnded(@Param("memberId") Long memberId, @Param("now") LocalDateTime now);
 }

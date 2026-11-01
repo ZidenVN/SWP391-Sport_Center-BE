@@ -27,6 +27,7 @@ public interface SubscriptionService {
     PurchasePreviewResponseDTO previewPurchase(Long memberId, Long packageId);
 
     // BR-CAN-01, BR-CAN-04: hoàn 1 buổi vào đúng gói đã trừ cho đăng ký này
+    @Deprecated
     void refundSession(ClassRegistration registration);
 
     // BR-SUB-07: đã có gói ACTIVE cùng loại + cùng tập môn hết hạn sau gói này (đã gia hạn)
