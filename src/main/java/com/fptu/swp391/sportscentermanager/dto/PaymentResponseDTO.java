@@ -23,4 +23,6 @@ public class PaymentResponseDTO {
     private String transactionRef;
     private String confirmedBy;
     private String note;
+
+    private BigDecimal refundAmount;
 }
