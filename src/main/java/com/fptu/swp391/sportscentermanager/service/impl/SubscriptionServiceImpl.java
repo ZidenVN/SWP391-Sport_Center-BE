@@ -2,32 +2,25 @@ package com.fptu.swp391.sportscentermanager.service.impl;
 
 import com.fptu.swp391.sportscentermanager.dto.PurchasePreviewResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.PurchaseWarningDTO;
-import com.fptu.swp391.sportscentermanager.dto.SubjectAccessDTO;
 import com.fptu.swp391.sportscentermanager.dto.SubscriptionRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.SubscriptionResponseDTO;
-import com.fptu.swp391.sportscentermanager.entity.ClassRegistration;
-import com.fptu.swp391.sportscentermanager.entity.Member;
-import com.fptu.swp391.sportscentermanager.entity.MembershipPackage;
-import com.fptu.swp391.sportscentermanager.entity.Payment;
-import com.fptu.swp391.sportscentermanager.entity.Subject;
-import com.fptu.swp391.sportscentermanager.entity.Subscription;
+import com.fptu.swp391.sportscentermanager.entity.*;
 import com.fptu.swp391.sportscentermanager.enums.*;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
-import com.fptu.swp391.sportscentermanager.repository.MemberRepository;
-import com.fptu.swp391.sportscentermanager.repository.MembershipPackageRepository;
-import com.fptu.swp391.sportscentermanager.repository.PaymentRepository;
-import com.fptu.swp391.sportscentermanager.repository.SubjectRepository;
-import com.fptu.swp391.sportscentermanager.repository.SubscriptionRepository;
+import com.fptu.swp391.sportscentermanager.repository.*;
 import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
-import org.springframework.transaction.annotation.Transactional;  import lombok.RequiredArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -66,9 +59,9 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         }
 
         Subscription subscription = subscriptionRepository.save(Subscription.builder()
-                .member(member)
-                .membershipPackage(pkg)
-                .status(SubscriptionStatus.PENDING.name())
+            .member(member)
+            .membershipPackage(pkg)
+            .status(SubscriptionStatus.PENDING.name())
             .build());
 
 
@@ -85,7 +78,6 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         return toResponse(subscription, payment);
     }
-
 
 
     // BR-SUB-05: chỉ nối sau gói ACTIVE cùng loại + cùng tập môn, còn hạn và còn buổi.
@@ -145,6 +137,73 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         return subscriptionRepository.findActiveNotEnded(subscription.getMember().getUserId(), subscription.getEndDate())
             .stream()
             .anyMatch(n -> sameScope(n.getMembershipPackage(), subscription.getMembershipPackage()));
+    }
+
+    @Override
+    @Transactional
+    public void activateMembershipIfWaiting(Long memberId, LocalDateTime now) {
+        if (subscriptionRepository.existsCurrentMembership(memberId, now)) {
+            return;
+        }
+        subscriptionRepository.findWaitingMemberships(memberId).stream().findFirst().ifPresent(s -> activateMembership(s, now));
+    }
+
+    @Override
+    @Transactional
+    public void activateClassPackage(Subscription classPackage, LocalDate classEndDate) {
+        String status = classPackage.getStatus();
+        boolean waiting = SubscriptionStatus.WAITING_ACTIVATION.name().equals(status);
+        boolean usable = classPackage.getMembershipPackage().getPackageType() == PackageType.CLASS && (waiting || SubscriptionStatus.ACTIVE.name().equals(status));
+        if (!usable) {
+            throw new AppException(ErrorCode.CLASS_PACKAGE_NOT_USABLE);
+        }
+
+        if (waiting) {
+            LocalDateTime now = LocalDateTime.now();
+            classPackage.setStatus(SubscriptionStatus.ACTIVE.name());
+            classPackage.setStartDate(now);
+            classPackage.setActivatedAt(now);
+        }
+
+        classPackage.setEndDate(classEndDate.plusDays(1).atStartOfDay());
+        subscriptionRepository.save(classPackage);
+    }
+
+    @Override
+    @Transactional
+    public void releaseClassPackage(Subscription classPackage) {
+        classPackage.setStatus(SubscriptionStatus.WAITING_ACTIVATION.name());
+        classPackage.setStartDate(null);
+        classPackage.setEndDate(null);
+        classPackage.setActivatedAt(null);
+        subscriptionRepository.save(classPackage);
+    }
+
+    @Override
+    @Transactional
+    public void extendClassPackages(Long classId, LocalDate newEndDate) {
+        LocalDateTime newEnd = newEndDate.plusDays(1).atStartOfDay();
+        for (Subscription s : subscriptionRepository.findClassPackagesOfClass(classId)) {
+            if (s.getEndDate() == null || s.getEndDate().isBefore(newEnd)) {
+                s.setEndDate(newEnd);
+            }
+        }
+    }
+
+    @Override
+    @Transactional
+    public List<Subscription> autoActivateWaitingMemberships(LocalDateTime now, int waitDays) {
+        List<Subscription> due = subscriptionRepository.findWaitingMembershipsPaidBefore(now.minusDays(waitDays));
+        due.forEach(s -> activateMembership(s, now));
+        return due;
+    }
+
+    private void activateMembership(Subscription s, LocalDateTime now) {
+        LocalDateTime start = calculateStartDate(s.getMember().getUserId(), s.getMembershipPackage(), now);
+        s.setStartDate(start);
+        s.setEndDate(start.plusDays(s.getMembershipPackage().getDurationDays()));
+        s.setStatus(SubscriptionStatus.ACTIVE.name());
+        s.setActivatedAt(now);
     }
 
     @Override
