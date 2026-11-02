@@ -9,16 +9,16 @@ import com.fptu.swp391.sportscentermanager.entity.Payment;
 import com.fptu.swp391.sportscentermanager.entity.Subscription;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import com.fptu.swp391.sportscentermanager.enums.SubscriptionStatus;
+import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
-import com.fptu.swp391.sportscentermanager.repository.MemberRepository;
-import com.fptu.swp391.sportscentermanager.repository.MembershipPackageRepository;
-import com.fptu.swp391.sportscentermanager.repository.PaymentRepository;
-import com.fptu.swp391.sportscentermanager.repository.SubscriptionRepository;
+import com.fptu.swp391.sportscentermanager.repository.*;
+import com.fptu.swp391.sportscentermanager.service.NotificationService;
 import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
 import com.fptu.swp391.sportscentermanager.service.VNPayService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.UnsupportedEncodingException;
@@ -29,6 +29,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class VNPayServiceImpl implements VNPayService {
@@ -38,6 +39,10 @@ public class VNPayServiceImpl implements VNPayService {
     private final SubscriptionRepository subscriptionRepository;
     private final PaymentRepository paymentRepository;
     private final SubscriptionService subscriptionService;
+    private final NotificationService notificationService;
+    private final UserRepository userRepository;
+
+    private static final String PAID_AFTER_CANCEL = "VNPAY_PAID_AFTER_CANCEL";
 
     @Override
     @Transactional
@@ -155,6 +160,18 @@ public class VNPayServiceImpl implements VNPayService {
         }
 
         if (!"PENDING".equals(payment.getStatus())) {
+            if ("CANCELLED".equals(payment.getStatus()) && "00".equals(request.getParameter("vnp_ResponseCode"))
+                    && !PAID_AFTER_CANCEL.equals(payment.getNote())) {
+                // IPN, return URL và IPN gọi lại đều vào đây: đánh dấu để quản lý chỉ nhận 1 thông báo
+                payment.setNote(PAID_AFTER_CANCEL);
+                String txn = request.getParameter("vnp_TransactionNo");
+                log.error("VNPay báo đã thu tiền cho giao dịch đã huỷ: paymentId={}, vnp_TransactionNo={}", paymentId, txn);
+                notificationService.notifyUsers(
+                    userRepository.findByRole_RoleNameAndStatus("CENTER_MANAGER", UserStatus.ACTIVE),
+                    "Cần kiểm tra giao dịch VNPay",
+                    "Giao dịch #" + paymentId + " đã huỷ nhưng VNPay báo đã thu tiền (mã " + txn + "). Hãy hoàn tiền hoặc kích hoạt gói tay.",
+                    "PAYMENT_NEEDS_REVIEW");
+            }
             return VNPayCallBackResponseDTO.builder()
                 .success("COMPLETED".equals(payment.getStatus()))
                 .message("Giao dịch đã được xử lý trước đó")
