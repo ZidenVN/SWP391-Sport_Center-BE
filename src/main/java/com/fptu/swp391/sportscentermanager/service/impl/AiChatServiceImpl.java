@@ -53,7 +53,6 @@ public class AiChatServiceImpl implements AiChatService {
     }
 
     @Override
-    @Transactional
     public AiChatResponseDTO chat(CustomUserDetails principal, Long conversationId, String message) {
         Long userId = principal.getUser().getUserId();
         String role = principal.getUser().getRole().getRoleName();
@@ -66,16 +65,12 @@ public class AiChatServiceImpl implements AiChatService {
         }
 
         // 2. Lay cuoc tro chuyen cu (phai la cua chinh minh) hoac tao moi
-        AiConversation conv = (conversationId == null)
-            ? aiConversationRepository.save(AiConversation.builder()
-                .user(userRepository.getReferenceById(userId))
-                .title(message.length() > 50 ? message.substring(0, 50) + "..." : message)
-                .build())
-            : aiConversationRepository.findByConversationIdAndUser_UserId(conversationId, userId)
-                .orElseThrow(() -> new AppException(ErrorCode.AI_CONVERSATION_NOT_FOUND));
+        AiConversation conv = (conversationId == null) ? AiConversation.builder()
+                                                         .user(userRepository.getReferenceById(userId)).title(message.length() > 50 ? message.substring(0, 50) + "..." : message)
+            .build() : aiConversationRepository.findByConversationIdAndUser_UserId(conversationId, userId).orElseThrow(() -> new AppException(ErrorCode.AI_CONVERSATION_NOT_FOUND));
 
         // 3. Lich su: chi gui historySize tin gan nhat de tiet kiem token
-        List<AiMessage> history = aiMessageRepository.findByConversation_ConversationIdOrderByCreatedAtAsc(conv.getConversationId());
+        List<AiMessage> history = (conv.getConversationId() == null) ? List.of() : aiMessageRepository.findByConversation_ConversationIdOrderByCreatedAtAsc(conv.getConversationId());
         List<Map<String, Object>> contents = new ArrayList<>();
         history.stream().skip(Math.max(0, history.size() - historySize))
             .forEach(m -> contents.add(textContent(m.getRole(), m.getContent())));
@@ -91,9 +86,10 @@ public class AiChatServiceImpl implements AiChatService {
         String reply = runToolLoop(systemPromptFor(), contents, declarations, tools, principal);
 
         // 6. Chi luu khi Gemini tra loi thanh cong, loi thi khong mat luot
+        conv.setUpdatedAt(LocalDateTime.now());
+        conv = aiConversationRepository.save(conv);
         aiMessageRepository.save(AiMessage.builder().conversation(conv).role("user").content(message).build());
         aiMessageRepository.save(AiMessage.builder().conversation(conv).role("model").content(reply).build());
-        conv.setUpdatedAt(LocalDateTime.now());
 
         return AiChatResponseDTO.builder().conversationId(conv.getConversationId()).reply(reply).build();
     }

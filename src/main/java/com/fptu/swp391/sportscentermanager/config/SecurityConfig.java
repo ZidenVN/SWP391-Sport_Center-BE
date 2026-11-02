@@ -49,6 +49,7 @@ public class SecurityConfig {
                 auth.requestMatchers(
                     "/api/v1/auth/**",
                     "/api/v1/payments/vnpay/callback",
+                    "/api/v1/payments/vnpay/ipn",
                     "/error",
                     "/v3/api-docs/**",
                     "/swagger-ui/**",

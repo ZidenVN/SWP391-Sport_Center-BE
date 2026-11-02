@@ -39,4 +39,7 @@ public interface SubscriptionService {
     void extendClassPackages(Long classId, LocalDate newEndDate);
 
     List<Subscription> autoActivateWaitingMemberships(LocalDateTime now, int waitDays);
+
+    // chặn nếu còn hoá đơn chờ hợp lệ, huỷ đơn VNPay đã hết hạn link
+    void cancelStalePendingOrThrow(Long memberId, LocalDateTime now);
 }

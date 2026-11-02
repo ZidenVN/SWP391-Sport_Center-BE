@@ -5,6 +5,7 @@ import com.fptu.swp391.sportscentermanager.entity.*;
 import com.fptu.swp391.sportscentermanager.enums.CheckInType;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import com.fptu.swp391.sportscentermanager.enums.PackageType;
+import com.fptu.swp391.sportscentermanager.enums.SubscriptionStatus;
 import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.*;
@@ -78,7 +79,10 @@ public class CheckInServiceImpl implements CheckInService {
             dto.setSubscriptionEndDate(shown.getEndDate());
         }
 
-        dto.setActiveSubscriptions(subscriptionService.getCurrentSubscriptions(memberId));
+        // getCurrentSubscriptions trả kèm gói chờ kích hoạt; lễ tân chỉ cần gói đang dùng được
+        dto.setActiveSubscriptions(subscriptionService.getCurrentSubscriptions(memberId).stream()
+            .filter(s -> SubscriptionStatus.ACTIVE.name().equals(s.getStatus()))
+            .toList());
         return dto;
     }
 

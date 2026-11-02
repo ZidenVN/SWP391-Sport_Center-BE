@@ -140,6 +140,7 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
         JOIN FETCH c.subject
         WHERE r.subscription.subscriptionId IN :ids
           AND r.status IN ('REGISTERED', 'STOPPED')
+          AND c.status IN ('OPENING', 'STOPPED')
         """)
     List<ClassRegistration> findLiveRegistrationsOf(@Param("ids") Collection<Long> ids);
 }

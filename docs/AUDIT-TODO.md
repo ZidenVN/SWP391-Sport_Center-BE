@@ -1,6 +1,12 @@
-# AUDIT TODO: 20 lỗi cần sửa (audit ngày 02/11/2026)
+# AUDIT TODO (audit ngày 02/11/2026, cập nhật lại sau PR #73)
 
-Kết quả audit toàn bộ backend trên `main` (tới PR #70). Mỗi mục gồm: chỗ sửa, lỗi, cách sửa, và điều kiện coi là xong.
+Kết quả audit toàn bộ backend trên `main`. Mỗi mục gồm: chỗ sửa, lỗi, cách sửa, và điều kiện coi là xong.
+
+**Cập nhật lần 2 (sau PR #71–73):**
+- **Đã xong 6 mục:** 5, 6, 7, 8, 9, 16.
+- **Còn mở:** 14 mục cũ.
+- **Mới thêm:** mục 21–23, sinh ra từ code chuyên môn HLV. Mục 21 chặn việc gán HLV, phải làm trước khi chạy bản mới.
+- **Đánh số:** số thứ tự giữ nguyên như cũ, để ai đã nhận mục nào vẫn tra được.
 
 **Tải giả định:** một trung tâm, vài trăm hội viên, chục nhân viên, 1 server trên Railway, pool kết nối DB mặc định là 10.
 
@@ -8,34 +14,41 @@ Kết quả audit toàn bộ backend trên `main` (tới PR #70). Mỗi mục g�
 
 **Người làm:** A = gói, membership, thanh toán, check-in · B = lớp, buổi học, báo cáo · C = HLV, đăng ký, đổi lớp. "Chưa giao" = phần đăng nhập / AI, trưởng nhóm gán người.
 
-Mục 5–9 trùng với `docs/TODO-ROLE-B-C.md`. File đó có code mẫu chi tiết hơn.
-
 ## Bảng tổng hợp
 
-| # | Mức | Lỗi | Người làm | Xong |
-|---|---|---|---|---|
-| 1 | 🔴 | Đăng nhập Google chiếm được tài khoản bất kỳ | Chưa giao | [ ] |
-| 2 | 🔴 | Mua gói online làm mất đơn đang chờ ở quầy | A | [ ] |
-| 3 | 🔴 | Trả tiền VNPay xong mà đóng tab thì không nhận được gói | A | [ ] |
-| 4 | 🔴 | Trợ lý AI giữ kết nối DB trong lúc chờ Gemini, có thể treo cả app | Chưa giao | [ ] |
-| 5 | 🔴 | Dừng lớp không gửi thông báo cho ai | B | [ ] |
-| 6 | 🔴 | Huỷ được lớp đang học dở | B | [ ] |
-| 7 | 🔴 | Lớp dư 1 ngày học | B | [ ] |
-| 8 | 🔴 | Tạo được lớp mà không ai đăng ký được | B | [ ] |
-| 9 | 🔴 | HLV nào cũng gán được vào môn nào | C | [ ] |
-| 10 | 🔴 | Báo cáo doanh thu bỏ sót tiền khi hoàn một phần | B | [ ] |
-| 11 | 🔴 | Deploy lên DB production sẽ làm sập trang gói | Cả team | [ ] |
-| 12 | 🟠 | Check-in trả "gói đang hiệu lực" lẫn gói chưa dùng được | A | [ ] |
-| 13 | 🟠 | Logic tính tiền hoàn chưa có test | A | [ ] |
-| 14 | 🟠 | Đăng ký và đổi lớp chưa có test | C | [ ] |
-| 15 | 🟠 | Code thừa: 6 mã lỗi cũ, 5 dòng cấu hình | A | [ ] |
-| 16 | 🟡 | Dừng được cả lớp chưa bắt đầu | B | [ ] |
-| 17 | 🟡 | Lỗi đăng nhập Google để lộ chi tiết bên trong | Chưa giao | [ ] |
-| 18 | 🟡 | Bấm "Mua" 2 lần cùng lúc tạo ra 2 đơn chờ | A | [ ] |
-| 19 | 🟡 | Giới hạn câu hỏi AI mỗi ngày có thể bị vượt | Chưa giao | [ ] |
-| 20 | 🟡 | Gói lớp đã hết hạn vẫn hiện "lớp đang học" | A | [ ] |
+| # | Mức  | Lỗi | Người làm | Xong |
+|---|------|---|---|---|
+| 1 | done | Đăng nhập Google chiếm được tài khoản bất kỳ | Chưa giao | [ ] |
+| 2 | done | Mua gói online làm mất đơn đang chờ ở quầy | A | [ ] |
+| 3 | done | Trả tiền VNPay xong mà đóng tab thì không nhận được gói | A | [ ] |
+| 4 | done | Trợ lý AI giữ kết nối DB trong lúc chờ Gemini, có thể treo cả app | Chưa giao | [ ] |
+| 5 | 🔴   | Dừng lớp không gửi thông báo cho ai | B | [x] PR #71 |
+| 6 | 🔴   | Huỷ được lớp đang học dở | B | [x] PR #71 |
+| 7 | 🔴   | Lớp dư 1 ngày học | B | [x] PR #71 |
+| 8 | 🔴   | Tạo được lớp mà không ai đăng ký được | B | [x] PR #71 |
+| 9 | 🔴   | HLV nào cũng gán được vào môn nào | C | [x] PR #72 |
+| 10 | 🔴   | Báo cáo doanh thu bỏ sót tiền khi hoàn một phần | B | [ ] |
+| 11 | 🔴   | Deploy lên DB production sẽ làm sập trang gói | Cả team | [ ] |
+| 21 | 🔴   | 🆕 HLV cũ chưa có môn trong `coach_subjects`, nên bị chặn khi gán lớp | C | [ ] |
+| 12 | done | Check-in trả "gói đang hiệu lực" lẫn gói chưa dùng được | A | [ ] |
+| 13 | done | Logic tính tiền hoàn chưa có test | A | [ ] |
+| 14 | 🟠   | Đăng ký và đổi lớp chưa có test | C | [ ] |
+| 15 | done | Code thừa: 6 mã lỗi cũ, 5 dòng cấu hình | A | [ ] |
+| 22 | 🟠   | 🆕 Bỏ môn của HLV không xét các buổi HLV đó dạy thay | C | [ ] |
+| 16 | 🟡   | Dừng được cả lớp chưa bắt đầu | B | [x] PR #71 |
+| 17 | done | Lỗi đăng nhập Google để lộ chi tiết bên trong | Chưa giao | [ ] |
+| 18 | done | Bấm "Mua" 2 lần cùng lúc tạo ra 2 đơn chờ | A | [ ] |
+| 19 | 🟡   | Giới hạn câu hỏi AI mỗi ngày có thể bị vượt | Chưa giao | [ ] |
+| 20 | done | Gói lớp đã hết hạn vẫn hiện "lớp đang học" | A | [ ] |
+| 23 | 🟡   | 🆕 Hai lỗi khác nhau dùng chung mã `ERR_CLASS_400_DURATION` | B | [ ] |
 
-**Thứ tự nên làm:** 1 và 4 (vài dòng, rủi ro lớn nhất) → 2, 3 (tiền) → 5–10 (nghiệp vụ) → 11 trước khi deploy → các mục còn lại.
+**Thứ tự nên làm:**
+1. Mục 21 trước khi chạy bản `main` mới.
+2. Mục 1 và 4: chỉ vài dòng nhưng rủi ro lớn nhất.
+3. Mục 2 và 3: liên quan tới tiền.
+4. Mục 10.
+5. Mục 11 cùng mục 21 trước khi deploy.
+6. Các mục còn lại.
 
 ---
 
@@ -81,56 +94,8 @@ Mục 5–9 trùng với `docs/TODO-ROLE-B-C.md`. File đó có code mẫu chi t
     ```
 - **Xong khi:** trong lúc 1 request AI đang chờ Gemini, các API khác vẫn phản hồi bình thường; lịch sử chat và `updatedAt` vẫn được lưu đúng.
 
-### 5. Dừng lớp không gửi thông báo cho ai
-- **File:** `service/impl/SportClassServiceImpl.java`, hàm `stopClass` (khoảng dòng 590–600)
-- **Lỗi:** Đăng ký được chuyển sang `STOPPED` **trước**, rồi mới gọi `registeredMembers(id)`. Hàm này chỉ đọc đăng ký `REGISTERED`, nên danh sách rỗng và không ai nhận được thông báo.
-- **Sửa:** Chuyển dòng `List<Member> members = registeredMembers(id);` lên **trước** vòng lặp đổi trạng thái.
-- **Xong khi:** dừng lớp có 5 học viên thì cả 5 người nhận thông báo "Dừng lớp khẩn cấp".
-
-### 6. Huỷ được lớp đang học dở
-- **File:** `SportClassServiceImpl.cancelClass`
-- **Lỗi:** Hàm chỉ kiểm tra lớp đang `OPENING`. Lớp đã học 2 tuần vẫn huỷ được, gói lớp của học viên bị trả về "chờ kích hoạt", nên họ đăng ký khoá khác và học thêm 1 tháng miễn phí.
-- **Sửa:** thêm mã lỗi `CLASS_CANCEL_STARTED` ("Lớp đã bắt đầu, hãy dùng chức năng Dừng lớp!"), rồi ngay sau `requireOpening(sportClass);`:
-  ```java
-  LocalDateTime first = sportClass.getFirstSessionAt();
-  if (first != null && !LocalDateTime.now().isBefore(first)) {
-      throw new AppException(ErrorCode.CLASS_CANCEL_STARTED);
-  }
-  ```
-- **Xong khi:** huỷ lớp đã có buổi diễn ra thì nhận 422, và gói lớp của học viên vẫn `ACTIVE`.
-
-### 7. Lớp dư 1 ngày học
-- **File:** `SportClassServiceImpl`, khoảng dòng 84 (`createClass`) và 413 (`updateClass`)
-- **Lỗi:** `endDate = startDate + durationDays`, và vòng lặp tạo buổi tính **cả** ngày `endDate`. Lớp "30 ngày" thực ra kéo dài 31 ngày, có thể dư 1 buổi.
-- **Sửa:** ở cả 2 chỗ:
-  ```java
-  LocalDate endDate = requestDTO.getStartDate().plusDays(requestDTO.getDurationDays() - 1);
-  ```
-  Từ đây `endDate` = ngày học cuối cùng, tính luôn ngày đó. Buổi bù (`ClassSessionServiceImpl`) và hạn gói lớp (`SubscriptionServiceImpl`, cộng thêm 1 ngày) đã theo đúng cách hiểu này.
-- **Xong khi:** lớp 30 ngày bắt đầu 01/12 có `endDate = 30/12`, và không có buổi học nào sau ngày đó.
-
-### 8. Tạo được lớp mà không ai đăng ký được
-- **File:** `SportClassServiceImpl.createClass` và `updateClass`
-- **Lỗi:** Code không kiểm tra thời hạn lớp có trùng với gói đang bán hay không. Ví dụ tạo lớp Boxing 45 ngày trong khi chỉ bán gói 30/90 ngày. Phần đăng ký đòi thời hạn gói **bằng** thời hạn lớp, nên lớp luôn trống.
-- **Sửa:** inject `MembershipPackageService` và thêm mã lỗi `CLASS_DURATION_NOT_SOLD`. Sau khi kiểm tra `startDate`:
-  ```java
-  if (!membershipPackageService.getClassDurations(subject.getSubjectId()).contains(requestDTO.getDurationDays())) {
-      throw new AppException(ErrorCode.CLASS_DURATION_NOT_SOLD);
-  }
-  ```
-- **Xong khi:** tạo lớp với thời hạn không có gói tương ứng thì nhận 400.
-
-### 9. HLV nào cũng gán được vào môn nào
-- **File:** `guard/CoachSubjectGuard.java`, `entity/Coach.java`, `service/impl/CoachServiceImpl.java`
-- **Lỗi:** Chuyên môn được kiểm tra bằng cách **so chữ** trong `speciality`, và chữ "fitness" khớp **mọi môn**. HLV mặc định "General Fitness" dạy được Boxing, Bơi, Yoga. Chưa có bảng `coach_subjects` như nghiệp vụ đã chốt.
-- **Sửa:** làm theo mục **C1** trong `docs/TODO-ROLE-B-C.md`:
-  - thêm `Coach.subjects` (bảng `coach_subjects`);
-  - DTO nhận `subjectIds` (bắt buộc ít nhất 1 môn);
-  - chặn bỏ môn khi HLV còn lớp của môn đó;
-  - thêm API `GET /coaches?subjectId=`;
-  - guard chuyển sang so theo id;
-  - chạy SQL gán môn cho các HLV đang có.
-- **Xong khi:** gán HLV Yoga vào lớp Boxing bị chặn, kể cả với HLV "General Fitness".
+### 5–9. ✅ Đã xong (PR #71, #72)
+Dừng lớp có gửi thông báo, không huỷ được lớp đã bắt đầu, `endDate` không còn dư 1 ngày, thời hạn lớp phải trùng với gói đang bán, chuyên môn HLV dùng bảng `coach_subjects`. Các mục 21–23 bên dưới là phần còn sót lại sau khi sửa.
 
 ### 10. Báo cáo doanh thu bỏ sót tiền khi hoàn một phần
 - **File:** `repository/PaymentRepository.java`, các query doanh thu (khoảng dòng 47–88)
@@ -154,14 +119,31 @@ Mục 5–9 trùng với `docs/TODO-ROLE-B-C.md`. File đó có code mẫu chi t
     UPDATE packages SET package_type = 'MEMBERSHIP', subject_id = NULL WHERE package_type = 'FREE';
     ```
     Có thể xoá thêm các cột, bảng không dùng: `subscriptions.used_sessions`, `packages.session_limit`, `package_subjects`.
+  - Chạy luôn SQL của mục 21 trong cùng đợt deploy.
 - **Xong khi:** sau khi deploy, `GET /packages` trên production trả 200.
+
+### 21. 🆕 HLV cũ chưa có môn trong `coach_subjects`, nên bị chặn khi gán lớp
+- **File:** `entity/Coach.java` (bảng mới `coach_subjects`), `config/DataInitializer.java` (khoảng dòng 182–192)
+- **Lỗi:** `CoachSubjectGuard` giờ chỉ đọc bảng `coach_subjects`. `ddl-auto=update` tạo bảng này **rỗng** và không chuyển dữ liệu từ cột `speciality` cũ sang.
+  - Mọi HLV đang có (DB local có 9 HLV) sẽ bị lỗi `COACH_NOT_TEACH_SUBJECT` khi tạo lớp, sửa lớp, đổi HLV hoặc chọn người dạy thay.
+  - HLV mặc định do `DataInitializer` tạo cũng không có môn nào.
+- **Sửa:**
+  - Sau khi app chạy lần đầu (lúc đó bảng đã được tạo), chạy SQL trên **từng DB** (local của mỗi người và production):
+    ```sql
+    INSERT IGNORE INTO coach_subjects (coach_id, subject_id)
+    SELECT c.coach_id, s.subject_id
+    FROM coaches c JOIN subjects s ON c.speciality LIKE CONCAT('%', s.subject_name, '%');
+    ```
+  - Kiểm tra lại các HLV vẫn chưa có môn: `SELECT coach_id, speciality FROM coaches WHERE coach_id NOT IN (SELECT coach_id FROM coach_subjects);`. Gán tay cho họ qua `PUT /coaches/{id}` với `subjectIds`. Ví dụ HLV "General Fitness" không khớp tên môn nào nên câu SQL trên bỏ qua.
+  - Trong `DataInitializer`, gán cho HLV mặc định ít nhất 1 môn, ví dụ `.subjects(Set.of(gymSubject))`. Nếu môn chưa được tạo lúc khởi động thì bỏ qua bước này và ghi chú lại.
+- **Xong khi:** mọi HLV có ít nhất 1 dòng trong `coach_subjects`, và tạo lớp Gym với HLV Gym có sẵn thì thành công.
 
 ---
 
 ## 🟠 Nên sửa
 
 ### 12. Check-in trả "gói đang hiệu lực" lẫn gói chưa dùng được
-- **File:** `service/impl/CheckInServiceImpl.java:81`
+- **File:** `service/impl/CheckInServiceImpl.java:84`
 - **Lỗi:** `activeSubscriptions` lấy từ `getCurrentSubscriptions`, mà hàm này giờ trả cả gói `WAITING_ACTIVATION`. Gói lớp chưa đăng ký lớp vẫn hiện như đang dùng.
 - **Sửa:**
   ```java
@@ -198,14 +180,18 @@ Mục 5–9 trùng với `docs/TODO-ROLE-B-C.md`. File đó có code mẫu chi t
 - **Sửa:** xoá khoảng 11 dòng trên.
 - **Xong khi:** compile xanh và app khởi động bình thường.
 
+### 22. 🆕 Bỏ môn của HLV không xét các buổi HLV đó dạy thay
+- **File:** `repository/CoachRepository.hasOpeningClassOfSubjects`, được gọi từ `CoachServiceImpl.updateCoach` (khoảng dòng 222)
+- **Lỗi:** Query chỉ xét các lớp mà HLV là **người dạy chính**. Ví dụ: HLV A được xếp dạy thay buổi Boxing ngày 10/11, quản lý bỏ môn Boxing của A vẫn thành công, và A vẫn dạy buổi đó.
+- **Sửa:** thêm vào query một điều kiện `OR EXISTS`: có `ClassSession` chưa diễn ra, `substituteCoach` là HLV này, và lớp thuộc một môn bị bỏ.
+- **Xong khi:** bỏ môn của một HLV đang có buổi dạy thay của môn đó thì nhận lỗi `COACH_SUBJECT_IN_USE`.
+
 ---
 
 ## 🟡 Làm thêm khi rảnh
 
-### 16. Dừng được cả lớp chưa bắt đầu
-- **File:** `SportClassServiceImpl.stopClass`
-- **Lỗi:** Lớp chưa học buổi nào bị "dừng" thay vì "huỷ", nên học viên phải nhờ lễ tân chuyển lớp thay vì tự đăng ký lại.
-- **Sửa:** ngược với mục 6. Nếu `firstSessionAt` còn ở tương lai thì báo lỗi, yêu cầu dùng "Huỷ lớp".
+### 16. ✅ Đã xong (PR #71)
+Dừng lớp chưa bắt đầu giờ báo lỗi `CLASS_STOP_NOT_STARTED`.
 
 ### 17. Lỗi đăng nhập Google để lộ chi tiết bên trong
 - **File:** `AuthController.loginWithGoogle`, khối `catch (Exception e)`
@@ -227,6 +213,13 @@ Mục 5–9 trùng với `docs/TODO-ROLE-B-C.md`. File đó có code mẫu chi t
 - **Lỗi:** Khoá học kết thúc thì lớp chuyển `COMPLETED`, nhưng đăng ký vẫn là `REGISTERED`, nên lịch sử gói vẫn ghi đang học lớp đó.
 - **Sửa:** thêm `AND c.status IN ('OPENING', 'STOPPED')` vào query.
 
+### 23. 🆕 Hai lỗi khác nhau dùng chung mã `ERR_CLASS_400_DURATION`
+- **File:** `enums/ErrorCode.java` (khoảng dòng 129–133)
+- **Lỗi:**
+  - `CLASS_DURATION_INVALID` và `CLASS_DURATION_NOT_SOLD` có cùng mã lỗi, nên FE không phân biệt được.
+  - `CLASS_CANCEL_STARTED` và `CLASS_STOP_NOT_STARTED` trả HTTP 422, nhưng tên mã lại ghi `400`.
+- **Sửa:** đổi mã thành `ERR_CLASS_400_DURATION_NOT_SOLD`, và cho tên mã khớp với HTTP status: đổi status về 400, hoặc đổi tên mã thành `ERR_CLASS_422_...`.
+
 ---
 
 ## Đã kiểm tra và ổn
@@ -237,4 +230,5 @@ Mục 5–9 trùng với `docs/TODO-ROLE-B-C.md`. File đó có code mẫu chi t
 - Callback VNPay có kiểm tra chữ ký và số tiền.
 
 ## Chưa kiểm tra
+Lần 2: chưa chạy `./mvnw test` trên `main`; FE chưa được kiểm tra xem đã gửi `subjectIds` thay cho `specialty` chưa.
 Cấu trúc bên trong WebSocket, chi tiết `AuditLogAspect`, SupportTicket, toàn bộ FE. Chưa chạy test tải, chưa kiểm tra trên DB production.

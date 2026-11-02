@@ -13,4 +13,5 @@ public class VNPayCallBackResponseDTO {
     private Long paymentId;
     private String transactionNo;
     private String responseCode;
+    private String rspCode;
 }

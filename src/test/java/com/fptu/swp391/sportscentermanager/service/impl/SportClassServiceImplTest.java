@@ -87,6 +87,8 @@ class SportClassServiceImplTest {
         testCoach.setFirstName("Thành");
         testCoach.setLastName("Lê");
 
+        testCoach.getSubjects().add(testSubject);
+
         testClass = SportClass.builder()
                 .classId(100L)
                 .room(testRoom)
