@@ -12,6 +12,7 @@ import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.guard.CoachSubjectGuard;
 import com.fptu.swp391.sportscentermanager.repository.*;
 import com.fptu.swp391.sportscentermanager.service.ImageStorageService;
+import com.fptu.swp391.sportscentermanager.service.MembershipPackageService;
 import com.fptu.swp391.sportscentermanager.service.NotificationService;
 import com.fptu.swp391.sportscentermanager.service.SportClassService;
 import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
@@ -43,6 +44,7 @@ public class SportClassServiceImpl implements SportClassService {
     private final ImageStorageService imageStorageService;
     private final SubscriptionService subscriptionService;
     private final ClassSessionRepository classSessionRepository;
+    private final MembershipPackageService membershipPackageService;
 
     private static final int MAX_PAGE_SIZE = 100;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
@@ -72,8 +74,11 @@ public class SportClassServiceImpl implements SportClassService {
 
         // Phân biệt chế độ tạo lớp lặp lịch cố định hay lớp đơn lẻ (tương thích ngược)
         if (requestDTO.getStartDate() != null && requestDTO.getDurationDays() != null && requestDTO.getDurationDays() > 0) {
-            if (requestDTO.getStartDate().isBefore(LocalDate.now())) {
+            if (!requestDTO.getStartDate().isAfter(LocalDate.now())) {
                 throw new AppException(ErrorCode.CLASS_START_DATE_INVALID);
+            }
+            if (!membershipPackageService.getClassDurations(subject.getSubjectId()).contains(requestDTO.getDurationDays())) {
+                throw new AppException(ErrorCode.CLASS_DURATION_NOT_SOLD);
             }
             if (requestDTO.getStartClock() == null || requestDTO.getEndClock() == null
                     || !requestDTO.getEndClock().isAfter(requestDTO.getStartClock())) {
@@ -81,7 +86,7 @@ public class SportClassServiceImpl implements SportClassService {
             }
 
             Set<DayOfWeek> days = parseDaysOfWeek(requestDTO.getDaysOfWeek());
-            LocalDate endDate = requestDTO.getStartDate().plusDays(requestDTO.getDurationDays());
+            LocalDate endDate = requestDTO.getStartDate().plusDays(requestDTO.getDurationDays() - 1);
 
             List<ClassSession> sessionsToCreate = new ArrayList<>();
             for (LocalDate d = requestDTO.getStartDate(); !d.isAfter(endDate); d = d.plusDays(1)) {
@@ -401,8 +406,11 @@ public class SportClassServiceImpl implements SportClassService {
             classSessionRepository.deleteBySportClass_ClassId(id);
 
             if (requestDTO.getStartDate() != null && requestDTO.getDurationDays() != null && requestDTO.getDurationDays() > 0) {
-                if (requestDTO.getStartDate().isBefore(LocalDate.now())) {
+                if (!requestDTO.getStartDate().isAfter(LocalDate.now())) {
                     throw new AppException(ErrorCode.CLASS_START_DATE_INVALID);
+                }
+                if (!membershipPackageService.getClassDurations(subject.getSubjectId()).contains(requestDTO.getDurationDays())) {
+                    throw new AppException(ErrorCode.CLASS_DURATION_NOT_SOLD);
                 }
                 if (requestDTO.getStartClock() == null || requestDTO.getEndClock() == null
                         || !requestDTO.getEndClock().isAfter(requestDTO.getStartClock())) {
@@ -410,7 +418,7 @@ public class SportClassServiceImpl implements SportClassService {
                 }
 
                 Set<DayOfWeek> days = parseDaysOfWeek(requestDTO.getDaysOfWeek());
-                LocalDate endDate = requestDTO.getStartDate().plusDays(requestDTO.getDurationDays());
+                LocalDate endDate = requestDTO.getStartDate().plusDays(requestDTO.getDurationDays() - 1);
 
                 List<ClassSession> sessionsToCreate = new ArrayList<>();
                 for (LocalDate d = requestDTO.getStartDate(); !d.isAfter(endDate); d = d.plusDays(1)) {
@@ -532,6 +540,11 @@ public class SportClassServiceImpl implements SportClassService {
                 .orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
         requireOpening(sportClass);
 
+        LocalDateTime first = sportClass.getFirstSessionAt();
+        if (first != null && !LocalDateTime.now().isBefore(first)) {
+            throw new AppException(ErrorCode.CLASS_CANCEL_STARTED);
+        }
+
         List<ClassRegistration> active = classRegistrationRepository.findActiveByClassId(id);
         List<Member> members = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
@@ -577,6 +590,14 @@ public class SportClassServiceImpl implements SportClassService {
             throw new AppException(ErrorCode.CLASS_ALREADY_STOPPED);
         }
 
+        LocalDateTime first = sportClass.getFirstSessionAt();
+        if (first != null && LocalDateTime.now().isBefore(first)) {
+            throw new AppException(ErrorCode.CLASS_STOP_NOT_STARTED);
+        }
+
+        // Lấy người nhận TRƯỚC khi đổi trạng thái (registeredMembers chỉ đọc REGISTERED)
+        List<Member> members = registeredMembers(id);
+
         // Chuyển các buổi học trong tương lai sang CANCELLED
         List<ClassSession> futureSessions = classSessionRepository.findBySportClass_ClassIdAndStartTimeAfterOrderByStartTimeAsc(id, LocalDateTime.now());
         for (ClassSession s : futureSessions) {
@@ -597,7 +618,6 @@ public class SportClassServiceImpl implements SportClassService {
         sportClass.setStatus("STOPPED");
         SportClass saved = sportClassRepository.save(sportClass);
 
-        List<Member> members = registeredMembers(id);
         if (!members.isEmpty()) {
             String content = "Lớp " + sportClass.getSubject().getSubjectName() + " đã dừng hoạt động khẩn cấp.";
             if (reason != null && !reason.isBlank()) {
