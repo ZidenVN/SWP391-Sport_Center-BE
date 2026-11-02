@@ -131,9 +131,7 @@ class SportClassServiceImplTest {
         when(membershipPackageService.getClassDurations(1L)).thenReturn(List.of(14, 30));
         when(imageStorageService.uploadClassImage(any())).thenReturn("http://img.png");
         when(classSessionRepository.existsRoomConflict(anyLong(), any(), any(), any())).thenReturn(false);
-        when(sportClassRepository.existsRoomConflict(anyLong(), any(), any(), anyLong())).thenReturn(false);
         when(classSessionRepository.existsCoachConflict(anyLong(), any(), any(), any())).thenReturn(false);
-        when(sportClassRepository.existsCoachConflict(anyLong(), any(), any(), anyLong())).thenReturn(false);
         when(sportClassRepository.save(any(SportClass.class))).thenAnswer(i -> {
             SportClass sc = i.getArgument(0);
             sc.setClassId(100L);
@@ -148,6 +146,50 @@ class SportClassServiceImplTest {
         assertNotNull(res.getScheduleSummary());
         assertTrue(res.getScheduleSummary().contains("08:00 - 09:30"));
         verify(classSessionRepository).saveAll(anyList());
+    }
+
+    @Test
+    @DisplayName("Trùng lịch ở 1 buổi giữa khoá thì không tạo gì: không lưu lớp, không lưu buổi, không upload ảnh")
+    void testCreateClass_OneSessionConflict_CreatesNothing() {
+        SportClassRequestDTO req = SportClassRequestDTO.builder()
+                .roomId(10L).subjectId(1L).coachId(5L).maxCapacity(20)
+                .startDate(LocalDate.now().plusDays(1)).durationDays(14).daysOfWeek("MON,WED,FRI")
+                .startClock(LocalTime.of(8, 0)).endClock(LocalTime.of(9, 30))
+                .build();
+
+        when(roomRepository.findByRoomIdAndStatusNot(10L, "INACTIVE")).thenReturn(Optional.of(testRoom));
+        when(subjectRepository.findBySubjectIdAndStatus(1L, "ACTIVE")).thenReturn(Optional.of(testSubject));
+        when(coachRepository.findById(5L)).thenReturn(Optional.of(testCoach));
+        when(membershipPackageService.getClassDurations(1L)).thenReturn(List.of(14, 30));
+        // buổi đầu trống phòng, buổi thứ 2 trùng phòng
+        when(classSessionRepository.existsRoomConflict(anyLong(), any(), any(), any())).thenReturn(false, true);
+        when(classSessionRepository.existsCoachConflict(anyLong(), any(), any(), any())).thenReturn(false);
+
+        AppException ex = assertThrows(AppException.class, () -> sportClassService.createClass(req, null));
+
+        assertEquals(ErrorCode.SESSION_SCHEDULE_CONFLICT, ex.getErrorCode());
+        verify(sportClassRepository, never()).save(any());
+        verify(classSessionRepository, never()).saveAll(anyList());
+        verifyNoInteractions(imageStorageService);
+    }
+
+    @Test
+    @DisplayName("Không gửi lịch lặp cố định (chỉ startTime/endTime) thì không tạo lớp đơn lẻ")
+    void testCreateClass_WithoutRecurringSchedule_Rejected() {
+        SportClassRequestDTO req = SportClassRequestDTO.builder()
+                .roomId(10L).subjectId(1L).coachId(5L).maxCapacity(20)
+                .startTime(LocalDate.now().plusDays(1).atTime(8, 0))
+                .endTime(LocalDate.now().plusDays(1).atTime(9, 30))
+                .build();
+
+        when(roomRepository.findByRoomIdAndStatusNot(10L, "INACTIVE")).thenReturn(Optional.of(testRoom));
+        when(subjectRepository.findBySubjectIdAndStatus(1L, "ACTIVE")).thenReturn(Optional.of(testSubject));
+        when(coachRepository.findById(5L)).thenReturn(Optional.of(testCoach));
+
+        AppException ex = assertThrows(AppException.class, () -> sportClassService.createClass(req, null));
+
+        assertEquals(ErrorCode.CLASS_DURATION_INVALID, ex.getErrorCode());
+        verify(sportClassRepository, never()).save(any());
     }
 
     @Test

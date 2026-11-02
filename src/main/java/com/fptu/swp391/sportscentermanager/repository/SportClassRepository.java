@@ -72,33 +72,6 @@ public interface SportClassRepository extends JpaRepository<SportClass, Long> {
     // BE-27: HLV còn lớp sắp dạy thì không cho khóa
     boolean existsByCoach_UserIdAndStatusAndStartTimeAfter(Long coachId, String status, LocalDateTime time);
 
-    // Kiểm tra trùng lịch: chỉ tính lớp đang mở (lớp đã hủy / đã kết thúc không còn giữ phòng, giữ HLV)
-    @Query("""
-        SELECT COUNT(c) > 0 FROM SportClass c
-        WHERE c.room.roomId = :roomId
-        AND c.classId <> :excludeClassId
-        AND c.status = 'OPENING'
-        AND c.startTime < :endTime
-        AND :startTime < c.endTime
-        """)
-    boolean existsRoomConflict(@Param("roomId") Long roomId,
-                               @Param("startTime") LocalDateTime startTime,
-                               @Param("endTime") LocalDateTime endTime,
-                               @Param("excludeClassId") Long excludeClassId);
-
-    @Query("""
-        SELECT COUNT(c) > 0 FROM SportClass c
-        WHERE c.coach.userId = :coachId
-        AND c.classId <> :excludeClassId
-        AND c.status = 'OPENING'
-        AND c.startTime < :endTime
-        AND :startTime < c.endTime
-        """)
-    boolean existsCoachConflict(@Param("coachId") Long coachId,
-                                @Param("startTime") LocalDateTime startTime,
-                                @Param("endTime") LocalDateTime endTime,
-                                @Param("excludeClassId") Long excludeClassId);
-
     // BE-12: phòng còn lớp ĐANG MỞ cần nhiều chỗ hơn sức chứa mới (lớp đã hủy/kết thúc không tính)
     boolean existsByRoom_RoomIdAndStatusAndMaxCapacityGreaterThan(Long roomId, String status, Integer capacity);
 

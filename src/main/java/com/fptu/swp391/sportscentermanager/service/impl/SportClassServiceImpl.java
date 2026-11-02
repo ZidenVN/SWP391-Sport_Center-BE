@@ -70,9 +70,7 @@ public class SportClassServiceImpl implements SportClassService {
             CoachSubjectGuard.requireTeaches(coach, subject);
         }
 
-        String imageUrl = imageStorageService.uploadClassImage(image);
-
-        // Phân biệt chế độ tạo lớp lặp lịch cố định hay lớp đơn lẻ (tương thích ngược)
+        // Lớp là 1 khoá học có lịch cố định; thiếu lịch lặp thì không tạo (chế độ lớp đơn lẻ cũ không khớp gói lớp nào)
         if (requestDTO.getStartDate() != null && requestDTO.getDurationDays() != null && requestDTO.getDurationDays() > 0) {
             if (!requestDTO.getStartDate().isAfter(LocalDate.now())) {
                 throw new AppException(ErrorCode.CLASS_START_DATE_INVALID);
@@ -94,12 +92,10 @@ public class SportClassServiceImpl implements SportClassService {
                     LocalDateTime sStart = d.atTime(requestDTO.getStartClock());
                     LocalDateTime sEnd = d.atTime(requestDTO.getEndClock());
 
-                    if (classSessionRepository.existsRoomConflict(room.getRoomId(), sStart, sEnd, null)
-                            || sportClassRepository.existsRoomConflict(room.getRoomId(), sStart, sEnd, 0L)) {
+                    if (classSessionRepository.existsRoomConflict(room.getRoomId(), sStart, sEnd, null)) {
                         throw new AppException(ErrorCode.SESSION_SCHEDULE_CONFLICT);
                     }
-                    if (coach != null && (classSessionRepository.existsCoachConflict(coach.getUserId(), sStart, sEnd, null)
-                            || sportClassRepository.existsCoachConflict(coach.getUserId(), sStart, sEnd, 0L))) {
+                    if (coach != null && classSessionRepository.existsCoachConflict(coach.getUserId(), sStart, sEnd, null)) {
                         throw new AppException(ErrorCode.SESSION_SCHEDULE_CONFLICT);
                     }
 
@@ -120,6 +116,8 @@ public class SportClassServiceImpl implements SportClassService {
 
             LocalDateTime firstSessionAt = sessionsToCreate.get(0).getStartTime();
             LocalDateTime lastSessionEnd = sessionsToCreate.get(sessionsToCreate.size() - 1).getEndTime();
+            // Upload sau khi đã kiểm tra trùng lịch: request lỗi không để lại ảnh rác trên Cloudinary
+            String imageUrl = imageStorageService.uploadClassImage(image);
 
             SportClass newClass = SportClass.builder()
                     .startDate(requestDTO.getStartDate())
@@ -146,44 +144,8 @@ public class SportClassServiceImpl implements SportClassService {
             classSessionRepository.saveAll(sessionsToCreate);
 
             return toResponseDTO(savedClass);
-        } else {
-            // Chế độ tương thích ngược
-            validateClassTime(requestDTO.getStartTime(), requestDTO.getEndTime());
-            checkScheduleConflict(requestDTO.getRoomId(), requestDTO.getCoachId(), requestDTO.getStartTime(), requestDTO.getEndTime(), 0L);
-
-            SportClass newClass = SportClass.builder()
-                    .startDate(requestDTO.getStartTime().toLocalDate())
-                    .endDate(requestDTO.getEndTime().toLocalDate())
-                    .durationDays(1)
-                    .daysOfWeek(requestDTO.getStartTime().getDayOfWeek().name())
-                    .startClock(requestDTO.getStartTime().toLocalTime())
-                    .endClock(requestDTO.getEndTime().toLocalTime())
-                    .firstSessionAt(requestDTO.getStartTime())
-                    .startTime(requestDTO.getStartTime())
-                    .endTime(requestDTO.getEndTime())
-                    .maxCapacity(requestDTO.getMaxCapacity())
-                    .status(ClassStatus.OPENING.name())
-                    .room(room)
-                    .subject(subject)
-                    .coach(coach)
-                    .imageUrl(imageUrl)
-                    .build();
-
-            SportClass savedClass = sportClassRepository.save(newClass);
-
-            ClassSession session = ClassSession.builder()
-                    .sportClass(savedClass)
-                    .startTime(requestDTO.getStartTime())
-                    .endTime(requestDTO.getEndTime())
-                    .coach(coach)
-                    .room(room)
-                    .type(SessionType.REGULAR)
-                    .status(SessionStatus.SCHEDULED)
-                    .build();
-            classSessionRepository.save(session);
-
-            return toResponseDTO(savedClass);
         }
+        throw new AppException(ErrorCode.CLASS_DURATION_INVALID);
     }
 
     @Override
@@ -397,9 +359,6 @@ public class SportClassServiceImpl implements SportClassService {
         sportClass.setSubject(subject);
         sportClass.setCoach(coach);
         sportClass.setMaxCapacity(requestDTO.getMaxCapacity());
-        if (image != null && !image.isEmpty()) {
-            sportClass.setImageUrl(imageStorageService.uploadClassImage(image));
-        }
 
         if (scheduleChanged) {
             // Xoá các buổi cũ và tạo lại toàn bộ
@@ -426,12 +385,10 @@ public class SportClassServiceImpl implements SportClassService {
                         LocalDateTime sStart = d.atTime(requestDTO.getStartClock());
                         LocalDateTime sEnd = d.atTime(requestDTO.getEndClock());
 
-                        if (classSessionRepository.existsRoomConflict(room.getRoomId(), sStart, sEnd, null)
-                                || sportClassRepository.existsRoomConflict(room.getRoomId(), sStart, sEnd, id)) {
+                        if (classSessionRepository.existsRoomConflict(room.getRoomId(), sStart, sEnd, null)) {
                             throw new AppException(ErrorCode.SESSION_SCHEDULE_CONFLICT);
                         }
-                        if (coach != null && (classSessionRepository.existsCoachConflict(coach.getUserId(), sStart, sEnd, null)
-                                || sportClassRepository.existsCoachConflict(coach.getUserId(), sStart, sEnd, id))) {
+                        if (coach != null && classSessionRepository.existsCoachConflict(coach.getUserId(), sStart, sEnd, null)) {
                             throw new AppException(ErrorCode.SESSION_SCHEDULE_CONFLICT);
                         }
 
@@ -466,32 +423,15 @@ public class SportClassServiceImpl implements SportClassService {
 
                 classSessionRepository.saveAll(sessionsToCreate);
             } else {
-                validateClassTime(requestDTO.getStartTime(), requestDTO.getEndTime());
-                checkScheduleConflict(requestDTO.getRoomId(), requestDTO.getCoachId(), requestDTO.getStartTime(), requestDTO.getEndTime(), id);
-
-                sportClass.setStartDate(requestDTO.getStartTime().toLocalDate());
-                sportClass.setEndDate(requestDTO.getEndTime().toLocalDate());
-                sportClass.setDurationDays(1);
-                sportClass.setDaysOfWeek(requestDTO.getStartTime().getDayOfWeek().name());
-                sportClass.setStartClock(requestDTO.getStartTime().toLocalTime());
-                sportClass.setEndClock(requestDTO.getEndTime().toLocalTime());
-                sportClass.setFirstSessionAt(requestDTO.getStartTime());
-                sportClass.setStartTime(requestDTO.getStartTime());
-                sportClass.setEndTime(requestDTO.getEndTime());
-
-                ClassSession session = ClassSession.builder()
-                        .sportClass(sportClass)
-                        .startTime(requestDTO.getStartTime())
-                        .endTime(requestDTO.getEndTime())
-                        .coach(coach)
-                        .room(room)
-                        .type(SessionType.REGULAR)
-                        .status(SessionStatus.SCHEDULED)
-                        .build();
-                classSessionRepository.save(session);
+                // Đổi lịch phải gửi đủ lịch lặp cố định, không còn đổi thành lớp đơn lẻ
+                throw new AppException(ErrorCode.CLASS_DURATION_INVALID);
             }
         }
 
+        // Upload sau khi đã kiểm tra lịch: request lỗi không để lại ảnh rác trên Cloudinary
+        if (image != null && !image.isEmpty()) {
+            sportClass.setImageUrl(imageStorageService.uploadClassImage(image));
+        }
         SportClass saved = sportClassRepository.save(sportClass);
         return toResponseDTO(saved);
     }
@@ -782,23 +722,6 @@ public class SportClassServiceImpl implements SportClassService {
 
         sportClass.setStatus("INACTIVE");
         sportClassRepository.save(sportClass);
-    }
-
-    private void validateClassTime(LocalDateTime startTime, LocalDateTime endTime) {
-        if (!endTime.isAfter(startTime)) {
-            throw new AppException(ErrorCode.INVALID_CLASS_TIME);
-        }
-    }
-
-    private void checkScheduleConflict(Long roomId, Long coachId, LocalDateTime startTime, LocalDateTime endTime, Long excludeClassId) {
-        if (sportClassRepository.existsRoomConflict(roomId, startTime, endTime, excludeClassId)
-                || classSessionRepository.existsRoomConflict(roomId, startTime, endTime, null)) {
-            throw new AppException(ErrorCode.ROOM_SCHEDULE_CONFLICT);
-        }
-        if (coachId != null && (sportClassRepository.existsCoachConflict(coachId, startTime, endTime, excludeClassId)
-                || classSessionRepository.existsCoachConflict(coachId, startTime, endTime, null))) {
-            throw new AppException(ErrorCode.COACH_SCHEDULE_CONFLICT);
-        }
     }
 
     private void validateRoomForClass(Room room, Integer maxCapacity) {
