@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -131,4 +132,14 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
             and r.status in ('REGISTERED', 'STOPPED')
         """)
     Optional<ClassRegistration> findLiveRegistration(@Param("subscriptionId") Long subscriptionId);
+
+    // Đăng ký đang dùng của nhiều gói lớp cùng lúc (1 query cho cả danh sách, tránh N+1)
+    @Query("""
+        SELECT r FROM ClassRegistration r
+        JOIN FETCH r.sportClass c
+        JOIN FETCH c.subject
+        WHERE r.subscription.subscriptionId IN :ids
+          AND r.status IN ('REGISTERED', 'STOPPED')
+        """)
+    List<ClassRegistration> findLiveRegistrationsOf(@Param("ids") Collection<Long> ids);
 }

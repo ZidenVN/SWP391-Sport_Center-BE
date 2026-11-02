@@ -4,10 +4,7 @@ import com.fptu.swp391.sportscentermanager.dto.PurchasePreviewResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.PurchaseWarningDTO;
 import com.fptu.swp391.sportscentermanager.dto.SubscriptionRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.SubscriptionResponseDTO;
-import com.fptu.swp391.sportscentermanager.entity.Member;
-import com.fptu.swp391.sportscentermanager.entity.MembershipPackage;
-import com.fptu.swp391.sportscentermanager.entity.Payment;
-import com.fptu.swp391.sportscentermanager.entity.Subscription;
+import com.fptu.swp391.sportscentermanager.entity.*;
 import com.fptu.swp391.sportscentermanager.enums.*;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.*;
@@ -21,9 +18,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -78,8 +74,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             .paymentDate(now)
             .status(PaymentStatus.PENDING.name())
             .build());
-
-        return toResponse(subscription, payment);
+        return toResponse(subscription, payment, null);
     }
 
 
@@ -197,25 +192,21 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public List<SubscriptionResponseDTO> getSubscriptions(Long memberId) {
-        return subscriptionRepository.findByMember_UserIdOrderByEndDateDesc(memberId)
-            .stream()
-            .map(s -> toResponse(s, latestPayment(s)))
-            .toList();
+        return toResponses(subscriptionRepository.findByMember_UserIdOrderByEndDateDesc(memberId));
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public List<SubscriptionResponseDTO> getCurrentSubscriptions(Long memberId) {
-        List<SubscriptionResponseDTO> current = subscriptionRepository.findCurrent(memberId, LocalDateTime.now())
-            .stream()
-            .map(s -> toResponse(s, latestPayment(s)))
-            .toList();
-        if (current.isEmpty()) {
+        List<Subscription> subs = new ArrayList<>(subscriptionRepository.findCurrent(memberId, LocalDateTime.now()));
+        subs.addAll(subscriptionRepository.findByMember_UserIdAndStatus(memberId, SubscriptionStatus.WAITING_ACTIVATION.name()));
+        if (subs.isEmpty()) {
             throw new AppException(ErrorCode.NO_ACTIVE_SUBSCRIPTION);
         }
-        return current;
+        return toResponses(subs);
+
     }
 
     @Override
@@ -281,9 +272,10 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             .orElse(null);
     }
 
-    private SubscriptionResponseDTO toResponse(Subscription s, Payment p) {
+    private SubscriptionResponseDTO toResponse(Subscription s, Payment p, ClassRegistration reg) {
         MembershipPackage pkg = s.getMembershipPackage();
         SubscriptionResponseDTO dto = new SubscriptionResponseDTO();
+
         dto.setSubscriptionId(s.getSubscriptionId());
         dto.setPackageId(pkg.getPackageId());
         dto.setPackageName(pkg.getPackageName());
@@ -295,6 +287,17 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         dto.setSubjectName(pkg.getSubject() != null ? pkg.getSubject().getSubjectName() : null);
         dto.setPaidAt(s.getPaidAt());
         dto.setActivatedAt(s.getActivatedAt());
+
+        if (reg != null) {
+            SportClass c = reg.getSportClass();
+            dto.setCurrentClassId(c.getClassId());
+            dto.setCurrentClassName(c.getSubject().getSubjectName() + " " + c.getDaysOfWeek()
+                + " " + c.getStartClock() + "–" + c.getEndClock());
+            dto.setClassStartDate(c.getStartDate());
+            dto.setClassEndDate(c.getEndDate());
+
+        }
+
         if (p != null) {
             dto.setPaymentId(p.getPaymentId());
             dto.setAmount(p.getAmount());
@@ -302,5 +305,23 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             dto.setPaymentStatus(p.getStatus());
         }
         return dto;
+    }
+
+    private List<SubscriptionResponseDTO> toResponses(List<Subscription> subs) {
+        Map<Long, ClassRegistration> regs = liveRegistrations(subs);
+
+        return subs.stream()
+            .map(s -> toResponse(s, latestPayment(s), regs.get(s.getSubscriptionId())))
+            .toList();
+    }
+
+    // subscriptionId -> đăng ký lớp đang dùng gói đó
+    private Map<Long, ClassRegistration> liveRegistrations(List<Subscription> subs) {
+        List<Long> ids = subs.stream().map(Subscription::getSubscriptionId).toList();
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        return subscriptionRepository.findLiveRegistrationsOf(ids).stream()
+            .collect(Collectors.toMap(r -> r.getSubscription().getSubscriptionId(), r -> r, (a, b) -> a));
     }
 }
