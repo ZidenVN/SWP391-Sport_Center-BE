@@ -14,6 +14,7 @@ import com.fptu.swp391.sportscentermanager.guard.CoachSubjectGuard;
 import com.fptu.swp391.sportscentermanager.repository.*;
 import com.fptu.swp391.sportscentermanager.service.ClassSessionService;
 import com.fptu.swp391.sportscentermanager.service.NotificationService;
+import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +33,7 @@ public class ClassSessionServiceImpl implements ClassSessionService {
     private final RoomRepository roomRepository;
     private final ClassRegistrationRepository classRegistrationRepository;
     private final NotificationService notificationService;
+    private final SubscriptionService subscriptionService;
 
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
 
@@ -218,6 +220,9 @@ public class ClassSessionServiceImpl implements ClassSessionService {
         }
         if (classUpdated) {
             sportClassRepository.save(sportClass);
+            if (sportClass.getEndDate() != null) {
+                subscriptionService.extendClassPackages(sportClass.getClassId(), sportClass.getEndDate());
+            }
         }
 
         ClassSession saved = classSessionRepository.save(makeupSession);

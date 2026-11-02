@@ -12,6 +12,7 @@ import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.*;
 import com.fptu.swp391.sportscentermanager.service.NotificationService;
+import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,8 @@ class ClassSessionServiceImplTest {
     private ClassRegistrationRepository classRegistrationRepository;
     @Mock
     private NotificationService notificationService;
+    @Mock
+    private SubscriptionService subscriptionService;
 
     @InjectMocks
     private ClassSessionServiceImpl classSessionService;

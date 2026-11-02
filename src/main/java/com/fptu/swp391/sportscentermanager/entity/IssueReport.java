@@ -4,7 +4,7 @@ import com.fptu.swp391.sportscentermanager.enums.IssueReportCategory;
 import com.fptu.swp391.sportscentermanager.enums.IssueReportDesk;
 import com.fptu.swp391.sportscentermanager.enums.IssueReportStatus;
 import jakarta.persistence.*;
-import lombok.Builder;
+import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
@@ -13,9 +13,16 @@ import java.time.LocalDateTime;
 @Table(name = "issue_reports", indexes = {
     @Index(name = "idx_report_desk_status", columnList = "desk, status"),
     @Index(name = "idx_report_reporter", columnList = "reporter_id")
-})public class IssueReport {
+})
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class IssueReport {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "report_id")
     private Long reportId;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -40,6 +47,7 @@ import java.time.LocalDateTime;
     @ColumnDefault("'OPEN'")
     @Builder.Default
     private IssueReportStatus status = IssueReportStatus.OPEN;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "desk", nullable = false, length = 20)
     private IssueReportDesk desk;
@@ -56,6 +64,4 @@ import java.time.LocalDateTime;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-
 }

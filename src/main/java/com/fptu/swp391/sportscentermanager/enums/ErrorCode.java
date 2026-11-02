@@ -142,9 +142,16 @@ public enum ErrorCode {
     CLASS_PACKAGE_NOT_USABLE(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_SUBSCRIPTION_004", "Gói lớp không hợp lệ hoặc chưa được thanh toán!"),
     CHECKIN_OUTSIDE_CLASS_TIME(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_CHECKIN_003", "Membership đã hết hạn, chỉ được vào trong khung giờ học của lớp (từ 30 phút trước giờ học tới hết giờ)!"),
 
-    REFUND_PACKAGE_ALREADY_USED(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_PAYMENT_005", "Gói đã được kích hoạt hoặc lớp đã bắt đầu, không thể hoàn tiền!")
+    REFUND_PACKAGE_ALREADY_USED(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_PAYMENT_005", "Gói đã được kích hoạt hoặc lớp đã bắt đầu, không thể hoàn tiền!"),
 
-
+    // ===== B: Report sự cố (IssueReport) =====
+    REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_REPORT_404", "Không tìm thấy báo cáo sự cố!"),
+    REPORT_CANNOT_CANCEL(HttpStatus.BAD_REQUEST, "ERR_REPORT_400_CANCEL", "Chỉ được huỷ báo cáo sự cố khi đang ở trạng thái OPEN!"),
+    REPORT_CATEGORY_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "ERR_REPORT_400_CATEGORY", "Danh mục sự cố không phù hợp với vai trò của bạn!"),
+    REPORT_DESK_ACCESS_DENIED(HttpStatus.FORBIDDEN, "ERR_REPORT_403_DESK", "Lễ tân chỉ có quyền xử lý các sự cố thuộc bàn Lễ tân (RECEPTION)!"),
+    REPORT_ALREADY_CLOSED(HttpStatus.BAD_REQUEST, "ERR_REPORT_400_CLOSED", "Báo cáo sự cố đã được xử lý xong hoặc đã huỷ, không thể chỉnh sửa!"),
+    REPORT_CANNOT_ESCALATE(HttpStatus.BAD_REQUEST, "ERR_REPORT_400_ESCALATE", "Chỉ được chuyển lên Quản lý các báo cáo sự cố đang ở bàn Lễ tân và chưa hoàn thành!"),
+    REPORT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "ERR_REPORT_403_ACCESS", "Bạn không có quyền truy cập báo cáo sự cố này!")
 
     ;
 
