@@ -72,8 +72,7 @@ public class ClassSessionServiceImpl implements ClassSessionService {
 
         CoachSubjectGuard.requireTeaches(substituteCoach, session.getSportClass().getSubject());
 
-        boolean hasConflict = classSessionRepository.existsCoachConflict(dto.getCoachId(), session.getStartTime(), session.getEndTime(), sessionId)
-                || sportClassRepository.existsCoachConflict(dto.getCoachId(), session.getStartTime(), session.getEndTime(), session.getSportClass().getClassId());
+        boolean hasConflict = classSessionRepository.existsCoachConflict(dto.getCoachId(), session.getStartTime(), session.getEndTime(), sessionId);
         if (hasConflict) {
             throw new AppException(ErrorCode.COACH_SCHEDULE_CONFLICT);
         }
@@ -174,8 +173,7 @@ public class ClassSessionServiceImpl implements ClassSessionService {
         if (sportClass.getMaxCapacity() != null && sportClass.getMaxCapacity() > room.getCapacity()) {
             throw new AppException(ErrorCode.CLASS_CAPACITY_EXCEEDS_ROOM);
         }
-        if (classSessionRepository.existsRoomConflict(room.getRoomId(), dto.getStartTime(), dto.getEndTime(), null)
-                || sportClassRepository.existsRoomConflict(room.getRoomId(), dto.getStartTime(), dto.getEndTime(), 0L)) {
+        if (classSessionRepository.existsRoomConflict(room.getRoomId(), dto.getStartTime(), dto.getEndTime(), null)) {
             throw new AppException(ErrorCode.ROOM_SCHEDULE_CONFLICT);
         }
 
@@ -189,8 +187,7 @@ public class ClassSessionServiceImpl implements ClassSessionService {
         }
         CoachSubjectGuard.requireTeaches(coach, sportClass.getSubject());
 
-        if (classSessionRepository.existsCoachConflict(coach.getUserId(), dto.getStartTime(), dto.getEndTime(), null)
-                || sportClassRepository.existsCoachConflict(coach.getUserId(), dto.getStartTime(), dto.getEndTime(), 0L)) {
+        if (classSessionRepository.existsCoachConflict(coach.getUserId(), dto.getStartTime(), dto.getEndTime(), null)) {
             throw new AppException(ErrorCode.COACH_SCHEDULE_CONFLICT);
         }
 

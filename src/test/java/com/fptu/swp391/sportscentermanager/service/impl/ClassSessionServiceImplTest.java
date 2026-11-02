@@ -138,7 +138,6 @@ class ClassSessionServiceImplTest {
         when(classSessionRepository.findById(1000L)).thenReturn(Optional.of(testSession));
         when(coachRepository.findById(20L)).thenReturn(Optional.of(substituteCoach));
         when(classSessionRepository.existsCoachConflict(eq(20L), any(), any(), eq(1000L))).thenReturn(false);
-        when(sportClassRepository.existsCoachConflict(eq(20L), any(), any(), eq(1L))).thenReturn(false);
         when(classSessionRepository.save(any(ClassSession.class))).thenAnswer(i -> i.getArgument(0));
         when(classRegistrationRepository.findActiveByClassId(1L)).thenReturn(Collections.emptyList());
 
@@ -201,9 +200,7 @@ class ClassSessionServiceImplTest {
         when(sportClassRepository.findById(1L)).thenReturn(Optional.of(testClass));
         when(classSessionRepository.findById(1000L)).thenReturn(Optional.of(testSession));
         when(classSessionRepository.existsRoomConflict(anyLong(), any(), any(), isNull())).thenReturn(false);
-        when(sportClassRepository.existsRoomConflict(anyLong(), any(), any(), anyLong())).thenReturn(false);
         when(classSessionRepository.existsCoachConflict(anyLong(), any(), any(), isNull())).thenReturn(false);
-        when(sportClassRepository.existsCoachConflict(anyLong(), any(), any(), anyLong())).thenReturn(false);
         when(classSessionRepository.save(any(ClassSession.class))).thenAnswer(i -> {
             ClassSession s = i.getArgument(0);
             s.setSessionId(2000L);

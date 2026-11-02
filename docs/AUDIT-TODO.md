@@ -1,234 +1,231 @@
-# AUDIT TODO (audit ngày 02/11/2026, cập nhật lại sau PR #73)
+# AUDIT TODO (audit ngày 02/11/2026, cập nhật lần 3)
 
-Kết quả audit toàn bộ backend trên `main`. Mỗi mục gồm: chỗ sửa, lỗi, cách sửa, và điều kiện coi là xong.
+Kết quả audit toàn bộ backend. Mỗi mục gồm: chỗ sửa, lỗi, cách sửa, và điều kiện coi là xong.
 
-**Cập nhật lần 2 (sau PR #71–73):**
-- **Đã xong 6 mục:** 5, 6, 7, 8, 9, 16.
-- **Còn mở:** 14 mục cũ.
-- **Mới thêm:** mục 21–23, sinh ra từ code chuyên môn HLV. Mục 21 chặn việc gán HLV, phải làm trước khi chạy bản mới.
+**Cập nhật lần 3 (sau nhánh `hotfix`, chưa merge vào `main`):**
+- **Đã xong thêm 10 mục của A:** 1, 2, 3, 4, 12, 13, 15, 17, 18, 20. Mỗi mục đã được test qua API thật hoặc bằng unit test. Bộ test hiện có 47/47 test đạt.
+- **Còn mở:** 10, 11, 14, 19, 21, 22, 23.
+- **Mới thêm:**
+  - mục 24: API đăng ký trả lỗi sai định dạng;
+  - mục 25: VNPay báo thanh toán muộn thì tiền về mà khách không có gói.
 - **Đánh số:** số thứ tự giữ nguyên như cũ, để ai đã nhận mục nào vẫn tra được.
 
 **Tải giả định:** một trung tâm, vài trăm hội viên, chục nhân viên, 1 server trên Railway, pool kết nối DB mặc định là 10.
 
 **Mức độ:** 🔴 phải sửa · 🟠 nên sửa · 🟡 làm thêm khi rảnh
 
-**Người làm:** A = gói, membership, thanh toán, check-in · B = lớp, buổi học, báo cáo · C = HLV, đăng ký, đổi lớp. "Chưa giao" = phần đăng nhập / AI, trưởng nhóm gán người.
+**Người làm:** A = gói, membership, thanh toán, check-in, đăng nhập · B = lớp, buổi học, báo cáo · C = HLV, đăng ký, đổi lớp.
 
-## Bảng tổng hợp
+## Bảng tổng hợp: còn mở
 
-| # | Mức  | Lỗi | Người làm | Xong |
-|---|------|---|---|---|
-| 1 | done | Đăng nhập Google chiếm được tài khoản bất kỳ | Chưa giao | [ ] |
-| 2 | done | Mua gói online làm mất đơn đang chờ ở quầy | A | [ ] |
-| 3 | done | Trả tiền VNPay xong mà đóng tab thì không nhận được gói | A | [ ] |
-| 4 | done | Trợ lý AI giữ kết nối DB trong lúc chờ Gemini, có thể treo cả app | Chưa giao | [ ] |
-| 5 | 🔴   | Dừng lớp không gửi thông báo cho ai | B | [x] PR #71 |
-| 6 | 🔴   | Huỷ được lớp đang học dở | B | [x] PR #71 |
-| 7 | 🔴   | Lớp dư 1 ngày học | B | [x] PR #71 |
-| 8 | 🔴   | Tạo được lớp mà không ai đăng ký được | B | [x] PR #71 |
-| 9 | 🔴   | HLV nào cũng gán được vào môn nào | C | [x] PR #72 |
-| 10 | 🔴   | Báo cáo doanh thu bỏ sót tiền khi hoàn một phần | B | [ ] |
-| 11 | 🔴   | Deploy lên DB production sẽ làm sập trang gói | Cả team | [ ] |
-| 21 | 🔴   | 🆕 HLV cũ chưa có môn trong `coach_subjects`, nên bị chặn khi gán lớp | C | [ ] |
-| 12 | done | Check-in trả "gói đang hiệu lực" lẫn gói chưa dùng được | A | [ ] |
-| 13 | done | Logic tính tiền hoàn chưa có test | A | [ ] |
-| 14 | 🟠   | Đăng ký và đổi lớp chưa có test | C | [ ] |
-| 15 | done | Code thừa: 6 mã lỗi cũ, 5 dòng cấu hình | A | [ ] |
-| 22 | 🟠   | 🆕 Bỏ môn của HLV không xét các buổi HLV đó dạy thay | C | [ ] |
-| 16 | 🟡   | Dừng được cả lớp chưa bắt đầu | B | [x] PR #71 |
-| 17 | done | Lỗi đăng nhập Google để lộ chi tiết bên trong | Chưa giao | [ ] |
-| 18 | done | Bấm "Mua" 2 lần cùng lúc tạo ra 2 đơn chờ | A | [ ] |
-| 19 | 🟡   | Giới hạn câu hỏi AI mỗi ngày có thể bị vượt | Chưa giao | [ ] |
-| 20 | done | Gói lớp đã hết hạn vẫn hiện "lớp đang học" | A | [ ] |
-| 23 | 🟡   | 🆕 Hai lỗi khác nhau dùng chung mã `ERR_CLASS_400_DURATION` | B | [ ] |
+| # | Mức | Lỗi | Người làm | Xong |
+|---|---|---|---|---|
+| 21 | 🔴 | HLV cũ chưa có môn trong `coach_subjects`, nên bị chặn khi gán lớp | C | [ ] |
+| 24 | 🔴 | 🆕 API đăng ký trả lỗi sai định dạng và lộ chi tiết bên trong | A | [ ] |
+| 10 | 🔴 | Báo cáo doanh thu bỏ sót tiền khi hoàn một phần | B | [ ] |
+| 11 | 🔴 | Deploy lên DB production sẽ làm sập trang gói | Cả team | [ ] |
+| 25 | 🟠 | 🆕 VNPay báo thanh toán muộn thì tiền về mà khách không có gói | A | [ ] |
+| 14 | 🟠 | Đăng ký và đổi lớp chưa có test | C | [ ] |
+| 22 | 🟠 | Bỏ môn của HLV không xét các buổi HLV đó dạy thay | C | [ ] |
+| 19 | 🟡 | Giới hạn câu hỏi AI mỗi ngày có thể bị vượt | A | [ ] |
+| 23 | 🟡 | Hai lỗi khác nhau dùng chung mã `ERR_CLASS_400_DURATION` | B | [ ] |
 
 **Thứ tự nên làm:**
-1. Mục 21 trước khi chạy bản `main` mới.
-2. Mục 1 và 4: chỉ vài dòng nhưng rủi ro lớn nhất.
-3. Mục 2 và 3: liên quan tới tiền.
-4. Mục 10.
-5. Mục 11 cùng mục 21 trước khi deploy.
-6. Các mục còn lại.
+1. **Mục 21:** đang chặn việc tạo lớp ngay trên DB local. DB local có 9 HLV nhưng `coach_subjects` có 0 dòng.
+2. **Mục 24:** chỉ cần xoá code.
+3. **Mục 10 và 25:** liên quan tới tiền.
+4. **Mục 11:** làm cùng mục 21, trong đợt deploy.
+5. Các mục còn lại.
+
+## Bảng tổng hợp: đã xong
+
+| # | Lỗi | Sửa ở |
+|---|---|---|
+| 1 | Đăng nhập Google chiếm được tài khoản bất kỳ | `hotfix` |
+| 2 | Mua gói online làm mất đơn đang chờ ở quầy | `hotfix` |
+| 3 | Trả tiền VNPay xong mà đóng tab thì không nhận được gói | `hotfix` |
+| 4 | Trợ lý AI giữ kết nối DB trong lúc chờ Gemini | `hotfix` |
+| 5 | Dừng lớp không gửi thông báo cho ai | PR #71 |
+| 6 | Huỷ được lớp đang học dở | PR #71 |
+| 7 | Lớp dư 1 ngày học | PR #71 |
+| 8 | Tạo được lớp mà không ai đăng ký được | PR #71 |
+| 9 | HLV nào cũng gán được vào môn nào | PR #72 |
+| 12 | Check-in trả lẫn gói chưa dùng được | `hotfix` |
+| 13 | Logic tính tiền hoàn chưa có test | `hotfix` |
+| 15 | Code thừa: 6 mã lỗi cũ, 5 dòng cấu hình | `hotfix` |
+| 16 | Dừng được cả lớp chưa bắt đầu | PR #71 |
+| 17 | Lỗi đăng nhập Google để lộ chi tiết bên trong | `hotfix` |
+| 18 | Bấm "Mua" 2 lần cùng lúc tạo ra 2 đơn chờ | `hotfix` |
+| 20 | Gói lớp đã hết hạn vẫn hiện "lớp đang học" | `hotfix` |
+
+Tóm tắt những gì đã sửa ở `hotfix` (để người review PR biết cần xem gì):
+- **Mục 1, 17:**
+  - kiểm tra `email_verified`;
+  - khối `catch` chỉ ghi log, trả câu thông báo chung;
+  - lấy tên từ đúng claim `given_name` / `family_name`.
+- **Mục 2, 18:**
+  - luật huỷ đơn chờ dồn về một hàm `SubscriptionService.cancelStalePendingOrThrow`;
+  - `subscribe` và `createPaymentUrl` khoá member bằng `findByIdForUpdate`.
+- **Mục 3:**
+  - thêm `GET /api/v1/payments/vnpay/ipn` và mở `permitAll` cho endpoint này;
+  - có `rspCode` cho mọi nhánh;
+  - `processCallBack` khoá dòng payment, nên IPN và return URL tới cùng lúc chỉ được xử lý 1 lần.
+  - **Còn thiếu:** khai báo URL IPN trên trang VNPay sandbox. Việc này cần người giữ tài khoản.
+- **Mục 4:**
+  - bỏ `@Transactional` ở `chat`;
+  - conversation mới chỉ được lưu sau khi Gemini trả lời xong.
+- **Mục 12:** `activeSubscriptions` chỉ lấy gói `ACTIVE`.
+- **Mục 13:** thêm `PaymentServiceImplTest` với 7 case.
+- **Mục 15:** xoá 6 mã lỗi và 5 dòng cấu hình không dùng.
+- **Mục 20:** `findLiveRegistrationsOf` lọc thêm `c.status IN ('OPENING','STOPPED')`.
+- **Ngoài danh sách:** sửa 3 test của B trong `SportClassServiceImplTest`. HLV giả trong test chưa có môn sau PR #72, nên các test này đang fail sẵn trên `main`.
 
 ---
 
 ## 🔴 Phải sửa
 
-### 1. Đăng nhập Google chiếm được tài khoản bất kỳ, kể cả Manager
-- **File:** `controller/AuthController.java`, hàm `loginWithGoogle`
-- **Lỗi:** Code lấy email trong token Google rồi đăng nhập vào tài khoản cùng email, nhưng **không kiểm tra Google đã xác minh email đó chưa** (`email_verified`). Một người tạo tài khoản Google gắn với `manager@sportcenter.com` mà không sở hữu hộp thư đó vẫn đăng nhập được với quyền Manager.
-- **Sửa:** ngay sau dòng `GoogleIdToken.Payload payload = idToken.getPayload();`
-  ```java
-  if (!Boolean.TRUE.equals(payload.getEmailVerified())) {
-      return ResponseEntity.status(401).body("Email Google chưa được xác minh");
-  }
-  ```
-- **Xong khi:** token Google có `email_verified=false` thì nhận 401; tài khoản Gmail bình thường vẫn đăng nhập được.
-
-### 2. Mua gói online làm mất đơn đang chờ ở quầy
-- **File:** `service/impl/VNPayServiceImpl.java`, vòng lặp huỷ đơn `PENDING` trong hàm tạo link thanh toán
-- **Lỗi:** Vòng lặp huỷ **mọi** đơn chờ quá 15 phút, kể cả đơn **tiền mặt** đang chờ khách ra quầy trả. Đường mua ở quầy (`SubscriptionServiceImpl.subscribe`) thì chỉ huỷ đơn **VNPay** quá hạn. Cùng một việc nhưng hai chỗ áp hai quy tắc khác nhau.
-  - Ví dụ: 9h khách đặt gói tiền mặt, 10h mua thêm gói online, thì đơn 9h bị huỷ ngầm. Khách mang tiền ra quầy, lễ tân xác nhận sẽ báo lỗi.
-- **Sửa:** Chuyển vòng lặp trong `subscribe` thành 1 hàm dùng chung trong `SubscriptionService`, ví dụ `void cancelStalePendingOrThrow(Long memberId, LocalDateTime now)`. Gọi hàm này từ cả `subscribe` và `VNPayServiceImpl`, rồi xoá vòng lặp trong `VNPayServiceImpl`.
-- **Xong khi:** có đơn tiền mặt đang chờ thì mua online nhận lỗi `ERR_PAYMENT_409` (giống mua ở quầy), và đơn tiền mặt vẫn còn `PENDING`.
-
-### 3. Trả tiền VNPay xong mà đóng tab thì không nhận được gói
-- **File:** `controller/VNPayController.java`, `service/impl/VNPayServiceImpl.processCallBack`
-- **Lỗi:** Giao dịch chỉ được ghi "đã trả" khi **trình duyệt của khách** được VNPay chuyển về `GET /callback`. Hệ thống chưa có **IPN** (VNPay tự gọi thẳng server để báo kết quả). Khách trả tiền xong rồi đóng tab hoặc mất mạng thì gói nằm mãi ở `PENDING`, lần mua sau bị huỷ.
+### 21. HLV cũ chưa có môn trong `coach_subjects`, nên bị chặn khi gán lớp
+- **File:** `entity/Coach.java` (bảng `coach_subjects`), `config/DataInitializer.java` (khoảng dòng 182–192)
+- **Lỗi:**
+  - `CoachSubjectGuard` chỉ đọc bảng `coach_subjects`.
+  - `ddl-auto=update` tạo bảng này **rỗng** và không chuyển dữ liệu từ cột `speciality` cũ sang.
+  - DB local có 9 HLV nhưng 0 dòng `coach_subjects`. Vì vậy tạo lớp, sửa lớp, đổi HLV hoặc chọn người dạy thay đều báo `COACH_NOT_TEACH_SUBJECT`.
+  - HLV mặc định do `DataInitializer` tạo cũng không có môn nào.
 - **Sửa:**
-  - Thêm endpoint `GET /api/v1/payments/vnpay/ipn` gọi lại đúng `processCallBack`. Hàm này đã kiểm tra chữ ký, số tiền và chống xử lý 2 lần.
-  - Trả về đúng định dạng VNPay yêu cầu: `{"RspCode":"00","Message":"Confirm Success"}` khi thành công; `97` khi sai chữ ký; `04` khi sai số tiền; `02` khi giao dịch đã xử lý.
-  - Mở endpoint trong `SecurityConfig` (`permitAll`) giống `/callback`.
-  - Khai báo URL IPN trên trang quản trị VNPay sandbox. URL phải là địa chỉ công khai, ví dụ domain Railway.
-- **Xong khi:** thanh toán thành công rồi đóng tab ngay, giao dịch vẫn chuyển `COMPLETED` và gói chuyển `WAITING_ACTIVATION`.
-
-### 4. Trợ lý AI giữ kết nối DB trong lúc chờ Gemini, có thể treo cả app
-- **File:** `service/impl/AiChatServiceImpl.java`, hàm `chat` (khoảng dòng 56)
-- **Lỗi:** Cả hàm có `@Transactional`, nên **giữ 1 kết nối DB suốt thời gian gọi Gemini**: tối đa 5 vòng, mỗi lần chờ tới 45 giây, có thử lại và có model dự phòng. Pool chỉ có 10 kết nối. 10 hội viên hỏi cùng lúc khi Gemini chậm là cả app đứng: check-in, thanh toán, đăng nhập đều phải chờ.
-- **Sửa:**
-  - Bỏ `@Transactional` trên `chat`. Mỗi lệnh `save()` của repository tự có transaction ngắn riêng.
-  - Vì không còn dirty checking, cuối hàm đổi thành:
-    ```java
-    conv.setUpdatedAt(LocalDateTime.now());
-    aiConversationRepository.save(conv);
+  - Chạy SQL trên **từng DB**: DB local của mỗi người và production.
+    ```sql
+    INSERT IGNORE INTO coach_subjects (coach_id, subject_id)
+    SELECT c.coach_id, s.subject_id
+    FROM coaches c JOIN subjects s ON c.speciality LIKE CONCAT('%', s.subject_name, '%');
     ```
-- **Xong khi:** trong lúc 1 request AI đang chờ Gemini, các API khác vẫn phản hồi bình thường; lịch sử chat và `updatedAt` vẫn được lưu đúng.
+  - Kiểm tra các HLV vẫn chưa có môn:
+    ```sql
+    SELECT coach_id, speciality FROM coaches WHERE coach_id NOT IN (SELECT coach_id FROM coach_subjects);
+    ```
+    Gán tay cho các HLV này qua `PUT /coaches/{id}` với `subjectIds`. Ví dụ HLV "General Fitness" không khớp tên môn nào, nên câu SQL trên bỏ qua.
+  - Trong `DataInitializer`, gán cho HLV mặc định ít nhất 1 môn. Nếu lúc khởi động môn chưa được tạo thì ghi chú lại để gán tay.
+- **Xong khi:** mọi HLV có ít nhất 1 dòng trong `coach_subjects`, và tạo lớp Gym với một HLV Gym có sẵn thì thành công.
 
-### 5–9. ✅ Đã xong (PR #71, #72)
-Dừng lớp có gửi thông báo, không huỷ được lớp đã bắt đầu, `endDate` không còn dư 1 ngày, thời hạn lớp phải trùng với gói đang bán, chuyên môn HLV dùng bảng `coach_subjects`. Các mục 21–23 bên dưới là phần còn sót lại sau khi sửa.
+### 24. 🆕 API đăng ký trả lỗi sai định dạng và lộ chi tiết bên trong
+- **File:** `controller/AuthController.java`, hàm `registerUser` (khoảng dòng 89–105)
+- **Lỗi:** cả hàm được bọc trong `try { ... } catch (RuntimeException e) { return badRequest().body(e.getMessage()); }`. Có 3 vấn đề:
+  - **Sai định dạng:** email trùng (`EMAIL_ALREADY_TAKEN`) bị trả về dạng chữ, mã 400. Đúng ra phải là JSON `{code, message}` của `GlobalExceptionHandler`, nên FE không đọc được `code`.
+  - **Lộ chi tiết:** lỗi DB, ví dụ 2 người đăng ký cùng số điện thoại cùng lúc, làm lộ câu SQL ra ngoài. Đây là cùng loại lỗi với mục 17.
+  - **Code thừa:** khối `User user = new User(); ... passwordEncoder.encode(...)` tạo xong rồi bỏ đi. Mỗi lần đăng ký tốn thêm một lần băm BCrypt, khoảng 100ms.
+- **Sửa:** xoá `try/catch` và khối tạo `User` thừa, chỉ giữ:
+  ```java
+  return ResponseEntity.ok(userService.registerUser(requestDTO));
+  ```
+  `GlobalExceptionHandler` sẽ tự trả lỗi đúng định dạng. Sau khi xoá, `passwordEncoder` không còn được dùng trong `AuthController` (dòng 100 là chỗ dùng duy nhất), nên xoá luôn field ở dòng 57 và import.
+- **Xong khi:**
+  - đăng ký bằng email đã có thì nhận đúng HTTP status và JSON `{code: "ERR_...", message}`, giống các API khác;
+  - đăng ký bình thường vẫn thành công.
 
 ### 10. Báo cáo doanh thu bỏ sót tiền khi hoàn một phần
-- **File:** `repository/PaymentRepository.java`, các query doanh thu (khoảng dòng 47–88)
-- **Lỗi:** Doanh thu chỉ tính giao dịch `COMPLETED`/`SUCCESS`. Lớp dừng giữa khoá, giao dịch 780.000đ được hoàn 676.000đ thì trung tâm vẫn giữ 104.000đ. Nhưng giao dịch đã chuyển `REFUNDED`, nên báo cáo tính **0đ**.
-- **Sửa:** trong các query doanh thu, thay phần tính tiền bằng:
-  ```sql
-  SUM(CASE WHEN p.status IN ('COMPLETED','SUCCESS') THEN p.amount
-           WHEN p.status = 'REFUNDED' THEN p.amount - COALESCE(p.refundAmount, p.amount)
-           ELSE 0 END)
-  ```
-  và mở điều kiện `WHERE` để có thêm `'REFUNDED'`.
-- **Xong khi:** giao dịch 780.000đ hoàn 676.000đ làm doanh thu kỳ đó tăng đúng 104.000đ; giao dịch hoàn đủ không làm doanh thu tăng.
+- **File:** `repository/PaymentRepository.java`, 5 query doanh thu (khoảng dòng 45–93)
+- **Lỗi:** doanh thu chỉ tính giao dịch `COMPLETED` / `SUCCESS`. Ví dụ lớp dừng giữa khoá, giao dịch 780.000đ được hoàn 676.000đ, nên trung tâm vẫn giữ 104.000đ. Nhưng giao dịch đã chuyển sang `REFUNDED`, nên báo cáo tính **0đ**.
+- **Sửa:**
+  - Trong các query doanh thu, thay phần tính tiền bằng:
+    ```sql
+    SUM(CASE WHEN p.status IN ('COMPLETED','SUCCESS') THEN p.amount
+             WHEN p.status = 'REFUNDED' THEN p.amount - COALESCE(p.refundAmount, p.amount)
+             ELSE 0 END)
+    ```
+  - Mở thêm `'REFUNDED'` trong điều kiện `WHERE`.
+  - Query native (`getRevenueByDay`) dùng tên cột `refund_amount`.
+  - Query đếm số giao dịch (`cntSuccessfulPaymentsBetween`) nên giữ nguyên. Đó là số đơn bán được, không phải số tiền.
+- **Xong khi:** giao dịch 780.000đ hoàn 676.000đ làm doanh thu kỳ đó tăng đúng 104.000đ, còn giao dịch hoàn đủ không làm doanh thu tăng.
 
 ### 11. Deploy lên DB production sẽ làm sập trang gói
 - **File:** DB production trên Railway (`ddl-auto=update` không tự sửa dữ liệu cũ)
-- **Lỗi:** DB production còn gói loại `FREE` của mô hình cũ, nên `GET /packages` sẽ lỗi 500 `No enum constant PackageType.FREE`.
+- **Lỗi:** DB production còn gói loại `FREE` của mô hình cũ, nên `GET /packages` sẽ lỗi 500 `No enum constant PackageType.FREE`. DB local đã sạch.
 - **Sửa:** trước khi deploy, chọn 1 trong 2 cách:
   - **Reset DB production**, đúng như team đã thống nhất từ đầu đợt đổi mô hình; hoặc
   - Chạy SQL:
     ```sql
     UPDATE packages SET package_type = 'MEMBERSHIP', subject_id = NULL WHERE package_type = 'FREE';
     ```
-    Có thể xoá thêm các cột, bảng không dùng: `subscriptions.used_sessions`, `packages.session_limit`, `package_subjects`.
+    Có thể xoá thêm các cột và bảng không dùng: `subscriptions.used_sessions`, `packages.session_limit`, `package_subjects`.
   - Chạy luôn SQL của mục 21 trong cùng đợt deploy.
-- **Xong khi:** sau khi deploy, `GET /packages` trên production trả 200.
-
-### 21. 🆕 HLV cũ chưa có môn trong `coach_subjects`, nên bị chặn khi gán lớp
-- **File:** `entity/Coach.java` (bảng mới `coach_subjects`), `config/DataInitializer.java` (khoảng dòng 182–192)
-- **Lỗi:** `CoachSubjectGuard` giờ chỉ đọc bảng `coach_subjects`. `ddl-auto=update` tạo bảng này **rỗng** và không chuyển dữ liệu từ cột `speciality` cũ sang.
-  - Mọi HLV đang có (DB local có 9 HLV) sẽ bị lỗi `COACH_NOT_TEACH_SUBJECT` khi tạo lớp, sửa lớp, đổi HLV hoặc chọn người dạy thay.
-  - HLV mặc định do `DataInitializer` tạo cũng không có môn nào.
-- **Sửa:**
-  - Sau khi app chạy lần đầu (lúc đó bảng đã được tạo), chạy SQL trên **từng DB** (local của mỗi người và production):
-    ```sql
-    INSERT IGNORE INTO coach_subjects (coach_id, subject_id)
-    SELECT c.coach_id, s.subject_id
-    FROM coaches c JOIN subjects s ON c.speciality LIKE CONCAT('%', s.subject_name, '%');
-    ```
-  - Kiểm tra lại các HLV vẫn chưa có môn: `SELECT coach_id, speciality FROM coaches WHERE coach_id NOT IN (SELECT coach_id FROM coach_subjects);`. Gán tay cho họ qua `PUT /coaches/{id}` với `subjectIds`. Ví dụ HLV "General Fitness" không khớp tên môn nào nên câu SQL trên bỏ qua.
-  - Trong `DataInitializer`, gán cho HLV mặc định ít nhất 1 môn, ví dụ `.subjects(Set.of(gymSubject))`. Nếu môn chưa được tạo lúc khởi động thì bỏ qua bước này và ghi chú lại.
-- **Xong khi:** mọi HLV có ít nhất 1 dòng trong `coach_subjects`, và tạo lớp Gym với HLV Gym có sẵn thì thành công.
+- **Xong khi:** sau khi deploy, `GET /packages` trên production trả 200 và tạo được lớp mới.
 
 ---
 
 ## 🟠 Nên sửa
 
-### 12. Check-in trả "gói đang hiệu lực" lẫn gói chưa dùng được
-- **File:** `service/impl/CheckInServiceImpl.java:84`
-- **Lỗi:** `activeSubscriptions` lấy từ `getCurrentSubscriptions`, mà hàm này giờ trả cả gói `WAITING_ACTIVATION`. Gói lớp chưa đăng ký lớp vẫn hiện như đang dùng.
-- **Sửa:**
+### 25. 🆕 VNPay báo thanh toán muộn thì tiền về mà khách không có gói
+- **File:** `service/impl/VNPayServiceImpl.processCallBack` (nhánh "payment không còn PENDING"), `SubscriptionServiceImpl.cancelStalePendingOrThrow`
+- **Lỗi:** khi khách tạo link mới, link VNPay cũ đã quá 15 phút bị huỷ (`CANCELLED`). Còn IPN hoặc callback nhận được payment không còn `PENDING` thì trả `02` và **không làm gì thêm**. Ví dụ:
+  - Khách trả tiền ở phút 14:59.
+  - IPN của VNPay đến muộn, vào phút 16.
+  - Trong lúc đó khách bấm "Mua" lại, nên payment cũ đã bị huỷ.
+  - IPN đến với `vnp_ResponseCode=00` nhưng chỉ nhận về `02`. Tiền đã trừ mà không có gói nào, và không ai biết.
+- **Sửa:** trong nhánh "không còn PENDING" (sau bước kiểm tra chữ ký):
   ```java
-  dto.setActiveSubscriptions(subscriptionService.getCurrentSubscriptions(memberId).stream()
-      .filter(s -> "ACTIVE".equals(s.getStatus())).toList());
+  if ("CANCELLED".equals(payment.getStatus()) && "00".equals(request.getParameter("vnp_ResponseCode"))) {
+      log.error("VNPay báo đã thu tiền cho giao dịch đã huỷ: paymentId={}, vnp_TransactionNo={}",
+          paymentId, request.getParameter("vnp_TransactionNo"));
+      // báo cho quản lý để hoàn tiền tay
+  }
   ```
-- **Xong khi:** hội viên có gói lớp chưa đăng ký lớp check-in thì danh sách chỉ có membership.
-
-### 13. Logic tính tiền hoàn chưa có test
-- **File:** `service/impl/PaymentServiceImpl.java` (`calculateRefundAmount`, `proratedForStoppedClass`)
-- **Lỗi:** Đây là các hàm quyết định hoàn bao nhiêu tiền nhưng không có test nào. Ai sửa sai công thức thì không có gì báo lỗi.
-- **Sửa:** thêm `src/test/.../PaymentServiceImplTest.java` (Mockito, giống các test có sẵn của B), tối thiểu 3 case:
-  - lớp bị dừng, 26/30 buổi chưa học, gói 780.000đ: hoàn **676.000đ**;
-  - membership đã kích hoạt: ném `ERR_PAYMENT_005`;
-  - gói lớp đang chờ: hoàn đủ.
-- **Xong khi:** `./mvnw test` chạy 3 case đều đạt.
+  Để báo cho quản lý, dùng lại `notificationService.notifyUsers` gửi tới các tài khoản `CENTER_MANAGER`. Vẫn trả `02` cho VNPay.
+- **Xong khi:** tạo link, sửa payment trong DB thành `CANCELLED`, rồi gọi `/ipn` với chữ ký đúng và `vnp_ResponseCode=00`. Kết quả mong đợi: nhận `02`, log có dòng ERROR, và quản lý nhận được thông báo. Có thể sửa script `todo3_test.mjs` để test.
 
 ### 14. Đăng ký và đổi lớp chưa có test
 - **File:** `service/impl/ClassRegistrationServiceImpl.java`
-- **Lỗi:** Đây là chỗ nhiều nhánh nhất (đăng ký, huỷ, tự đổi, lễ tân đổi, đếm lượt, khoá dòng) mà không có test nào.
-- **Sửa:** thêm `ClassRegistrationServiceImplTest.java`, tối thiểu:
-  - lễ tân đổi khi lớp **chưa** bắt đầu: không tăng `receptionistSwitchCount`;
-  - lớp **đã** bắt đầu: tăng lên 1, và lần đổi thứ 2 bị chặn bằng `REGISTRATION_SWITCH_LIMIT`;
+- **Lỗi:**
+  - Đây là service có nhiều nhánh nhất: đăng ký, huỷ, tự đổi lớp, lễ tân đổi lớp, đếm lượt, khoá dòng. Vậy mà chưa có test nào.
+  - PR #72 vừa đổi luật tính lượt thành `countTurn = hasStarted(...)` mà không có test nào kiểm tra.
+- **Sửa:** thêm `ClassRegistrationServiceImplTest.java`. Có thể copy cách dựng mock từ `PaymentServiceImplTest`. Tối thiểu các case sau:
+  - lễ tân đổi lớp khi lớp **chưa** bắt đầu: không tăng `receptionistSwitchCount`;
+  - lễ tân đổi lớp khi lớp **đã** bắt đầu: tăng lên 1, và lần đổi thứ 2 bị chặn bằng `REGISTRATION_SWITCH_LIMIT`;
   - đăng ký lớp khác thời hạn gói: `REGISTRATION_DURATION_MISMATCH`.
-- **Xong khi:** các case trên đạt. Nên làm trước khi sửa mục C2 trong `TODO-ROLE-B-C.md`.
+- **Xong khi:** `./mvnw test` chạy các case trên đều đạt.
 
-### 15. Code thừa
-- **File:** `enums/ErrorCode.java`, `src/main/resources/application.properties`
-- **Lỗi:** Có 6 mã lỗi của mô hình gói cũ không còn chỗ nào dùng (đã tìm toàn bộ project):
-  - `FREE_PACKAGE_NOT_ALLOWED`, `INVALID_PACKAGE_CONFIG`, `SUBJECT_HAS_ACTIVE_FREE_PACKAGE`;
-  - `NO_SESSIONS_LEFT`, `PACKAGE_NOT_ALLOW_CLASS`, `SUBJECT_NOT_COVERED`.
-
-  Ngoài ra có 3 dòng `spring.thymeleaf.*` (project không có thư viện Thymeleaf) và 2 dòng `spring.sql.init.*` (không có file `data.sql`).
-- **Sửa:** xoá khoảng 11 dòng trên.
-- **Xong khi:** compile xanh và app khởi động bình thường.
-
-### 22. 🆕 Bỏ môn của HLV không xét các buổi HLV đó dạy thay
+### 22. Bỏ môn của HLV không xét các buổi HLV đó dạy thay
 - **File:** `repository/CoachRepository.hasOpeningClassOfSubjects`, được gọi từ `CoachServiceImpl.updateCoach` (khoảng dòng 222)
-- **Lỗi:** Query chỉ xét các lớp mà HLV là **người dạy chính**. Ví dụ: HLV A được xếp dạy thay buổi Boxing ngày 10/11, quản lý bỏ môn Boxing của A vẫn thành công, và A vẫn dạy buổi đó.
+- **Lỗi:** query chỉ xét các lớp mà HLV là **người dạy chính**. Ví dụ HLV A được xếp dạy thay buổi Boxing ngày 10/11. Quản lý bỏ môn Boxing của A vẫn thành công, và A vẫn dạy buổi đó.
 - **Sửa:** thêm vào query một điều kiện `OR EXISTS`: có `ClassSession` chưa diễn ra, `substituteCoach` là HLV này, và lớp thuộc một môn bị bỏ.
-- **Xong khi:** bỏ môn của một HLV đang có buổi dạy thay của môn đó thì nhận lỗi `COACH_SUBJECT_IN_USE`.
+- **Xong khi:** bỏ môn của HLV đang có buổi dạy thay thuộc môn đó thì nhận lỗi `COACH_SUBJECT_IN_USE`.
 
 ---
 
 ## 🟡 Làm thêm khi rảnh
 
-### 16. ✅ Đã xong (PR #71)
-Dừng lớp chưa bắt đầu giờ báo lỗi `CLASS_STOP_NOT_STARTED`.
-
-### 17. Lỗi đăng nhập Google để lộ chi tiết bên trong
-- **File:** `AuthController.loginWithGoogle`, khối `catch (Exception e)`
-- **Lỗi:** Trả 500 kèm `e.getMessage()` cho người dùng, có thể lộ thông tin cấu hình hoặc thư viện.
-- **Sửa:** `log.error("Google login lỗi", e);` rồi trả câu chung "Đăng nhập Google thất bại, vui lòng thử lại".
-
-### 18. Bấm "Mua" 2 lần cùng lúc tạo ra 2 đơn chờ
-- **File:** `SubscriptionServiceImpl.subscribe`
-- **Lỗi:** Bước kiểm tra "đã có đơn chờ chưa" không khoá dòng hội viên, nên 2 request đến cùng lúc đều qua.
-- **Sửa:** đổi `memberRepository.findById(memberId)` thành `memberRepository.findByIdForUpdate(memberId)`. Hàm này đã có sẵn, check-in đang dùng. Làm cùng lúc với mục 2.
-
 ### 19. Giới hạn câu hỏi AI mỗi ngày có thể bị vượt
-- **File:** `AiChatServiceImpl.chat`
-- **Lỗi:** Code đếm số câu đã hỏi trước, lưu câu mới sau. Hai request gửi cùng lúc khi đang ở câu thứ 29 đều qua, nên hội viên hỏi được 31 câu.
-- **Sửa:** chấp nhận được vì đây chỉ là giới hạn mềm. Muốn chặt thì khoá dòng user khi đếm. Lưu ý không làm lại lỗi ở mục 4 (giữ transaction lâu).
-
-### 20. Gói lớp đã hết hạn vẫn hiện "lớp đang học"
-- **File:** `repository/SubscriptionRepository.java`, query `findLiveRegistrationsOf`
-- **Lỗi:** Khoá học kết thúc thì lớp chuyển `COMPLETED`, nhưng đăng ký vẫn là `REGISTERED`, nên lịch sử gói vẫn ghi đang học lớp đó.
-- **Sửa:** thêm `AND c.status IN ('OPENING', 'STOPPED')` vào query.
-
-### 23. 🆕 Hai lỗi khác nhau dùng chung mã `ERR_CLASS_400_DURATION`
-- **File:** `enums/ErrorCode.java` (khoảng dòng 129–133)
+- **File:** `service/impl/AiChatServiceImpl.java`, hàm `chat` (khoảng dòng 60–64)
 - **Lỗi:**
-  - `CLASS_DURATION_INVALID` và `CLASS_DURATION_NOT_SOLD` có cùng mã lỗi, nên FE không phân biệt được.
-  - `CLASS_CANCEL_STARTED` và `CLASS_STOP_NOT_STARTED` trả HTTP 422, nhưng tên mã lại ghi `400`.
-- **Sửa:** đổi mã thành `ERR_CLASS_400_DURATION_NOT_SOLD`, và cho tên mã khớp với HTTP status: đổi status về 400, hoặc đổi tên mã thành `ERR_CLASS_422_...`.
+  - Code đếm số câu đã hỏi trước, rồi mới lưu câu mới sau khi Gemini trả lời.
+  - Đang ở câu thứ 29 mà gửi 3 request cùng lúc thì cả 3 đều qua.
+  - Sau mục 4, `chat` không còn transaction bọc ngoài, nên trường hợp này dễ xảy ra hơn.
+- **Sửa:** chấp nhận được vì đây chỉ là giới hạn mềm. Ghi lại quyết định bằng comment ngay trên bước đếm:
+  ```java
+  // shortcut: đếm rồi mới lưu nên request song song có thể vượt vài câu; muốn chặt thì đếm bằng bảng counter có khoá riêng
+  ```
+  **Không** khoá dòng user trong lúc chờ Gemini, vì làm vậy sẽ quay lại đúng lỗi của mục 4.
+
+### 23. Hai lỗi khác nhau dùng chung mã `ERR_CLASS_400_DURATION`
+- **File:** `enums/ErrorCode.java` (khoảng dòng 123–126)
+- **Lỗi:**
+  - `CLASS_DURATION_INVALID` và `CLASS_DURATION_NOT_SOLD` có cùng mã lỗi, nên FE không phân biệt được hai trường hợp.
+  - `CLASS_CANCEL_STARTED` và `CLASS_STOP_NOT_STARTED` trả HTTP 422 nhưng tên mã lại ghi `400`.
+- **Sửa:**
+  - Đổi mã thành `ERR_CLASS_400_DURATION_NOT_SOLD`.
+  - Cho tên mã khớp với HTTP status: hoặc đổi status về 400, hoặc đổi tên mã thành `ERR_CLASS_422_...`.
+  - Báo FE nếu FE đang so mã cũ.
 
 ---
 
 ## Đã kiểm tra và ổn
 - Quyền của HLV với dữ liệu hội viên: `CoachAccessGuard` chặn đúng ở mọi endpoint.
-- JWT kiểm tra phiên bản token và trạng thái tài khoản ở mỗi request.
+- JWT kiểm tra phiên bản token và trạng thái tài khoản ở mỗi request. Tài khoản bị khoá có token cũng không gọi được API.
+- Các secret (`jwt.secret`, `vnpay.hash-secret`, mật khẩu DB và mật khẩu tài khoản khởi tạo) không có giá trị mặc định trong code.
 - API key Gemini gửi qua header, không nằm trong URL. Câu hỏi AI giới hạn 2000 ký tự.
-- Múi giờ JVM được đặt về `Asia/Ho_Chi_Minh`.
-- Callback VNPay có kiểm tra chữ ký và số tiền.
+- Múi giờ JVM và các job theo lịch đều dùng `Asia/Ho_Chi_Minh`.
+- Job nhắc lịch học chỉ lấy buổi `SCHEDULED` của lớp `OPENING`. Khung thời gian `(from, to]` không chồng nhau, nên mỗi buổi chỉ được nhắc 1 lần.
+- Đăng ký lớp khoá member, lớp và gói theo cùng một thứ tự, nên tránh được tranh chỗ cuối.
 
 ## Chưa kiểm tra
-Lần 2: chưa chạy `./mvnw test` trên `main`; FE chưa được kiểm tra xem đã gửi `subjectIds` thay cho `specialty` chưa.
-Cấu trúc bên trong WebSocket, chi tiết `AuditLogAspect`, SupportTicket, toàn bộ FE. Chưa chạy test tải, chưa kiểm tra trên DB production.
+- WebSocket / STOMP, `AuditLogAspect`, SupportTicket, WorkoutPlan, upload ảnh Cloudinary.
+- Toàn bộ FE, bao gồm việc FE đã gửi `subjectIds` thay cho `specialty` chưa.
+- Chưa test VNPay sandbox thật (cần URL công khai), chưa chạy test tải, chưa kiểm tra trên DB production.
