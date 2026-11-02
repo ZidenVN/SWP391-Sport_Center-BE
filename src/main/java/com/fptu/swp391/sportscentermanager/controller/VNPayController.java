@@ -11,6 +11,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/payments/vnpay")
@@ -26,5 +28,12 @@ public class VNPayController {
     @GetMapping("/callback")
     public ResponseEntity<VNPayCallBackResponseDTO> processCallBack(HttpServletRequest request) {
         return ResponseEntity.ok(vnPayService.processCallBack(request));
+    }
+
+    // IPN: server VNPay gọi thẳng về, không phụ thuộc trình duyệt khách; VNPay chỉ đọc RspCode + Message
+    @GetMapping("/ipn")
+    public ResponseEntity<Map<String, String>> ipn(HttpServletRequest request) {
+        VNPayCallBackResponseDTO r = vnPayService.processCallBack(request);
+        return ResponseEntity.ok(Map.of("RspCode", r.getRspCode(), "Message", r.getMessage()));
     }
 }

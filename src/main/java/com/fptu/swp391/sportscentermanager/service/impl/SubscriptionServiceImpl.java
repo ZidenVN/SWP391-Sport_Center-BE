@@ -36,7 +36,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     @Override
     @Transactional
     public SubscriptionResponseDTO subscribe(Long memberId, SubscriptionRequestDTO dto) {
-        Member member = memberRepository.findById(memberId)
+        Member member = memberRepository.findByIdForUpdate(memberId)
             .orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
         MembershipPackage pkg = packageRepository.findByPackageIdAndStatus(dto.getPackageId(), "ACTIVE")
             .orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND));
@@ -44,18 +44,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         LocalDateTime now = LocalDateTime.now();
         requireMembershipForClass(memberId, pkg, now);
 
-        for (Subscription pending : subscriptionRepository.findByMember_UserIdAndStatus(memberId, "PENDING")) {
-            Payment pendingPayment = latestPayment(pending);
-            if (pendingPayment == null || !PaymentStatus.PENDING.name().equals(pendingPayment.getStatus())) continue;
-            boolean staleOnline = PaymentMethod.VNPAY.name().equals(pendingPayment.getPaymentMethod())
-                && pendingPayment.getPaymentDate().isBefore(now.minusMinutes(15));
-            if (!staleOnline) {
-                throw new AppException(ErrorCode.PAYMENT_PENDING_EXISTS);
-            }
-            // Link VNPay đã hết hạn: hủy để không treo mãi
-            pending.setStatus(SubscriptionStatus.CANCELLED.name());
-            pendingPayment.setStatus(PaymentStatus.CANCELLED.name());
-        }
+        cancelStalePendingOrThrow(memberId, now);
 
         Subscription subscription = subscriptionRepository.save(Subscription.builder()
             .member(member)
@@ -181,6 +170,22 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         List<Subscription> due = subscriptionRepository.findWaitingMembershipsPaidBefore(now.minusDays(waitDays));
         due.forEach(s -> activateMembership(s, now));
         return due;
+    }
+
+    @Override
+    public void cancelStalePendingOrThrow(Long memberId, LocalDateTime now) {
+        for (Subscription pending : subscriptionRepository.findByMember_UserIdAndStatus(memberId, "PENDING")) {
+            Payment pendingPayment = latestPayment(pending);
+            if (pendingPayment == null || !PaymentStatus.PENDING.name().equals(pendingPayment.getStatus())) continue;
+            boolean staleOnline = PaymentMethod.VNPAY.name().equals(pendingPayment.getPaymentMethod())
+                && pendingPayment.getPaymentDate().isBefore(now.minusMinutes(15));
+            if (!staleOnline) {
+                throw new AppException(ErrorCode.PAYMENT_PENDING_EXISTS);
+            }
+            // Link VNPay đã hết hạn: hủy để không treo mãi
+            pending.setStatus(SubscriptionStatus.CANCELLED.name());
+            pendingPayment.setStatus(PaymentStatus.CANCELLED.name());
+        }
     }
 
     private void activateMembership(Subscription s, LocalDateTime now) {

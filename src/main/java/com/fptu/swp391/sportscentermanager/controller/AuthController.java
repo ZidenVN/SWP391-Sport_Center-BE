@@ -117,9 +117,12 @@ public class AuthController {
             // Token đúng. lấy email và tên từ goole
             if (idToken != null) {
                 GoogleIdToken.Payload payload = idToken.getPayload();
+                if (!Boolean.TRUE.equals(payload.getEmailVerified())) {
+                    return ResponseEntity.status(401).body("Email Google chưa được xác minh");
+                }
                 String email = payload.getEmail();
-                String firstName = (String) payload.get("first_name");
-                String lastName = (String) payload.get("given_name");
+                String firstName = (String) payload.get("given_name");
+                String lastName = (String) payload.get("family_name");
 
                 // kiểm tra db user đã tồn tại chưa
                 java.util.Optional<User> userOption = userRepository.findByEmail(email);
@@ -167,7 +170,8 @@ public class AuthController {
                 return ResponseEntity.status(401).body("Token Google không hợp lệ");
             }
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Lỗi xác thực Google: " + e.getMessage());
+            log.error("Đăng nhập Google thất bại", e);
+            return ResponseEntity.status(500).body("Đăng nhập Google thất bại, vui lòng thử lại");
         }
     }
 

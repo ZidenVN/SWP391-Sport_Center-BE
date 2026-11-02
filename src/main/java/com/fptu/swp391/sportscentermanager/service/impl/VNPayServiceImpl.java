@@ -14,6 +14,7 @@ import com.fptu.swp391.sportscentermanager.repository.MemberRepository;
 import com.fptu.swp391.sportscentermanager.repository.MembershipPackageRepository;
 import com.fptu.swp391.sportscentermanager.repository.PaymentRepository;
 import com.fptu.swp391.sportscentermanager.repository.SubscriptionRepository;
+import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
 import com.fptu.swp391.sportscentermanager.service.VNPayService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
@@ -27,7 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
+
 @Service
 @RequiredArgsConstructor
 public class VNPayServiceImpl implements VNPayService {
@@ -41,27 +42,14 @@ public class VNPayServiceImpl implements VNPayService {
     @Override
     @Transactional
     public VNPayPaymentResponseDTO createPaymentUrl(Long memberId, Long packageId, HttpServletRequest request) {
-        Member member = memberRepository.findById(memberId).orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
+        Member member = memberRepository.findByIdForUpdate(memberId).orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
         MembershipPackage pkg = packageRepository.findByPackageIdAndStatus(packageId, "ACTIVE").orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND));
 
         LocalDateTime now = LocalDateTime.now();
 
         subscriptionService.requireMembershipForClass(memberId, pkg, now);
 
-        // Không cho tạo nhiều giao dịch chờ thanh toán cùng lúc
-        for (Subscription pending : subscriptionRepository.findByMember_UserIdAndStatus(memberId, "PENDING")) {
-            Payment pendingPayment = paymentRepository.findFirstBySubscription_SubscriptionIdOrderByPaymentDateDesc(pending.getSubscriptionId()).orElse(null);
-            boolean stillValid = pendingPayment != null && pendingPayment.getPaymentDate().isAfter(now.minusMinutes(15));
-            if (stillValid) {
-                throw new AppException(ErrorCode.PAYMENT_PENDING_EXISTS);
-            }
-
-            pending.setStatus("CANCELLED");
-            if (pendingPayment != null)
-                pendingPayment.setStatus("CANCELLED");
-        }
-
-
+        subscriptionService.cancelStalePendingOrThrow(memberId, now);
 
         Subscription subscription = subscriptionRepository.save(Subscription.builder().member(member).membershipPackage(pkg).status(SubscriptionStatus.PENDING.name()).build());
 
@@ -144,6 +132,7 @@ public class VNPayServiceImpl implements VNPayService {
             return VNPayCallBackResponseDTO.builder()
                 .success(false)
                 .message("Lỗi đối soát chữ ký VNPay")
+                .rspCode("99")
                 .build();
         }
 
@@ -151,16 +140,26 @@ public class VNPayServiceImpl implements VNPayService {
             return VNPayCallBackResponseDTO.builder()
                 .success(false)
                 .message("Chữ ký VNPay không hợp lệ")
+                .rspCode("97")
                 .build();
         }
         Long paymentId = Long.parseLong(request.getParameter("vnp_TxnRef"));
-        Payment payment = paymentRepository.findById(paymentId).orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
+        // Khoá dòng payment: IPN và return URL có thể tới cùng lúc, chỉ 1 request được xử lý
+        Payment payment = paymentRepository.findByIdForUpdate(paymentId).orElse(null);
+        if (payment == null) {
+            return VNPayCallBackResponseDTO.builder()
+                .success(false)
+                .message("Không tìm thấy giao dịch")
+                .rspCode("01")
+                .build();
+        }
 
         if (!"PENDING".equals(payment.getStatus())) {
             return VNPayCallBackResponseDTO.builder()
                 .success("COMPLETED".equals(payment.getStatus()))
                 .message("Giao dịch đã được xử lý trước đó")
                 .paymentId(paymentId)
+                .rspCode("02")
                 .build();
         }
 
@@ -171,6 +170,7 @@ public class VNPayServiceImpl implements VNPayService {
                 .success(false)
                 .message("Số tiền thanh toán không hợp lệ")
                 .paymentId(paymentId)
+                .rspCode("04")
                 .build();
         }
 
@@ -192,6 +192,7 @@ public class VNPayServiceImpl implements VNPayService {
                 .paymentId(paymentId)
                 .transactionNo(transactionNo)
                 .responseCode(responseCode)
+                .rspCode("00")
                 .build();
         } else {
             // Thanh toán bị hủy hoặc thất bại
@@ -207,6 +208,8 @@ public class VNPayServiceImpl implements VNPayService {
                 .paymentId(paymentId)
                 .transactionNo(transactionNo)
                 .responseCode(responseCode)
+                // 00 = merchant đã ghi nhận kết quả, không có nghĩa là thanh toán thành công
+                .rspCode("00")
                 .build();
         }
     }
