@@ -42,30 +42,38 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     // Lấy giao dịch gần nhất của một gói đăng ký
     Optional<Payment> findFirstBySubscription_SubscriptionIdOrderByPaymentDateDesc(Long subscriptionId);
 
+    // Doanh thu kỳ = tiền thu trong kỳ (theo ngày thu) - tiền hoàn trong kỳ (theo ngày hoàn).
+    // Số giao dịch = số lần thu tiền trong kỳ, kể cả giao dịch sau đó bị hoàn.
     @Query("""
-        select coalesce(sum(case when p.status in ('COMPLETED', 'SUCCESS') then p.amount
-                                 when p.status = 'REFUNDED' then p.amount - coalesce(p.refundAmount, p.amount)
-                                 else 0 end), 0)
+        select coalesce(sum(case when p.status in ('COMPLETED', 'SUCCESS', 'REFUNDED') and coalesce(p.paidAt, p.paymentDate) between :start and :end then p.amount else 0 end), 0)
+               - coalesce(sum(case when p.status = 'REFUNDED' and coalesce(p.refundedAt, p.paidAt, p.paymentDate) between :start and :end then coalesce(p.refundAmount, 0) else 0 end), 0)
         from Payment p
-        where p.status in ('COMPLETED', 'SUCCESS', 'REFUNDED') and coalesce(p.paidAt, p.paymentDate) between :start and :end
+        where (p.status in ('COMPLETED', 'SUCCESS', 'REFUNDED') and coalesce(p.paidAt, p.paymentDate) between :start and :end)
+           or (p.status = 'REFUNDED' and coalesce(p.refundedAt, p.paidAt, p.paymentDate) between :start and :end)
     """)
     BigDecimal sumReveneBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     @Query("""
         select count(p) from Payment p
-        where p.status in ('COMPLETED', 'SUCCESS') and coalesce(p.paidAt, p.paymentDate) between :start and :end
+        where p.status in ('COMPLETED', 'SUCCESS', 'REFUNDED') and coalesce(p.paidAt, p.paymentDate) between :start and :end
     """)
     long cntSuccessfulPaymentsBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
+    // Mỗi giao dịch tách thành dòng thu (ngày thu) và dòng hoàn (ngày hoàn) rồi cộng theo ngày
     @Query(value = """
-        SELECT DATE_FORMAT(COALESCE(paid_at, payment_date), '%Y-%m-%d') AS dayLabel,
-               COALESCE(SUM(CASE WHEN status IN ('COMPLETED', 'SUCCESS') THEN amount
-                                 WHEN status = 'REFUNDED' THEN amount - COALESCE(refund_amount, amount)
-                                 ELSE 0 END), 0) AS dailyRevenue
-        FROM payments
-        WHERE status IN ('COMPLETED', 'SUCCESS', 'REFUNDED')
-          AND COALESCE(paid_at, payment_date) BETWEEN :start AND :end
-        GROUP BY DATE_FORMAT(COALESCE(paid_at, payment_date), '%Y-%m-%d')
+        SELECT dayLabel, COALESCE(SUM(money), 0) AS dailyRevenue
+        FROM (
+            SELECT DATE_FORMAT(COALESCE(paid_at, payment_date), '%Y-%m-%d') AS dayLabel, amount AS money
+            FROM payments
+            WHERE status IN ('COMPLETED', 'SUCCESS', 'REFUNDED')
+              AND COALESCE(paid_at, payment_date) BETWEEN :start AND :end
+            UNION ALL
+            SELECT DATE_FORMAT(COALESCE(refunded_at, paid_at, payment_date), '%Y-%m-%d'), -COALESCE(refund_amount, 0)
+            FROM payments
+            WHERE status = 'REFUNDED'
+              AND COALESCE(refunded_at, paid_at, payment_date) BETWEEN :start AND :end
+        ) t
+        GROUP BY dayLabel
         ORDER BY dayLabel ASC
     """, nativeQuery = true)
     List<Object[]> getRevenueByDay(@Param("start") LocalDateTime start,
@@ -73,15 +81,14 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     @Query("""
         SELECT pkg.packageName,
-               COALESCE(SUM(case when p.status in ('COMPLETED', 'SUCCESS') then p.amount
-                                 when p.status = 'REFUNDED' then p.amount - coalesce(p.refundAmount, p.amount)
-                                 else 0 end), 0),
-               COUNT(p.paymentId)
+               coalesce(sum(case when p.status in ('COMPLETED', 'SUCCESS', 'REFUNDED') and coalesce(p.paidAt, p.paymentDate) between :start and :end then p.amount else 0 end), 0)
+               - coalesce(sum(case when p.status = 'REFUNDED' and coalesce(p.refundedAt, p.paidAt, p.paymentDate) between :start and :end then coalesce(p.refundAmount, 0) else 0 end), 0),
+               sum(case when p.status in ('COMPLETED', 'SUCCESS', 'REFUNDED') and coalesce(p.paidAt, p.paymentDate) between :start and :end then 1 else 0 end)
         FROM Payment p
         JOIN p.subscription sub
         JOIN sub.membershipPackage pkg
-        WHERE p.status in ('COMPLETED', 'SUCCESS', 'REFUNDED')
-          AND COALESCE(p.paidAt, p.paymentDate) BETWEEN :start AND :end
+        WHERE (p.status in ('COMPLETED', 'SUCCESS', 'REFUNDED') and coalesce(p.paidAt, p.paymentDate) between :start and :end)
+           or (p.status = 'REFUNDED' and coalesce(p.refundedAt, p.paidAt, p.paymentDate) between :start and :end)
         GROUP BY pkg.packageName
     """)
     List<Object[]> getRevenueByPackage(@Param("start") LocalDateTime start,
@@ -89,13 +96,12 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     @Query("""
         SELECT p.paymentMethod,
-               COALESCE(SUM(case when p.status in ('COMPLETED', 'SUCCESS') then p.amount
-                                 when p.status = 'REFUNDED' then p.amount - coalesce(p.refundAmount, p.amount)
-                                 else 0 end), 0),
-               COUNT(p.paymentId)
+               coalesce(sum(case when p.status in ('COMPLETED', 'SUCCESS', 'REFUNDED') and coalesce(p.paidAt, p.paymentDate) between :start and :end then p.amount else 0 end), 0)
+               - coalesce(sum(case when p.status = 'REFUNDED' and coalesce(p.refundedAt, p.paidAt, p.paymentDate) between :start and :end then coalesce(p.refundAmount, 0) else 0 end), 0),
+               sum(case when p.status in ('COMPLETED', 'SUCCESS', 'REFUNDED') and coalesce(p.paidAt, p.paymentDate) between :start and :end then 1 else 0 end)
         FROM Payment p
-        WHERE p.status in ('COMPLETED', 'SUCCESS', 'REFUNDED')
-          AND COALESCE(p.paidAt, p.paymentDate) BETWEEN :start AND :end
+        WHERE (p.status in ('COMPLETED', 'SUCCESS', 'REFUNDED') and coalesce(p.paidAt, p.paymentDate) between :start and :end)
+           or (p.status = 'REFUNDED' and coalesce(p.refundedAt, p.paidAt, p.paymentDate) between :start and :end)
         GROUP BY p.paymentMethod
     """)
     List<Object[]> getRevenueByPaymentMethod(@Param("start") LocalDateTime start,

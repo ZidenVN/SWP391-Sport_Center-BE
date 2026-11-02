@@ -49,4 +49,8 @@ public class Payment {
 
     @Column(name = "refund_amount")
     private BigDecimal refundAmount;
+
+    // Ngày hoàn tiền: báo cáo trừ khoản hoàn vào kỳ hoàn, không sửa lùi kỳ đã thu
+    @Column(name = "refunded_at")
+    private LocalDateTime refundedAt;
 }

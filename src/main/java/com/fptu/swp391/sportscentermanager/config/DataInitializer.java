@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -24,6 +25,8 @@ public class DataInitializer implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
     private final QuizQuestionRepository quizQuestionRepository;
     private final SubjectRepository subjectRepository;
+
+    private static final String DEFAULT_COACH_EMAIL = "coach@Sportcenter.com";
 
     @Value("${app.init.manager.email:manager@sportcenter.com}")
     private String managerEmail;
@@ -83,13 +86,16 @@ public class DataInitializer implements CommandLineRunner {
         )
     );
 
+    // Cả quá trình khởi tạo chạy trong 1 transaction để đọc được Coach.subjects (LAZY)
     @Override
+    @Transactional
     public void run(String... args) throws Exception {
         Map<String, Permission> permissions = seedPermissions();
         Map<String, Role> roles = seedRoles();
         seedRolePermissions(roles, permissions);
         seedDefaultManager(roles.get("CENTER_MANAGER"));
         seedDefaultCoach(roles.get("COACH"));
+        assignSubjectToDefaultCoach();
         seedDefaultReceptionist(roles.get("RECEPTIONIST"));
         seedQuizSystemQuestions();
     }
@@ -172,7 +178,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedDefaultCoach(Role coachRole) {
-        String email = "coach@Sportcenter.com";
+        String email = DEFAULT_COACH_EMAIL;
         if (userRepository.existsByEmail(email) || userRepository.existsByPhone("098789654")) return ;
 
         if (coachPassword.isBlank()) {
@@ -194,6 +200,20 @@ public class DataInitializer implements CommandLineRunner {
             .subjects(new HashSet<>(activeSubjects))
             .build());
         System.out.println("Đã tạo tài khoản HLV mặc định: " + email + " với " + activeSubjects.size() + " môn chuyên môn");
+    }
+
+    private void assignSubjectToDefaultCoach(){
+        userRepository.findByEmail(DEFAULT_COACH_EMAIL).filter(u -> u instanceof Coach)
+            .map(u -> (Coach) u)
+            .filter(c -> c.getSubjects().isEmpty()).ifPresent(c -> {
+                List<Subject> subjects = subjectRepository.findByStatus("ACTIVE");
+                if (subjects.isEmpty()) {
+                    return;
+                }
+                c.getSubjects().addAll(subjects);
+                userRepository.save(c);
+                System.out.println("Đã gán " + subjects.size() + " môn cho HLV mặc định");
+            });
     }
 
     private void seedDefaultReceptionist(Role receptionistRole) {

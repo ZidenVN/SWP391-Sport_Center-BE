@@ -174,6 +174,7 @@ public class PaymentServiceImpl implements PaymentService {
         BigDecimal refundAmount = calculateRefundAmount(payment, sub, registration, now);
         payment.setStatus(PaymentStatus.REFUNDED.name());
         payment.setRefundAmount(refundAmount);
+        payment.setRefundedAt(now);
         payment.setNote(reason);
         paymentRepository.save(payment);
 
