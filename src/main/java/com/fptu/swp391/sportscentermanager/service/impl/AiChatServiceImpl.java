@@ -58,6 +58,7 @@ public class AiChatServiceImpl implements AiChatService {
         String role = principal.getUser().getRole().getRoleName();
 
         // 1. Gioi han luot hoi trong ngay
+        // shortcut: đếm rồi mới lưu nên request song song có thể vượt vài câu; muốn chặt thì đếm bằng bảng counter có khoá riêng
         long usedToday = aiMessageRepository.countByConversation_User_UserIdAndRoleAndCreatedAtAfter(
             userId, "user", LocalDate.now().atStartOfDay());
         if (usedToday >= memberDailyLimit) {

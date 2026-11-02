@@ -31,7 +31,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import javax.swing.text.html.Option;
@@ -53,8 +52,6 @@ public class AuthController {
 
     @Value("${google.client-id}")
     private String googleClientId;
-
-    private final PasswordEncoder passwordEncoder;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody AuthRequest request) {
@@ -88,21 +85,8 @@ public class AuthController {
 
     @LogAudit(actionType = "REGISTER_ACCOUNT", targetEntity = "User")
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequestDTO requestDTO
-    ) {
-        try {
-            User user = new User();
-            user.setFirstName(requestDTO.getFirstName());
-            user.setLastName(requestDTO.getLastName());
-            user.setGender(requestDTO.getGender());
-            user.setEmail(requestDTO.getEmail());
-            user.setPhone(requestDTO.getPhone());
-            user.setPasswordHash(passwordEncoder.encode(requestDTO.getPassword()));
-            return ResponseEntity.ok(userService.registerUser(requestDTO));
-
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequestDTO requestDTO) {
+        return ResponseEntity.ok(userService.registerUser(requestDTO));
     }
 
     @PostMapping("/google")
