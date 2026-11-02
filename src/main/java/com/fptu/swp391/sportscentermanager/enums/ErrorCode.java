@@ -42,6 +42,16 @@ public enum ErrorCode {
     MEMBER_NOT_IN_CLASS(HttpStatus.BAD_REQUEST, "ERR_ATTENDANCE_001", "Học viên không thuộc danh sách lớp học này!"),
     REGISTRATION_ALREADY_CANCELLED(HttpStatus.CONFLICT, "ERR_REGISTRATION_001", "Đăng ký này đã được hủy trước đó!"),
     CANCEL_NOT_ALLOWED(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_REGISTRATION_002", "Đã quá hạn huỷ đăng ký lớp học này!"),
+    // ----- Phần C: đăng ký / đổi lớp theo gói lớp
+    REGISTRATION_PACKAGE_NOT_CLASS(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_REGISTRATION_007", "Gói này không phải gói lớp, không dùng để đăng ký lớp!"),
+    REGISTRATION_PACKAGE_NOT_WAITING(HttpStatus.CONFLICT, "ERR_REGISTRATION_008", "Gói lớp này đã có lớp hoặc chưa thanh toán, hãy dùng chức năng đổi lớp!"),
+    REGISTRATION_SUBJECT_MISMATCH(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_REGISTRATION_009", "Lớp không cùng môn với gói lớp!"),
+    REGISTRATION_DURATION_MISMATCH(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_REGISTRATION_010", "Thời hạn lớp không khớp với thời hạn gói lớp!"),
+    REGISTRATION_CLASS_STARTED(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_REGISTRATION_011", "Lớp đã bắt đầu, không thể đăng ký hoặc huỷ đăng ký!"),
+    REGISTRATION_NOT_ACTIVE(HttpStatus.CONFLICT, "ERR_REGISTRATION_012", "Đăng ký này không còn hiệu lực!"),
+    REGISTRATION_SELF_SWITCH_CLOSED(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_REGISTRATION_013", "Chỉ được tự đổi lớp khi buổi đầu còn hơn 12 tiếng, vui lòng liên hệ lễ tân!"),
+    REGISTRATION_SWITCH_LIMIT(HttpStatus.CONFLICT, "ERR_REGISTRATION_014", "Gói lớp này đã dùng hết 1 lượt đổi lớp tại quầy!"),
+    REGISTRATION_SAME_CLASS(HttpStatus.BAD_REQUEST, "ERR_REGISTRATION_015", "Lớp mới phải khác lớp đang học!"),
     PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_PAYMENT_404", "Giao dịch thanh toán không tồn tại!"),
 
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "ERR_REQUEST_001", "Yêu cầu không hợp lệ!"),

@@ -9,4 +9,7 @@ public class ClassRegistrationRequestDTO {
 
     @NotNull(message = "classId không được để trống")
     private Long classId;
+
+    @NotNull(message = "subscriptionId không được để trống")
+    private Long subscriptionId;
 }

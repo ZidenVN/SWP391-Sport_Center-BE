@@ -15,7 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
-
+import com.fptu.swp391.sportscentermanager.enums.SessionStatus;
+import java.time.LocalDate;
 @Service
 @RequiredArgsConstructor
 public class CoachServiceImpl implements CoachService {
@@ -26,27 +27,59 @@ public class CoachServiceImpl implements CoachService {
     private final SportClassRepository sportClassRepository;
     private final ClassAttendanceRepository classAttendanceRepository;
     private final ClassRegistrationRepository classRegistrationRepository;
+    private final CoachScheduleRepository coachScheduleRepository;
     @Value("${app.attendance.open-minutes-before}")
     private long attendanceOpenMinutesBefore;
 
     @Value("${app.attendance.close-hours-after}")
     private long attendanceCloseHoursAfter;
 
-    // BE-TODO 8: chỉ điểm danh / sửa điểm danh từ 15 phút trước giờ học đến 24 giờ sau khi lớp kết thúc,
-    // lớp bị huỷ hoặc xoá mềm thì không điểm danh
-    private void ensureAttendanceWindow(SportClass sportClass, LocalDateTime now) {
-        String status = sportClass.getStatus();
-        if ("CANCELLED".equals(status) || "INACTIVE".equals(status)) {
+    // Chỉ điểm danh / sửa điểm danh từ 15 phút trước giờ học đến 24 giờ sau khi BUỔI kết thúc.
+    // Buổi bị huỷ / hoãn, hoặc lớp bị huỷ / xoá mềm thì không điểm danh.
+    private void ensureAttendanceWindow(ClassSession session, LocalDateTime now) {
+        SessionStatus sessionStatus = session.getStatus();
+        String classStatus = session.getSportClass().getStatus();
+        if (sessionStatus == SessionStatus.CANCELLED || sessionStatus == SessionStatus.POSTPONED
+            || "CANCELLED".equals(classStatus) || "INACTIVE".equals(classStatus)) {
             throw new AppException(ErrorCode.ATTENDANCE_CLASS_NOT_ACTIVE);
         }
 
-        if (now.isBefore(sportClass.getStartTime().minusMinutes(attendanceOpenMinutesBefore))) {
+        if (now.isBefore(session.getStartTime().minusMinutes(attendanceOpenMinutesBefore))) {
             throw new AppException(ErrorCode.ATTENDANCE_TOO_EARLY);
         }
 
-        if (now.isAfter(sportClass.getEndTime().plusHours(attendanceCloseHoursAfter))) {
+        if (now.isAfter(session.getEndTime().plusHours(attendanceCloseHoursAfter))) {
             throw new AppException(ErrorCode.ATTENDANCE_CLOSED);
         }
+    }
+
+    // Buổi phải tồn tại và do chính HLV này dạy (HLV chính bị thay thì không còn quyền với buổi đó)
+    private ClassSession getTaughtSessionOrThrow(Long coachId, Long sessionId) {
+        ClassSession session = coachScheduleRepository.findDetailById(sessionId)
+            .orElseThrow(() -> new AppException(ErrorCode.SESSION_NOT_FOUND));
+        if (!session.getCoach().getUserId().equals(coachId)) {
+            throw new AppException(ErrorCode.SESSION_NOT_FOUND);
+        }
+        return session;
+    }
+
+    private List<ClassRosterResponseDTO> toRoster(List<ClassRegistration> registrations) {
+        List<ClassRosterResponseDTO> result = new ArrayList<>();
+        for (ClassRegistration r : registrations) {
+            Member m = r.getMember();
+            result.add(ClassRosterResponseDTO.builder()
+                .memberId(m.getUserId())
+                .firstName(m.getFirstName())
+                .lastName(m.getLastName())
+                .email(m.getEmail())
+                .phone(m.getPhone())
+                .gender(m.getGender())
+                .trainingGoal(m.getTrainingGoal())
+                .enrolledDate(r.getRegisteredAt())
+                .enrollmentStatus(r.getStatus())
+                .build());
+        }
+        return result;
     }
 
     private SportClass getOwnedClassOrThrow(Long coachId, Long classId) {
@@ -173,27 +206,41 @@ public class CoachServiceImpl implements CoachService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<TeachingScheduleResponseDTO> getMyTeachingSchedule(Long coachId) {
-        List<SportClass> classes = sportClassRepository.findByCoach_UserIdOrderByStartTimeAsc(coachId);
+    public List<TeachingScheduleResponseDTO> getMyTeachingSchedule(Long coachId, LocalDate from, LocalDate to) {
+        LocalDate fromDate = (from != null) ? from : LocalDate.now().minusDays(1);
+        LocalDate toDate = (to != null) ? to : LocalDate.now().plusDays(30);
+        if (toDate.isBefore(fromDate)) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+
+        List<ClassSession> sessions = coachScheduleRepository.findTeachingSessions(
+            coachId, fromDate.atStartOfDay(), toDate.plusDays(1).atStartOfDay());
+
+        // 1 lớp có nhiều buổi: đếm sĩ số mỗi lớp 1 lần
+        Map<Long, Long> enrolledByClass = new HashMap<>();
         List<TeachingScheduleResponseDTO> result = new ArrayList<>();
+        for (ClassSession s : sessions) {
+            SportClass c = s.getSportClass();
+            long enrolled = enrolledByClass.computeIfAbsent(c.getClassId(),
+                id -> classRegistrationRepository.countBySportClass_ClassIdAndStatus(id, "REGISTERED"));
+            Coach mainCoach = c.getCoach();
 
-        for (SportClass c : classes) {
-            long enrolledCnt = classRegistrationRepository.countBySportClass_ClassIdAndStatus(c.getClassId(), "REGISTERED");
-            String subjectName = (c.getSubject() != null) ? c.getSubject().getSubjectName() : "Chưa có môn nào";
-            String roomName = (c.getRoom() != null) ? c.getRoom().getRoomName() : "Chưa có phòng";
-
-            TeachingScheduleResponseDTO dto = TeachingScheduleResponseDTO.builder()
+            result.add(TeachingScheduleResponseDTO.builder()
+                .sessionId(s.getSessionId())
                 .classId(c.getClassId())
-                .subjectName(subjectName)
-                .roomName(roomName)
-                .startTime(c.getStartTime())
-                .endTime(c.getEndTime())
+                .subjectName(c.getSubject() != null ? c.getSubject().getSubjectName() : "Chưa có môn nào")
+                .roomName(s.getRoom() != null ? s.getRoom().getRoomName() : "Chưa có phòng")
+                .startTime(s.getStartTime())
+                .endTime(s.getEndTime())
                 .maxCapacity(c.getMaxCapacity())
-                .currentEnrolled(enrolledCnt)
-                .status(c.getStatus())
+                .currentEnrolled(enrolled)
+                .status(s.getStatus().name())
+                .classStatus(c.getStatus())
+                .type(s.getType().name())
+                .substitute(mainCoach != null && !mainCoach.getUserId().equals(coachId))
+                .mainCoachName(mainCoach != null ? mainCoach.getLastName() + " " + mainCoach.getFirstName() : null)
                 .imageUrl(c.getImageUrl())
-                .build();
-            result.add(dto);
+                .build());
         }
         return result;
     }
@@ -202,47 +249,36 @@ public class CoachServiceImpl implements CoachService {
     @Transactional(readOnly = true)
     public List<ClassRosterResponseDTO> getClassRoster(Long coachId, Long classId) {
         getOwnedClassOrThrow(coachId, classId);
+        return toRoster(classRegistrationRepository.findActiveByClassId(classId));
+    }
 
-        List<ClassRosterResponseDTO> result = new ArrayList<>();
-        for (ClassRegistration r : classRegistrationRepository.findActiveByClassId(classId)) {
-            Member m = r.getMember();
-            ClassRosterResponseDTO dto = ClassRosterResponseDTO.builder()
-                .memberId(m.getUserId())
-                .firstName(m.getFirstName())
-                .lastName(m.getLastName())
-                .email(m.getEmail())
-                .phone(m.getPhone())
-                .gender(m.getGender())
-                .trainingGoal(m.getTrainingGoal())
-                .enrolledDate(r.getRegisteredAt())
-                .enrollmentStatus(r.getStatus())
-                .build();
-            result.add(dto);
-        }
-        return result;
-
+    @Override
+    @Transactional(readOnly = true)
+    public List<ClassRosterResponseDTO> getSessionRoster(Long coachId, Long sessionId) {
+        ClassSession session = getTaughtSessionOrThrow(coachId, sessionId);
+        return toRoster(classRegistrationRepository.findActiveByClassId(session.getSportClass().getClassId()));
     }
 
     @Override
     @Transactional
-    public List<AttendanceResponseDTO> takeAttendance(Long coachId, Long classId, TakeAttendanceRequestDTO requestDTO) {
-        // check lop ton tai va co phai coach do phu trach khong
-        SportClass sportClass = getOwnedClassOrThrow(coachId, classId);
+    public List<AttendanceResponseDTO> takeAttendance(Long coachId, Long sessionId, TakeAttendanceRequestDTO requestDTO) {
+        // buổi phải tồn tại và do HLV này dạy
+        ClassSession session = getTaughtSessionOrThrow(coachId, sessionId);
         LocalDateTime now = LocalDateTime.now();
-        ensureAttendanceWindow(sportClass, now);
+        ensureAttendanceWindow(session, now);
 
         if (requestDTO.getRecords() == null || requestDTO.getRecords().isEmpty()) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
+        // học viên của buổi = học viên đang học của lớp chứa buổi đó
         Map<Long, Member> enrolledMembers = new HashMap<>();
-        for (ClassRegistration r : classRegistrationRepository.findActiveByClassId(classId)) {
+        for (ClassRegistration r : classRegistrationRepository.findActiveByClassId(session.getSportClass().getClassId())) {
             enrolledMembers.put(r.getMember().getUserId(), r.getMember());
         }
 
-
         Map<Long, ClassAttendance> existing = new HashMap<>();
-        for (ClassAttendance a : classAttendanceRepository.findBySportClass_ClassId(classId)) {
+        for (ClassAttendance a : classAttendanceRepository.findByClassSession_SessionId(sessionId)) {
             existing.put(a.getMember().getUserId(), a);
         }
 
@@ -257,9 +293,9 @@ public class CoachServiceImpl implements CoachService {
                 throw new AppException(ErrorCode.DUPLICATE_ATTENDANCE);
 
             ClassAttendance attendance = existing.getOrDefault(memberId, ClassAttendance.builder()
-                .sportClass(sportClass)
+                .classSession(session)
                 .member(member)
-                .attendanceDate(sportClass.getStartTime())
+                .attendanceDate(session.getStartTime())
                 .build());
             attendance.setStatus(record.getStatus());
             attendance.setNote(record.getNote());
@@ -269,14 +305,12 @@ public class CoachServiceImpl implements CoachService {
         return classAttendanceRepository.saveAll(toSave).stream().map(this::toAttendanceResponse).toList();
     }
 
-
     @Override
     @Transactional(readOnly = true)
-    public List<AttendanceResponseDTO> getClassAttendance(Long coachId, Long classId) {
-        getOwnedClassOrThrow(coachId, classId);
-        return classAttendanceRepository.findBySportClass_ClassId(classId).stream().map(this::toAttendanceResponse).toList();
+    public List<AttendanceResponseDTO> getSessionAttendance(Long coachId, Long sessionId) {
+        getTaughtSessionOrThrow(coachId, sessionId);
+        return classAttendanceRepository.findByClassSession_SessionId(sessionId).stream().map(this::toAttendanceResponse).toList();
     }
-
 
 }
 

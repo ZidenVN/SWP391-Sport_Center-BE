@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 /**
  * Một member đăng ký một lớp học.
- * - status: REGISTERED (đang đăng ký) | CANCELLED (đã hủy)
+ * - status: REGISTERED (đang học) | SWITCHED (đã đổi sang lớp khác) | CANCELLED (đã hủy) | STOPPED (lớp bị dừng giữa khoá)
  * - Mỗi cặp (member, class) chỉ có 1 dòng. Hủy rồi đăng ký lại thì dùng lại dòng cũ.
  */
 @Entity
@@ -41,8 +41,16 @@ public class ClassRegistration {
     @Column(name = "reminder_sent_at")
     private LocalDateTime reminderSentAt;
 
-    // Gói đã bị trừ buổi cho lần đăng ký này (để hoàn đúng gói). Dữ liệu cũ = null
+    // Gói lớp dùng cho lần đăng ký này. Dữ liệu cũ = null
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subscription_id")
     private Subscription subscription;
+
+    // Đổi lớp: thời điểm đổi và người đổi (hội viên hoặc lễ tân)
+    @Column(name = "switched_at")
+    private LocalDateTime switchedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "switched_by")
+    private User switchedBy;
 }

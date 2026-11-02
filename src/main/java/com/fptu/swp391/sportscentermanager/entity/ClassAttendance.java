@@ -9,7 +9,8 @@ import org.hibernate.validator.constraints.ISBN;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "class_attendances")
+@Table(name = "class_attendances",
+    uniqueConstraints = @UniqueConstraint(columnNames = {"session_id", "member_id"}))
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -22,8 +23,8 @@ public class ClassAttendance {
     private Long attendanceId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "class_id", nullable = false)
-    private SportClass sportClass;
+    @JoinColumn(name = "session_id", nullable = false)
+    private ClassSession classSession;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)

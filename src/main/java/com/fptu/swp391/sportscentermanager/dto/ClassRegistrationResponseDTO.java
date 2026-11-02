@@ -1,8 +1,14 @@
 package com.fptu.swp391.sportscentermanager.dto;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Getter
 @Setter
@@ -16,15 +22,23 @@ public class ClassRegistrationResponseDTO {
     private String subjectName;
     private String roomName;
     private String coachName;
+    private String imageUrl;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private String status;           // REGISTERED | CANCELLED
-    private String imageUrl;
+    // Lịch cố định của lớp
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private String daysOfWeek;
+    private LocalTime startClock;
+    private LocalTime endClock;
+    private LocalDateTime firstSessionAt;
+    private String classStatus;
+    private String status;           // REGISTERED | SWITCHED | CANCELLED | STOPPED
     private LocalDateTime registeredAt;
     private LocalDateTime cancelledAt;
-
-    // Gói bị trừ buổi cho lần đăng ký này
+    private LocalDateTime switchedAt;
+    // Gói lớp dùng cho lần đăng ký này
     private Long subscriptionId;
-    private Integer usedSessions;
-    private Integer remainingSessions; // null = không giới hạn
+    private String packageName;
+    private Integer receptionistSwitchCount;
 }

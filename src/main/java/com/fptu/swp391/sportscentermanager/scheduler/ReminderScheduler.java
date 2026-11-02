@@ -17,7 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-
+import com.fptu.swp391.sportscentermanager.entity.ClassSession;
+import com.fptu.swp391.sportscentermanager.entity.Member;
+import com.fptu.swp391.sportscentermanager.enums.PackageType;
+import com.fptu.swp391.sportscentermanager.enums.SessionType;
+import com.fptu.swp391.sportscentermanager.repository.ScheduleQueryRepository;
+import java.time.temporal.ChronoUnit;
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -27,6 +32,7 @@ public class ReminderScheduler {
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
     private final SubscriptionRepository subscriptionRepository;
     private final ClassRegistrationRepository classRegistrationRepository;
+    private final ScheduleQueryRepository scheduleQueryRepository;
     private final NotificationService notificationService;
     private final SubscriptionService subscriptionService;
 
@@ -36,6 +42,9 @@ public class ReminderScheduler {
     @Value("${app.reminder.class-hours-before:24}")
     private int classHoursBefore;
 
+    // Phải bằng chu kỳ của app.reminder.class-cron (mặc định 15 phút)
+    @Value("${app.reminder.class-interval-minutes:15}")
+    private int classIntervalMinutes;
     @Scheduled(cron = "${app.reminder.subscription-cron:0 0 8 * * *}", zone = "Asia/Ho_Chi_Minh")
     @Transactional
     public void remindExpiringSubscriptions() {
@@ -45,6 +54,8 @@ public class ReminderScheduler {
         int sent = 0;
         for (Subscription s : subs) {
             // BR-SUB-07: đã gia hạn gói cùng loại + cùng môn thì không nhắc (không đánh dấu, lỡ gói gia hạn bị hoàn tiền vẫn nhắc được)
+            // Chỉ nhắc membership; gói lớp hết hạn theo lớp nên không nhắc gia hạn
+            if (s.getMembershipPackage().getPackageType() != PackageType.MEMBERSHIP) continue;
             if (subscriptionService.hasRenewal(s)) continue;
             String content = s.getMembershipPackage().getPackageName() + " của bạn sẽ hết hạn vào " + s.getEndDate().format(DATE) + ". Hãy gia hạn để không bị gián đoạn lịch tập.";
             notificationService.notifyUsers(List.of(s.getMember()), "Gói tập sắp hết hạn", content, "SUBSCRIPTION_EXPIRING");
@@ -54,19 +65,27 @@ public class ReminderScheduler {
         log.info("Subscription reminders sent: {}", sent);
     }
 
+    // Nhắc theo buổi: mỗi lần chạy lấy các buổi bắt đầu trong đúng 1 khung = chu kỳ cron,
+    // cách bây giờ classHoursBefore giờ. Mỗi buổi rơi vào đúng 1 khung nên không cần cột đánh dấu đã nhắc
     @Scheduled(cron = "${app.reminder.class-cron:0 */15 * * * *}", zone = "Asia/Ho_Chi_Minh")
     @Transactional
     public void remindUpcomingClasses() {
-        LocalDateTime now = LocalDateTime.now();
-        List<ClassRegistration> regs = classRegistrationRepository.findUpcomingWithoutReminder(now, now.plusHours(classHoursBefore));
-        for (ClassRegistration r : regs) {
-            SportClass c = r.getSportClass();
+        LocalDateTime to = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).plusHours(classHoursBefore);
+        LocalDateTime from = to.minusMinutes(classIntervalMinutes);
+        int sent = 0;
+        for (ClassSession s : scheduleQueryRepository.findSessionsStartingBetween(from, to)) {
+            SportClass c = s.getSportClass();
+            List<Member> members = classRegistrationRepository.findActiveByClassId(c.getClassId()).stream()
+                .map(ClassRegistration::getMember).toList();
+            if (members.isEmpty()) continue;
             String subject = c.getSubject() != null ? c.getSubject().getSubjectName() : "Lớp học";
-            String room = c.getRoom() != null ? c.getRoom().getRoomName() : "Chưa xếp phòng";
-            String content = "Lớp " + subject + " bắt đầu lúc " + c.getStartTime().format(DATE_TIME) + " tại " + room + ".";
-            notificationService.notifyUsers(List.of(r.getMember()), "Nhắc lịch học", content, "CLASS_REMINDER");
-            r.setReminderSentAt(now);
+            String room = s.getRoom() != null ? s.getRoom().getRoomName() : "Chưa xếp phòng";
+            String content = (s.getType() == SessionType.MAKEUP ? "Buổi bù lớp " : "Lớp ") + subject
+                + " bắt đầu lúc " + s.getStartTime().format(DATE_TIME) + " tại " + room
+                + (s.getCoach() != null ? ", HLV " + s.getCoach().getFirstName() + " " + s.getCoach().getLastName() : "") + ".";
+            notificationService.notifyUsers(members, "Nhắc lịch học", content, "CLASS_REMINDER");
+            sent += members.size();
         }
-        log.info("Class reminders sent: {}", regs.size());
+        log.info("Class reminders sent: {}", sent);
     }
 }

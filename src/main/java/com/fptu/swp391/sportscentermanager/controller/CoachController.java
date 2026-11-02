@@ -14,7 +14,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDate;
 @RestController
 @RequestMapping("/api/v1/coaches")
 @RequiredArgsConstructor
@@ -66,9 +67,12 @@ public class CoachController {
     // API cho COACH
     @PreAuthorize("hasRole('COACH') and hasAuthority('VIEW_OWN_SCHEDULE')")
     @GetMapping("/me/schedules")
-    public ResponseEntity<List<TeachingScheduleResponseDTO>> getMySchedules(@AuthenticationPrincipal CustomUserDetails principal) {
+    public ResponseEntity<List<TeachingScheduleResponseDTO>> getMySchedules(
+        @AuthenticationPrincipal CustomUserDetails principal,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         Long coachId = principal.getUser().getUserId();
-        return ResponseEntity.ok(coachService.getMyTeachingSchedule(coachId));
+        return ResponseEntity.ok(coachService.getMyTeachingSchedule(coachId, from, to));
     }
 
     @PreAuthorize("hasRole('COACH') and hasAuthority('VIEW_CLASS')")
@@ -76,6 +80,13 @@ public class CoachController {
     public ResponseEntity<List<ClassRosterResponseDTO>> getClassRoster(@AuthenticationPrincipal CustomUserDetails principal, @PathVariable Long classId) {
         Long coachId = principal.getUser().getUserId();
         return ResponseEntity.ok(coachService.getClassRoster(coachId, classId));
+    }
+
+    // Danh sách học viên của buổi mình dạy (dùng cho HLV dạy thay)
+    @PreAuthorize("hasRole('COACH') and hasAuthority('VIEW_CLASS')")
+    @GetMapping("/me/sessions/{sessionId}/roster")
+    public ResponseEntity<List<ClassRosterResponseDTO>> getSessionRoster(@AuthenticationPrincipal CustomUserDetails principal, @PathVariable Long sessionId) {
+        return ResponseEntity.ok(coachService.getSessionRoster(principal.getUser().getUserId(), sessionId));
     }
 
     /**
@@ -90,17 +101,17 @@ public class CoachController {
 
     @LogAudit(actionType = "MARK_ATTENDANCE", targetEntity = "ClassAttendance")
     @PreAuthorize("hasRole('COACH') AND hasAuthority('MARK_ATTENDANCE')")
-    @PostMapping("/me/classes/{classId}/attendances")
-    public ResponseEntity<List<AttendanceResponseDTO>> takeAttendance(@AuthenticationPrincipal CustomUserDetails principal, @PathVariable Long classId, @Valid @RequestBody TakeAttendanceRequestDTO requestDTO) {
-Long coachId = principal.getUser().getUserId();
-return ResponseEntity.ok(coachService.takeAttendance(coachId, classId, requestDTO));
+    @PostMapping("/me/sessions/{sessionId}/attendances")
+    public ResponseEntity<List<AttendanceResponseDTO>> takeAttendance(@AuthenticationPrincipal CustomUserDetails principal, @PathVariable Long sessionId, @Valid @RequestBody TakeAttendanceRequestDTO requestDTO) {
+        Long coachId = principal.getUser().getUserId();
+        return ResponseEntity.ok(coachService.takeAttendance(coachId, sessionId, requestDTO));
     }
 
     @PreAuthorize("hasRole('COACH') AND hasAuthority('VIEW_ATTENDANCE')")
-    @GetMapping("/me/classes/{classId}/attendances")
-    public ResponseEntity<List<AttendanceResponseDTO>> getClassAttendances(@AuthenticationPrincipal CustomUserDetails principal, @PathVariable Long classId) {
+    @GetMapping("/me/sessions/{sessionId}/attendances")
+    public ResponseEntity<List<AttendanceResponseDTO>> getSessionAttendances(@AuthenticationPrincipal CustomUserDetails principal, @PathVariable Long sessionId) {
         Long coachId = principal.getUser().getUserId();
-        return ResponseEntity.ok(coachService.getClassAttendance(coachId, classId));
+        return ResponseEntity.ok(coachService.getSessionAttendance(coachId, sessionId));
     }
 
     // coach giao bài tập luyện cho cá nhân hoặc cho lớp
