@@ -103,7 +103,6 @@ class SportClassServiceImplTest {
                 .startClock(LocalTime.of(8, 0))
                 .endClock(LocalTime.of(9, 30))
                 .firstSessionAt(LocalDate.now().plusDays(2).atTime(8, 0))
-                .startTime(LocalDate.now().plusDays(2).atTime(8, 0))
                 .endTime(LocalDate.now().plusDays(32).atTime(9, 30))
                 .build();
     }
