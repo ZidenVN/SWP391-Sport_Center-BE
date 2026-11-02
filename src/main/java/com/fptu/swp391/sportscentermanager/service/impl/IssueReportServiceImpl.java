@@ -49,7 +49,7 @@ public class IssueReportServiceImpl implements IssueReportService {
         String userRole = currentUser.getRole() != null ? currentUser.getRole().getRoleName() : "";
         String categoryRole = dto.getCategory() != null ? dto.getCategory().getRole() : "";
 
-        boolean roleAllowed = userRole.equalsIgnoreCase(categoryRole) || "CENTER_MANAGER".equalsIgnoreCase(userRole);
+        boolean roleAllowed = userRole.equalsIgnoreCase(categoryRole);
         if (!roleAllowed) {
             throw new AppException(ErrorCode.REPORT_CATEGORY_NOT_ALLOWED);
         }

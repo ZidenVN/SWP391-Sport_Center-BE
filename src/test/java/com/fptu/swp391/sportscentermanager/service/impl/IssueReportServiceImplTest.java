@@ -196,23 +196,18 @@ class IssueReportServiceImplTest {
     }
 
     @Test
-    @DisplayName("Tạo báo cáo - Center Manager có quyền gửi bất kỳ danh mục nào")
-    void createReport_managerCanSubmitAnyCategory() {
+    @DisplayName("Tạo báo cáo thất bại - Manager không có thẩm quyền gửi report (chỉ xử lý)")
+    void createReport_managerNotAllowedToSubmit() {
         IssueReportCreateDTO dto = IssueReportCreateDTO.builder()
                 .category(IssueReportCategory.MEMBER_FACILITY)
                 .title("Manager gửi báo cáo")
                 .content("Nội dung manager")
                 .build();
 
-        when(issueReportRepository.save(any(IssueReport.class))).thenAnswer(inv -> {
-            IssueReport r = inv.getArgument(0);
-            r.setReportId(103L);
-            return r;
-        });
-
-        IssueReportResponseDTO res = issueReportService.createReport(managerUser, dto, null);
-        assertNotNull(res);
-        assertEquals(103L, res.getReportId());
+        AppException ex = assertThrows(AppException.class,
+                () -> issueReportService.createReport(managerUser, dto, null));
+        assertEquals(ErrorCode.REPORT_CATEGORY_NOT_ALLOWED, ex.getErrorCode());
+        verify(issueReportRepository, never()).save(any());
     }
 
     @Test

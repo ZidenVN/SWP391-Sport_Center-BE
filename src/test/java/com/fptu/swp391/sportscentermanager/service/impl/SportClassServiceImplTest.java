@@ -10,6 +10,7 @@ import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.*;
 import com.fptu.swp391.sportscentermanager.service.ImageStorageService;
+import com.fptu.swp391.sportscentermanager.service.MembershipPackageService;
 import com.fptu.swp391.sportscentermanager.service.NotificationService;
 import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,6 +53,8 @@ class SportClassServiceImplTest {
     private SubscriptionService subscriptionService;
     @Mock
     private ClassSessionRepository classSessionRepository;
+    @Mock
+    private MembershipPackageService membershipPackageService;
 
     @InjectMocks
     private SportClassServiceImpl sportClassService;
@@ -122,6 +125,8 @@ class SportClassServiceImplTest {
         when(roomRepository.findByRoomIdAndStatusNot(10L, "INACTIVE")).thenReturn(Optional.of(testRoom));
         when(subjectRepository.findBySubjectIdAndStatus(1L, "ACTIVE")).thenReturn(Optional.of(testSubject));
         when(coachRepository.findById(5L)).thenReturn(Optional.of(testCoach));
+        when(coachRepository.findById(5L)).thenReturn(Optional.of(testCoach));
+        when(membershipPackageService.getClassDurations(1L)).thenReturn(List.of(14, 30));
         when(imageStorageService.uploadClassImage(any())).thenReturn("http://img.png");
         when(classSessionRepository.existsRoomConflict(anyLong(), any(), any(), any())).thenReturn(false);
         when(sportClassRepository.existsRoomConflict(anyLong(), any(), any(), anyLong())).thenReturn(false);
@@ -146,10 +151,11 @@ class SportClassServiceImplTest {
     @Test
     @DisplayName("Dừng lớp học khẩn cấp thành công và chuyển trạng thái STOPPED")
     void testStopClass_Success() {
+        testClass.setFirstSessionAt(LocalDateTime.now().minusHours(2)); // Lớp đã bắt đầu
         when(sportClassRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(testClass));
+        when(classRegistrationRepository.findActiveByClassId(100L)).thenReturn(Collections.emptyList());
         when(classSessionRepository.findBySportClass_ClassIdAndStartTimeAfterOrderByStartTimeAsc(eq(100L), any()))
                 .thenReturn(Collections.emptyList());
-        when(classRegistrationRepository.findActiveByClassId(100L)).thenReturn(Collections.emptyList());
         when(sportClassRepository.save(any(SportClass.class))).thenAnswer(i -> i.getArgument(0));
 
         SportClassResponseDTO res = sportClassService.stopClass(100L, "Hỏng hệ thống điện trung tâm");
@@ -157,6 +163,80 @@ class SportClassServiceImplTest {
         assertNotNull(res);
         assertEquals("STOPPED", res.getStatus());
         verify(sportClassRepository).save(testClass);
+    }
+
+    @Test
+    @DisplayName("Dừng lớp thất bại khi lớp chưa bắt đầu (phải dùng chức năng Huỷ lớp)")
+    void testStopClass_CannotStopBeforeStarted() {
+        testClass.setFirstSessionAt(LocalDateTime.now().plusDays(2)); // Chưa bắt đầu
+        when(sportClassRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(testClass));
+
+        AppException ex = assertThrows(AppException.class,
+                () -> sportClassService.stopClass(100L, "Lý do"));
+        assertEquals(ErrorCode.CLASS_STOP_NOT_STARTED, ex.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("Huỷ lớp thất bại khi lớp đã bắt đầu (phải dùng chức năng Dừng lớp)")
+    void testCancelClass_CannotCancelAfterStarted() {
+        testClass.setFirstSessionAt(LocalDateTime.now().minusHours(1)); // Đã bắt đầu
+        when(sportClassRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(testClass));
+
+        AppException ex = assertThrows(AppException.class,
+                () -> sportClassService.cancelClass(100L, "Lý do huỷ"));
+        assertEquals(ErrorCode.CLASS_CANCEL_STARTED, ex.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("Tạo lớp thất bại khi thời hạn lớp không có trong gói đang bán")
+    void testCreateClass_DurationNotSold() {
+        LocalDate startDate = LocalDate.now().plusDays(1);
+        SportClassRequestDTO req = SportClassRequestDTO.builder()
+                .roomId(10L)
+                .subjectId(1L)
+                .coachId(5L)
+                .maxCapacity(25)
+                .startDate(startDate)
+                .durationDays(45) // Không có trong gói 14, 30
+                .daysOfWeek("MON,WED,FRI")
+                .startClock(LocalTime.of(8, 0))
+                .endClock(LocalTime.of(9, 30))
+                .build();
+
+        when(roomRepository.findByRoomIdAndStatusNot(10L, "INACTIVE")).thenReturn(Optional.of(testRoom));
+        when(subjectRepository.findBySubjectIdAndStatus(1L, "ACTIVE")).thenReturn(Optional.of(testSubject));
+        when(coachRepository.findById(5L)).thenReturn(Optional.of(testCoach));
+        when(coachRepository.findById(5L)).thenReturn(Optional.of(testCoach));
+        when(membershipPackageService.getClassDurations(1L)).thenReturn(List.of(14, 30));
+
+        AppException ex = assertThrows(AppException.class,
+                () -> sportClassService.createClass(req, null));
+        assertEquals(ErrorCode.CLASS_DURATION_NOT_SOLD, ex.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("Tạo lớp thất bại khi ngày bắt đầu là hôm nay hoặc trong quá khứ")
+    void testCreateClass_StartDateNotFuture() {
+        LocalDate today = LocalDate.now();
+        SportClassRequestDTO req = SportClassRequestDTO.builder()
+                .roomId(10L)
+                .subjectId(1L)
+                .coachId(5L)
+                .maxCapacity(25)
+                .startDate(today) // Hôm nay -> Không hợp lệ
+                .durationDays(30)
+                .daysOfWeek("MON,WED,FRI")
+                .startClock(LocalTime.of(8, 0))
+                .endClock(LocalTime.of(9, 30))
+                .build();
+
+        when(roomRepository.findByRoomIdAndStatusNot(10L, "INACTIVE")).thenReturn(Optional.of(testRoom));
+        when(subjectRepository.findBySubjectIdAndStatus(1L, "ACTIVE")).thenReturn(Optional.of(testSubject));
+        when(coachRepository.findById(5L)).thenReturn(Optional.of(testCoach));
+
+        AppException ex = assertThrows(AppException.class,
+                () -> sportClassService.createClass(req, null));
+        assertEquals(ErrorCode.CLASS_START_DATE_INVALID, ex.getErrorCode());
     }
 
     @Test
