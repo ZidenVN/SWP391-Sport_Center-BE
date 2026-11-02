@@ -7,6 +7,7 @@ import com.fptu.swp391.sportscentermanager.exception.AppException;
 
 public class CoachSubjectGuard {
 
+    // Phải gọi trong @Transactional vì Coach.subjects là LAZY
     public static void requireTeaches(Coach coach, Subject subject) {
         if (coach == null) {
             throw new AppException(ErrorCode.COACH_NOT_FOUND);
@@ -14,29 +15,8 @@ public class CoachSubjectGuard {
         if (subject == null) {
             throw new AppException(ErrorCode.SUBJECT_NOT_FOUND);
         }
-
-        boolean matches = false;
-
-        if (coach.getSpeciality() != null && !coach.getSpeciality().isBlank()) {
-            String spec = coach.getSpeciality().trim().toLowerCase();
-            String subName = subject.getSubjectName() != null ? subject.getSubjectName().trim().toLowerCase() : "";
-
-            if (spec.contains(subName) || subName.contains(spec)
-                    || "all".equalsIgnoreCase(spec)
-                    || "general fitness".equalsIgnoreCase(spec)
-                    || "fitness".equalsIgnoreCase(spec)) {
-                matches = true;
-            } else {
-                String[] tokens = spec.split("[,;/|\\s]+");
-                for (String t : tokens) {
-                    if (t.length() >= 3 && subName.contains(t)) {
-                        matches = true;
-                        break;
-                    }
-                }
-            }
-        }
-
+        boolean matches = coach.getSubjects() != null && coach.getSubjects().stream()
+            .anyMatch(s -> s.getSubjectId().equals(subject.getSubjectId()));
         if (!matches) {
             throw new AppException(ErrorCode.COACH_NOT_TEACH_SUBJECT);
         }

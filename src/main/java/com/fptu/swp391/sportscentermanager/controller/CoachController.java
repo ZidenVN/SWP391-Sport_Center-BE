@@ -44,8 +44,10 @@ public class CoachController {
 
     @PreAuthorize("hasAuthority('VIEW_USER')")
     @GetMapping
-    public ResponseEntity<List<CoachResponseDTO>> getAllCoaches() {
-        return ResponseEntity.ok(coachService.getAllCoaches());
+    public ResponseEntity<List<CoachResponseDTO>> getAllCoaches(@RequestParam(required = false) Long subjectId) {
+        return ResponseEntity.ok(subjectId == null
+            ? coachService.getAllCoaches()
+            : coachService.getCoachesBySubject(subjectId));
     }
 
     @LogAudit(actionType = "UPDATE", targetEntity = "Coach")

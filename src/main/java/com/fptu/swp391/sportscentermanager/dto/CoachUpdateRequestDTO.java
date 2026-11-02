@@ -4,7 +4,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
-
+import jakarta.validation.constraints.NotEmpty;
+import java.util.Set;
 /** BE-27: Manager sửa thông tin HLV. Không nhận password để tránh reset mật khẩu tùy tiện. */
 @Getter @Setter
 @Builder @NoArgsConstructor @AllArgsConstructor
@@ -25,5 +26,6 @@ public class CoachUpdateRequestDTO {
     @Email(message = "Email không đúng định dạng")
     private String email;
 
-    private String specialty;
+    @NotEmpty(message = "HLV phải có ít nhất 1 môn chuyên môn")
+    private Set<Long> subjectIds;
 }

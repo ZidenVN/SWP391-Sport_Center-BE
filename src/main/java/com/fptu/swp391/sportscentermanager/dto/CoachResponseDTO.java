@@ -17,6 +17,7 @@ public class CoachResponseDTO {
     private String phone;
     private String gender;
     private String speciality;
+    private java.util.List<CoachSubjectDTO> subjects;
     // BE-27: ACTIVE | INACTIVE để FE hiện nút khóa/mở
     private String status;
 }

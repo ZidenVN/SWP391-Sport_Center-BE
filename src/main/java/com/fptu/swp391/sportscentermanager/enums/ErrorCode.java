@@ -74,6 +74,7 @@ public enum ErrorCode {
     INVOICE_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "ERR_INVOICE_001", "Chỉ xuất hóa đơn cho giao dịch đã thanh toán!"),
     RECEPTIONIST_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_RECEPTIONIST_404", "Lễ tân không tồn tại!"),
     COACH_HAS_UPCOMING_CLASSES(HttpStatus.CONFLICT, "ERR_COACH_409", "Huấn luyện viên đang có lớp sắp dạy, hãy đổi HLV cho các lớp đó trước khi khóa!"),
+    COACH_SUBJECT_IN_USE(HttpStatus.CONFLICT, "ERR_COACH_409_SUBJECT", "HLV còn lớp chưa kết thúc của môn này, hãy đổi HLV cho lớp trước!"),
     WRONG_CURRENT_PASSWORD(HttpStatus.BAD_REQUEST, "ERR_AUTH_001", "Mật khẩu hiện tại không đúng!"),
     NEW_PASSWORD_SAME_AS_OLD(HttpStatus.BAD_REQUEST, "ERR_AUTH_002", "Mật khẩu mới phải khác mật khẩu hiện tại!"),
     CANNOT_CHANGE_OWN_STATUS(HttpStatus.BAD_REQUEST, "ERR_USER_003", "Không thể tự khoá hoặc mở khoá tài khoản của chính mình!"),

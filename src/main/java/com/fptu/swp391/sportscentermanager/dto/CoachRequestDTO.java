@@ -5,7 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.*;
-
+import jakarta.validation.constraints.NotEmpty;
+import java.util.Set;
 @Getter @Setter
 @Builder @NoArgsConstructor @AllArgsConstructor
 public class CoachRequestDTO {
@@ -30,5 +31,6 @@ public class CoachRequestDTO {
     @Size(min = 6, max = 64)
     private String password;
 
-    private String specialty;
+    @NotEmpty(message = "HLV phải có ít nhất 1 môn chuyên môn")
+    private Set<Long> subjectIds;
 }
