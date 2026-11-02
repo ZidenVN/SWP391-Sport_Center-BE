@@ -68,7 +68,7 @@ class ClassSessionServiceImplTest {
                 .build();
 
         testCoach = Coach.builder()
-                .speciality("Yoga")
+                .subjects(new java.util.HashSet<>(java.util.Set.of(testSubject)))
                 .status(UserStatus.ACTIVE)
                 .build();
         testCoach.setUserId(10L);
@@ -76,7 +76,7 @@ class ClassSessionServiceImplTest {
         testCoach.setLastName("Nguyễn");
 
         substituteCoach = Coach.builder()
-                .speciality("Yoga, Pilates")
+                .subjects(new java.util.HashSet<>(java.util.Set.of(testSubject)))
                 .status(UserStatus.ACTIVE)
                 .build();
         substituteCoach.setUserId(20L);

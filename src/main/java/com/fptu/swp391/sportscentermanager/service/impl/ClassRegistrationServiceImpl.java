@@ -200,8 +200,8 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
             // Lớp bị dừng: chuyển lớp không tính lượt
             countTurn = false;
         } else if (REGISTERED.equals(current.getStatus())) {
-            // Hội viên còn tự đổi được thì lễ tân đổi giúp không tính lượt; quá mốc 12 tiếng thì tính 1 lượt
-            countTurn = !canSelfSwitch(current.getSportClass(), now);
+            // Chỉ tính lượt khi lớp đã bắt đầu; trước đó lễ tân đổi giúp không tính lượt
+            countTurn = hasStarted(current.getSportClass(), now);
         } else {
             throw new AppException(ErrorCode.REGISTRATION_NOT_ACTIVE);
         }

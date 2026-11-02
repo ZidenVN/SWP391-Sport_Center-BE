@@ -7,54 +7,51 @@ import com.fptu.swp391.sportscentermanager.exception.AppException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class CoachSubjectGuardTest {
 
-    @Test
-    @DisplayName("Chấp nhận khi HLV có chuyên môn khớp tên môn học")
-    void testRequireTeaches_ExactMatch() {
-        Coach coach = Coach.builder().speciality("Yoga").build();
-        Subject subject = Subject.builder().subjectName("Yoga").build();
-
-        assertDoesNotThrow(() -> CoachSubjectGuard.requireTeaches(coach, subject));
+    private Subject subject(long id, String name) {
+        return Subject.builder().subjectId(id).subjectName(name).build();
     }
 
     @Test
-    @DisplayName("Chấp nhận khi chuyên môn HLV chứa môn học dạng danh sách phẩy")
-    void testRequireTeaches_CommaSeparated() {
-        Coach coach = Coach.builder().speciality("Boxing, Bơi lội, Yoga").build();
-        Subject subject = Subject.builder().subjectName("Yoga").build();
+    @DisplayName("Chấp nhận khi môn nằm trong danh sách chuyên môn của HLV")
+    void testRequireTeaches_SubjectInList() {
+        Subject yoga = subject(1L, "Yoga");
+        Coach coach = Coach.builder().subjects(new HashSet<>(Set.of(yoga, subject(2L, "Boxing")))).build();
 
-        assertDoesNotThrow(() -> CoachSubjectGuard.requireTeaches(coach, subject));
+        assertDoesNotThrow(() -> CoachSubjectGuard.requireTeaches(coach, yoga));
     }
 
     @Test
-    @DisplayName("Chấp nhận khi chuyên môn HLV là tổng quát (All / Fitness)")
-    void testRequireTeaches_GeneralFitness() {
-        Coach coach = Coach.builder().speciality("General Fitness").build();
-        Subject subject = Subject.builder().subjectName("Gym").build();
-
-        assertDoesNotThrow(() -> CoachSubjectGuard.requireTeaches(coach, subject));
-    }
-
-    @Test
-    @DisplayName("Ném COACH_NOT_TEACH_SUBJECT khi chuyên môn không khớp môn học")
+    @DisplayName("Ném COACH_NOT_TEACH_SUBJECT khi môn không nằm trong chuyên môn")
     void testRequireTeaches_Mismatch_ThrowsException() {
-        Coach coach = Coach.builder().speciality("Bơi lội").build();
-        Subject subject = Subject.builder().subjectName("Boxing").build();
+        Coach coach = Coach.builder().subjects(new HashSet<>(Set.of(subject(1L, "Yoga")))).build();
 
         AppException ex = assertThrows(AppException.class,
-                () -> CoachSubjectGuard.requireTeaches(coach, subject));
+            () -> CoachSubjectGuard.requireTeaches(coach, subject(2L, "Boxing")));
+        assertEquals(ErrorCode.COACH_NOT_TEACH_SUBJECT, ex.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("HLV 'General Fitness' cũ không còn dạy được mọi môn")
+    void testRequireTeaches_LegacySpecialityIgnored() {
+        Coach coach = Coach.builder().speciality("General Fitness").build();
+
+        AppException ex = assertThrows(AppException.class,
+            () -> CoachSubjectGuard.requireTeaches(coach, subject(3L, "Gym")));
         assertEquals(ErrorCode.COACH_NOT_TEACH_SUBJECT, ex.getErrorCode());
     }
 
     @Test
     @DisplayName("Ném COACH_NOT_FOUND khi coach là null")
     void testRequireTeaches_NullCoach() {
-        Subject subject = Subject.builder().subjectName("Yoga").build();
         AppException ex = assertThrows(AppException.class,
-                () -> CoachSubjectGuard.requireTeaches(null, subject));
+            () -> CoachSubjectGuard.requireTeaches(null, subject(1L, "Yoga")));
         assertEquals(ErrorCode.COACH_NOT_FOUND, ex.getErrorCode());
     }
 }

@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import com.fptu.swp391.sportscentermanager.enums.SessionStatus;
 import java.time.LocalDate;
+import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class CoachServiceImpl implements CoachService {
@@ -28,6 +29,7 @@ public class CoachServiceImpl implements CoachService {
     private final ClassAttendanceRepository classAttendanceRepository;
     private final ClassRegistrationRepository classRegistrationRepository;
     private final CoachScheduleRepository coachScheduleRepository;
+    private final SubjectRepository subjectRepository;
     @Value("${app.attendance.open-minutes-before}")
     private long attendanceOpenMinutesBefore;
 
@@ -90,6 +92,23 @@ public class CoachServiceImpl implements CoachService {
         return sportClass;
     }
 
+    // Tải các môn ACTIVE theo id; id nào không có thì báo SUBJECT_NOT_FOUND
+    private Set<Subject> loadActiveSubjects(Set<Long> subjectIds) {
+        if (subjectIds == null || subjectIds.isEmpty()) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+        Set<Subject> result = new HashSet<>();
+        for (Long subjectId : subjectIds) {
+            result.add(subjectRepository.findBySubjectIdAndStatus(subjectId, "ACTIVE")
+                .orElseThrow(() -> new AppException(ErrorCode.SUBJECT_NOT_FOUND)));
+        }
+        return result;
+    }
+
+    // Cột speciality cũ vẫn NOT NULL trong DB, nên ghi tên các môn vào đó
+    private String joinNames(Set<Subject> subjects) {
+        return subjects.stream().map(Subject::getSubjectName).sorted().collect(Collectors.joining(", "));
+    }
 
     private CoachResponseDTO toCoachResponse(Coach c) {
         return CoachResponseDTO.builder()
@@ -100,6 +119,9 @@ public class CoachServiceImpl implements CoachService {
             .email(c.getEmail())
             .phone(c.getPhone())
             .speciality(c.getSpeciality())
+            .subjects(c.getSubjects().stream()
+                .map(s -> CoachSubjectDTO.builder().subjectId(s.getSubjectId()).subjectName(s.getSubjectName()).build())
+                .toList())
             .status(c.getStatus() != null ? c.getStatus().name() : null)
             .build();
     }
@@ -132,6 +154,7 @@ public class CoachServiceImpl implements CoachService {
         if (coachRole == null) {
             throw new AppException(ErrorCode.ROLE_NOT_FOUND);
         }
+        Set<Subject> subjects = loadActiveSubjects(requestDTO.getSubjectIds());
 
         Coach newCoach = Coach.builder()
             .firstName(requestDTO.getFirstName())
@@ -142,7 +165,8 @@ public class CoachServiceImpl implements CoachService {
             .passwordHash(passwordEncoder.encode(requestDTO.getPassword()))
             .status(UserStatus.ACTIVE)
             .role(coachRole)
-            .speciality(requestDTO.getSpecialty())
+            .speciality(joinNames(subjects))
+            .subjects(subjects)
             .build();
 
         Coach savedCoach = coachRepository.save(newCoach);
@@ -164,6 +188,15 @@ public class CoachServiceImpl implements CoachService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<CoachResponseDTO> getCoachesBySubject(Long subjectId) {
+        return coachRepository.findDistinctBySubjects_SubjectId(subjectId).stream()
+            .filter(c -> c.getStatus() == UserStatus.ACTIVE)
+            .map(this::toCoachResponse)
+            .toList();
+    }
+
+    @Override
     @Transactional
     public CoachResponseDTO updateCoach(Long id, CoachUpdateRequestDTO requestDTO) {
         Coach coach = coachRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
@@ -180,7 +213,18 @@ public class CoachServiceImpl implements CoachService {
         coach.setGender(requestDTO.getGender());
         coach.setPhone(requestDTO.getPhone());
         coach.setEmail(requestDTO.getEmail());
-        coach.setSpeciality(requestDTO.getSpecialty());
+        Set<Subject> newSubjects = loadActiveSubjects(requestDTO.getSubjectIds());
+        // Môn bị bỏ mà HLV còn lớp chưa kết thúc của môn đó thì chặn
+        Set<Long> removedIds = coach.getSubjects().stream()
+            .map(Subject::getSubjectId)
+            .filter(sid -> newSubjects.stream().noneMatch(s -> s.getSubjectId().equals(sid)))
+            .collect(Collectors.toSet());
+        if (!removedIds.isEmpty() && coachRepository.hasOpeningClassOfSubjects(id, removedIds)) {
+            throw new AppException(ErrorCode.COACH_SUBJECT_IN_USE);
+        }
+        coach.getSubjects().clear();
+        coach.getSubjects().addAll(newSubjects);
+        coach.setSpeciality(joinNames(newSubjects));
 
         Coach savedCoach = coachRepository.save(coach);
 

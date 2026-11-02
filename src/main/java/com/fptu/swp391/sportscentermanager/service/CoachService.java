@@ -11,6 +11,7 @@ public interface CoachService {
     CoachResponseDTO createCoach(CoachRequestDTO requestDTO);
     List<CoachResponseDTO> getAllCoaches();
     CoachResponseDTO getCoachById(Long id);
+    List<CoachResponseDTO> getCoachesBySubject(Long subjectId);
     CoachResponseDTO updateCoach(Long id, CoachUpdateRequestDTO requestDTO);
     void toggleCoachStatus(Long id);
 
