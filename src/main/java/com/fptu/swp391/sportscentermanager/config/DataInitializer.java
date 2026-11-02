@@ -186,6 +186,7 @@ public class DataInitializer implements CommandLineRunner {
             return;
         }
 
+        List<Subject> activeSubjects = subjectRepository.findByStatus("ACTIVE");
         userRepository.save(Coach.builder()
             .firstName("Default")
             .lastName("Coach")
@@ -196,8 +197,9 @@ public class DataInitializer implements CommandLineRunner {
             .status(UserStatus.ACTIVE)
             .role(coachRole)
             .speciality("General Fitness")
+            .subjects(new HashSet<>(activeSubjects))
             .build());
-        System.out.println("Đã tạo tài khoản HLV mặc định: " + email);
+        System.out.println("Đã tạo tài khoản HLV mặc định: " + email + " với " + activeSubjects.size() + " môn chuyên môn");
     }
 
     private void assignSubjectToDefaultCoach(){

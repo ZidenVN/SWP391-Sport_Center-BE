@@ -24,7 +24,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -49,7 +48,6 @@ public class AuthController {
 
     @Value("${google.client-id}")
     private String googleClientId;
-
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody AuthRequest request) {
@@ -83,8 +81,7 @@ public class AuthController {
 
     @LogAudit(actionType = "REGISTER_ACCOUNT", targetEntity = "User")
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequestDTO requestDTO
-    ) {
+    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequestDTO requestDTO) {
         return ResponseEntity.ok(userService.registerUser(requestDTO));
     }
 
