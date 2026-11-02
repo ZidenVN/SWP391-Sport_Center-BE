@@ -149,7 +149,9 @@ public enum ErrorCode {
     REPORT_DESK_ACCESS_DENIED(HttpStatus.FORBIDDEN, "ERR_REPORT_403_DESK", "Lễ tân chỉ có quyền xử lý các sự cố thuộc bàn Lễ tân (RECEPTION)!"),
     REPORT_ALREADY_CLOSED(HttpStatus.BAD_REQUEST, "ERR_REPORT_400_CLOSED", "Báo cáo sự cố đã được xử lý xong hoặc đã huỷ, không thể chỉnh sửa!"),
     REPORT_CANNOT_ESCALATE(HttpStatus.BAD_REQUEST, "ERR_REPORT_400_ESCALATE", "Chỉ được chuyển lên Quản lý các báo cáo sự cố đang ở bàn Lễ tân và chưa hoàn thành!"),
-    REPORT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "ERR_REPORT_403_ACCESS", "Bạn không có quyền truy cập báo cáo sự cố này!")
+    REPORT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "ERR_REPORT_403_ACCESS", "Bạn không có quyền truy cập báo cáo sự cố này!"),
+    REPORT_INVALID_STATUS(HttpStatus.BAD_REQUEST, "ERR_REPORT_400_STATUS", "Người xử lý chỉ được chuyển báo cáo sang Đang xử lý, Đã xử lý hoặc Từ chối!"),
+    REPORT_RESPONSE_REQUIRED(HttpStatus.BAD_REQUEST, "ERR_REPORT_400_RESPONSE", "Cần nhập phản hồi cho người gửi khi kết thúc báo cáo!")
 
     ;
 

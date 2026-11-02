@@ -21,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -307,7 +308,7 @@ class IssueReportServiceImplTest {
                 .build();
 
         Page<IssueReport> page = new PageImpl<>(List.of(r));
-        when(issueReportRepository.searchReports(any(), any(), any(), any(), any(), any(), any(Pageable.class)))
+        when(issueReportRepository.searchReports(any(), eq(false), any(), any(), any(), any(), any(), any(Pageable.class)))
                 .thenReturn(page);
 
         Page<IssueReportResponseDTO> result = issueReportService.searchReports(
@@ -321,14 +322,15 @@ class IssueReportServiceImplTest {
     @DisplayName("Tìm kiếm báo cáo - Lễ tân chỉ được tìm kiếm ở bàn RECEPTION")
     void searchReports_success_receptionist() {
         Page<IssueReport> page = new PageImpl<>(Collections.emptyList());
-        when(issueReportRepository.searchReports(eq(IssueReportDesk.RECEPTION), any(), any(), any(), any(), any(), any(Pageable.class)))
+        when(issueReportRepository.searchReports(eq(IssueReportDesk.RECEPTION), eq(true), any(), any(), any(), any(), any(), any(Pageable.class)))
                 .thenReturn(page);
 
         Page<IssueReportResponseDTO> result = issueReportService.searchReports(
                 receptionistUser, null, null, null, null, null, null, 0, 10);
 
         assertNotNull(result);
-        verify(issueReportRepository).searchReports(eq(IssueReportDesk.RECEPTION), any(), any(), any(), any(), any(), any(Pageable.class));
+        // lễ tân: bàn RECEPTION kèm các báo cáo mình đã chuyển lên (includeEscalated = true)
+        verify(issueReportRepository).searchReports(eq(IssueReportDesk.RECEPTION), eq(true), any(), any(), any(), any(), any(), any(Pageable.class));
     }
 
     @Test
@@ -358,6 +360,7 @@ class IssueReportServiceImplTest {
         IssueReport r = IssueReport.builder()
                 .reportId(500L)
                 .reporter(memberUser)
+                .category(IssueReportCategory.MEMBER_FACILITY)
                 .status(IssueReportStatus.OPEN)
                 .build();
 
@@ -423,8 +426,139 @@ class IssueReportServiceImplTest {
         assertEquals(IssueReportStatus.RESOLVED, res.getStatus());
         assertEquals("Đã cử kỹ thuật sửa chữa xong vòi nước.", res.getResponse());
         assertEquals(30L, res.getHandledById());
+        assertNotNull(res.getHandledAt());
 
         verify(notificationService).notifyUsers(eq(List.of(memberUser)), anyString(), anyString(), eq("ISSUE_REPORT_UPDATED"), eq(receptionistUser));
+    }
+
+    @Test
+    @DisplayName("Xử lý báo cáo thất bại - người xử lý không được chuyển sang CANCELLED hoặc OPEN")
+    void handleReport_invalidStatus_rejected() {
+        for (IssueReportStatus bad : List.of(IssueReportStatus.CANCELLED, IssueReportStatus.OPEN)) {
+            IssueReport r = IssueReport.builder()
+                    .reportId(603L)
+                    .reporter(memberUser)
+                    .desk(IssueReportDesk.RECEPTION)
+                    .status(IssueReportStatus.IN_PROGRESS)
+                    .build();
+            when(issueReportRepository.findById(603L)).thenReturn(Optional.of(r));
+
+            AppException ex = assertThrows(AppException.class, () -> issueReportService.handleReport(603L, receptionistUser,
+                    IssueReportHandleDTO.builder().status(bad).build()));
+            assertEquals(ErrorCode.REPORT_INVALID_STATUS, ex.getErrorCode());
+            assertEquals(IssueReportStatus.IN_PROGRESS, r.getStatus());
+        }
+    }
+
+    @Test
+    @DisplayName("Người báo cáo xem báo cáo đã chuyển cấp: không thấy người chuyển và lý do chuyển")
+    void reporterView_hidesEscalation() {
+        IssueReport r = IssueReport.builder()
+                .reportId(605L)
+                .reporter(memberUser)
+                .category(IssueReportCategory.MEMBER_FACILITY)
+                .desk(IssueReportDesk.MANAGER)
+                .status(IssueReportStatus.OPEN)
+                .escalatedBy(receptionistUser)
+                .escalateReason("Khách hay phàn nàn, cần quản lý gọi lại")
+                .build();
+        when(issueReportRepository.findById(605L)).thenReturn(Optional.of(r));
+
+        IssueReportResponseDTO asMember = issueReportService.getReportById(605L, memberUser);
+        IssueReportResponseDTO asManager = issueReportService.getReportById(605L, managerUser);
+
+        assertNull(asMember.getEscalateReason());
+        assertNull(asMember.getEscalatedById());
+        // hội viên thấy nơi nhận ban đầu (lễ tân), không thấy báo cáo đã sang bàn quản lý
+        assertEquals(IssueReportDesk.RECEPTION, asMember.getDesk());
+        assertEquals(IssueReportDesk.MANAGER, asManager.getDesk());
+        assertEquals("Khách hay phàn nàn, cần quản lý gọi lại", asManager.getEscalateReason());
+        assertEquals(receptionistUser.getUserId(), asManager.getEscalatedById());
+    }
+
+    @Test
+    @DisplayName("Đóng báo cáo (Đã xử lý / Từ chối) mà không có phản hồi: bị chặn")
+    void handleReport_closingWithoutResponse_rejected() {
+        for (IssueReportStatus closing : List.of(IssueReportStatus.RESOLVED, IssueReportStatus.REJECTED)) {
+            IssueReport r = IssueReport.builder()
+                    .reportId(606L)
+                    .reporter(memberUser)
+                    .desk(IssueReportDesk.RECEPTION)
+                    .status(IssueReportStatus.IN_PROGRESS)
+                    .response("Lễ tân đã ghi nhận")
+                    .build();
+            when(issueReportRepository.findById(606L)).thenReturn(Optional.of(r));
+
+            AppException ex = assertThrows(AppException.class, () -> issueReportService.handleReport(606L, managerUser,
+                    IssueReportHandleDTO.builder().status(closing).response("  ").build()));
+            assertEquals(ErrorCode.REPORT_RESPONSE_REQUIRED, ex.getErrorCode());
+            assertEquals(IssueReportStatus.IN_PROGRESS, r.getStatus());
+        }
+    }
+
+    @Test
+    @DisplayName("Thông báo gửi người báo cáo dùng nhãn tiếng Việt, không dùng mã trạng thái")
+    void handleReport_notificationUsesVietnameseLabel() {
+        IssueReport r = IssueReport.builder()
+                .reportId(607L)
+                .reporter(memberUser)
+                .desk(IssueReportDesk.RECEPTION)
+                .status(IssueReportStatus.IN_PROGRESS)
+                .title("Vòi nước rò")
+                .build();
+        when(issueReportRepository.findById(607L)).thenReturn(Optional.of(r));
+        when(issueReportRepository.save(any(IssueReport.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        issueReportService.handleReport(607L, receptionistUser,
+                IssueReportHandleDTO.builder().status(IssueReportStatus.RESOLVED).response("Đã thay vòi mới").build());
+
+        ArgumentCaptor<String> content = ArgumentCaptor.forClass(String.class);
+        verify(notificationService).notifyUsers(eq(List.of(memberUser)), anyString(), content.capture(), eq("ISSUE_REPORT_UPDATED"), eq(receptionistUser));
+        assertTrue(content.getValue().contains("Đã xử lý"));
+        assertFalse(content.getValue().contains("RESOLVED"));
+    }
+
+    @Test
+    @DisplayName("Lễ tân xem được báo cáo mình đã chuyển lên, nhưng không xử lý được")
+    void receptionist_canViewButNotHandleEscalatedReport() {
+        IssueReport r = IssueReport.builder()
+                .reportId(608L)
+                .reporter(memberUser)
+                .category(IssueReportCategory.MEMBER_FACILITY)
+                .desk(IssueReportDesk.MANAGER)
+                .status(IssueReportStatus.OPEN)
+                .escalatedBy(receptionistUser)
+                .build();
+        when(issueReportRepository.findById(608L)).thenReturn(Optional.of(r));
+
+        IssueReportResponseDTO seen = issueReportService.getReportById(608L, receptionistUser);
+        assertEquals(608L, seen.getReportId());
+
+        AppException ex = assertThrows(AppException.class, () -> issueReportService.handleReport(608L, receptionistUser,
+                IssueReportHandleDTO.builder().status(IssueReportStatus.IN_PROGRESS).build()));
+        assertEquals(ErrorCode.REPORT_DESK_ACCESS_DENIED, ex.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("Lễ tân chuyển lên, Quản lý xử lý: giữ cả người chuyển lẫn người xử lý")
+    void escalateThenManagerResolves_keepsBothPeople() {
+        IssueReport r = IssueReport.builder()
+                .reportId(604L)
+                .reporter(memberUser)
+                .desk(IssueReportDesk.RECEPTION)
+                .status(IssueReportStatus.OPEN)
+                .title("Máy chạy bộ hỏng")
+                .build();
+        when(issueReportRepository.findById(604L)).thenReturn(Optional.of(r));
+        when(issueReportRepository.save(any(IssueReport.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        issueReportService.escalateReport(604L, receptionistUser, IssueReportEscalateDTO.builder().reason("Cần thay máy mới").build());
+        IssueReportResponseDTO res = issueReportService.handleReport(604L, managerUser,
+                IssueReportHandleDTO.builder().status(IssueReportStatus.RESOLVED).response("Đã đặt máy mới").build());
+
+        assertEquals(receptionistUser.getUserId(), res.getEscalatedById());
+        assertEquals(managerUser.getUserId(), res.getHandledById());
+        assertEquals(IssueReportStatus.RESOLVED, res.getStatus());
     }
 
     @Test
@@ -490,9 +624,16 @@ class IssueReportServiceImplTest {
         IssueReportResponseDTO res = issueReportService.escalateReport(700L, receptionistUser, dto);
 
         assertEquals(IssueReportDesk.MANAGER, res.getDesk());
-        assertTrue(res.getResponse().contains("Cần phê duyệt từ cấp Quản lý"));
+        // lý do chuyển là ghi chú nội bộ, không lọt vào phản hồi gửi người báo cáo
+        assertEquals("Cần phê duyệt từ cấp Quản lý", res.getEscalateReason());
+        assertNull(res.getResponse());
+        // chuyển cấp không phải là xử lý: lưu người chuyển riêng, chưa có người xử lý
+        assertEquals(receptionistUser.getUserId(), res.getEscalatedById());
+        assertNotNull(res.getEscalatedAt());
+        assertNull(res.getHandledById());
         verify(notificationService).notifyUsers(eq(List.of(managerUser)), anyString(), anyString(), eq("ISSUE_REPORT_ESCALATED"), eq(receptionistUser));
-        verify(notificationService).notifyUsers(eq(List.of(memberUser)), anyString(), anyString(), eq("ISSUE_REPORT_ESCALATED"), eq(receptionistUser));
+        // chuyển cấp là việc nội bộ: không báo cho hội viên
+        verify(notificationService, never()).notifyUsers(eq(List.of(memberUser)), anyString(), anyString(), anyString(), any());
     }
 
     @Test

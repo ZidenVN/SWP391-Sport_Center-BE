@@ -116,7 +116,7 @@ public class IssueReportController {
     @PatchMapping("/{id}/escalate")
     public ResponseEntity<IssueReportResponseDTO> escalateReport(
             @PathVariable Long id,
-            @RequestBody(required = false) IssueReportEscalateDTO dto,
+            @Valid @RequestBody(required = false) IssueReportEscalateDTO dto,
             @AuthenticationPrincipal CustomUserDetails principal) {
         return ResponseEntity.ok(issueReportService.escalateReport(id, principal.getUser(), dto));
     }
