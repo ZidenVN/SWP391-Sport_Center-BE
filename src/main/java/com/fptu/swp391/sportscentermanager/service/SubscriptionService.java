@@ -3,13 +3,13 @@ package com.fptu.swp391.sportscentermanager.service;
 import com.fptu.swp391.sportscentermanager.dto.PurchasePreviewResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.SubscriptionRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.SubscriptionResponseDTO;
-
-import java.time.LocalDate;
-import java.util.List;
-import com.fptu.swp391.sportscentermanager.entity.ClassRegistration;
 import com.fptu.swp391.sportscentermanager.entity.MembershipPackage;
 import com.fptu.swp391.sportscentermanager.entity.Subscription;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+
 public interface SubscriptionService {
     SubscriptionResponseDTO subscribe(Long memberId, SubscriptionRequestDTO dto);
     List<SubscriptionResponseDTO> getSubscriptions(Long memberId);
@@ -26,10 +26,6 @@ public interface SubscriptionService {
 
     // BR-SUB-08: xem trước ngày dự kiến và cảnh báo gói thừa trước khi thanh toán
     PurchasePreviewResponseDTO previewPurchase(Long memberId, Long packageId);
-
-    // BR-CAN-01, BR-CAN-04: hoàn 1 buổi vào đúng gói đã trừ cho đăng ký này
-    @Deprecated
-    void refundSession(ClassRegistration registration);
 
     // BR-SUB-07: đã có gói ACTIVE cùng loại + cùng tập môn hết hạn sau gói này (đã gia hạn)
     boolean hasRenewal(Subscription subscription);

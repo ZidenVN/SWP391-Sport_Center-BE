@@ -91,8 +91,7 @@ public class MembershipPackageServiceImp implements MembershipPackageService {
     @Transactional
     public void deletePackage(Long id) {
         MembershipPackage existingPackage = getPackageById(id);
-        // Chỉ chuyển INACTIVE, không gọi delete() để Hibernate không xoá dòng package_subjects
-        // (subscription đã mua vẫn cần biết gói áp dụng môn nào, BR-PKG-07)
+        // Chỉ chuyển INACTIVE: subscription đã mua vẫn cần đọc được gói.
         existingPackage.setStatus("INACTIVE");
         packageRepository.save(existingPackage);
     }

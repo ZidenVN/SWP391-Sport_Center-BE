@@ -18,6 +18,5 @@ public class PurchaseWarningDTO {
     private LocalDateTime endDate;
     private Long daysLeft;
     private String status;
-    private Integer remainingSessions; // null = không giới hạn hoặc gói FREE
     private String message;
 }

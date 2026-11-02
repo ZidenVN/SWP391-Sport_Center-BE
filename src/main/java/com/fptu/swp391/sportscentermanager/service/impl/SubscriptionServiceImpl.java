@@ -4,7 +4,10 @@ import com.fptu.swp391.sportscentermanager.dto.PurchasePreviewResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.PurchaseWarningDTO;
 import com.fptu.swp391.sportscentermanager.dto.SubscriptionRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.SubscriptionResponseDTO;
-import com.fptu.swp391.sportscentermanager.entity.*;
+import com.fptu.swp391.sportscentermanager.entity.Member;
+import com.fptu.swp391.sportscentermanager.entity.MembershipPackage;
+import com.fptu.swp391.sportscentermanager.entity.Payment;
+import com.fptu.swp391.sportscentermanager.entity.Subscription;
 import com.fptu.swp391.sportscentermanager.enums.*;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.*;
@@ -116,19 +119,6 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             .activationNote(activationNote(pkg))
             .warnings(warnings)
             .build();
-    }
-
-    @Override
-    @Transactional
-    public void refundSession(ClassRegistration registration) {
-        // Đăng ký cũ (trước khi tính buổi) không gắn gói thì bỏ qua
-        if (registration.getSubscription() == null) return;
-        subscriptionRepository.findByIdForUpdate(registration.getSubscription().getSubscriptionId())
-            .filter(s -> s.getUsedSessions() > 0)
-            .ifPresent(s -> {
-                s.setUsedSessions(s.getUsedSessions() - 1);
-                subscriptionRepository.save(s);
-            });
     }
 
     @Override
