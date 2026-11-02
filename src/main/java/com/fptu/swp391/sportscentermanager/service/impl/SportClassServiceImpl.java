@@ -538,7 +538,9 @@ public class SportClassServiceImpl implements SportClassService {
         for (ClassRegistration r : active) {
             r.setStatus("CANCELLED");
             r.setCancelledAt(now);
-            subscriptionService.refundSession(r);
+            if (r.getSubscription() != null) {
+                subscriptionService.releaseClassPackage(r.getSubscription());
+            }
             members.add(r.getMember());
         }
         classRegistrationRepository.saveAll(active);
@@ -584,6 +586,13 @@ public class SportClassServiceImpl implements SportClassService {
             }
         }
         classSessionRepository.saveAll(futureSessions);
+
+        // Chuyển các đăng ký còn hiệu lực sang STOPPED để đồng bộ hoàn tiền/đổi lớp
+        List<ClassRegistration> activeRegs = classRegistrationRepository.findActiveByClassId(id);
+        for (ClassRegistration r : activeRegs) {
+            r.setStatus("STOPPED");
+        }
+        classRegistrationRepository.saveAll(activeRegs);
 
         sportClass.setStatus("STOPPED");
         SportClass saved = sportClassRepository.save(sportClass);
@@ -740,7 +749,9 @@ public class SportClassServiceImpl implements SportClassService {
         for (ClassRegistration r : classRegistrationRepository.findActiveByClassId(id)) {
             r.setStatus("CANCELLED");
             r.setCancelledAt(now);
-            subscriptionService.refundSession(r);
+            if (r.getSubscription() != null) {
+                subscriptionService.releaseClassPackage(r.getSubscription());
+            }
         }
 
         List<ClassSession> sessions = classSessionRepository.findBySportClass_ClassIdOrderByStartTimeAsc(id);
