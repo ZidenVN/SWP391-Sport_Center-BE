@@ -219,7 +219,7 @@ public class CoachServiceImpl implements CoachService {
             .map(Subject::getSubjectId)
             .filter(sid -> newSubjects.stream().noneMatch(s -> s.getSubjectId().equals(sid)))
             .collect(Collectors.toSet());
-        if (!removedIds.isEmpty() && coachRepository.hasOpeningClassOfSubjects(id, removedIds)) {
+        if (!removedIds.isEmpty() && coachRepository.hasOpeningClassOfSubjects(id, removedIds, LocalDateTime.now())) {
             throw new AppException(ErrorCode.COACH_SUBJECT_IN_USE);
         }
         coach.getSubjects().clear();

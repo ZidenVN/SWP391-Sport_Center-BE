@@ -148,7 +148,7 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public RevenueReportDTO getRevenueReport(LocalDate fromDate, LocalDate toDate) {
-        // BE-21: chỉ tính giao dịch COMPLETED, theo ngày thực thu (paidAt), múi giờ Asia/Ho_Chi_Minh
+        // BE-21: tiền thu tính theo ngày thu (paidAt), tiền hoàn trừ theo ngày hoàn (refundedAt), múi giờ Asia/Ho_Chi_Minh
         LocalDateTime[] range = resolveRange(fromDate, toDate);
         LocalDateTime start = range[0];
         LocalDateTime end = range[1];
