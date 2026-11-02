@@ -121,9 +121,9 @@ public enum ErrorCode {
     // ===== B: lớp / buổi / HLV =====
     COACH_NOT_TEACH_SUBJECT(HttpStatus.BAD_REQUEST, "ERR_CLASS_400_COACH_SUBJECT", "Huấn luyện viên không có chuyên môn dạy môn học này!"),
     CLASS_DURATION_INVALID(HttpStatus.BAD_REQUEST, "ERR_CLASS_400_DURATION", "Thời hạn khoá học không hợp lệ!"),
-    CLASS_DURATION_NOT_SOLD(HttpStatus.BAD_REQUEST, "ERR_CLASS_400_DURATION", "Môn này chưa có gói lớp với thời hạn đã chọn!"),
-    CLASS_CANCEL_STARTED(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_CLASS_400_CANCEL_STARTED", "Lớp đã bắt đầu, hãy dùng chức năng Dừng lớp!"),
-    CLASS_STOP_NOT_STARTED(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_CLASS_400_STOP_NOT_STARTED", "Lớp chưa bắt đầu, hãy dùng chức năng Huỷ lớp!"),
+    CLASS_DURATION_NOT_SOLD(HttpStatus.BAD_REQUEST, "ERR_CLASS_400_DURATION_NOT_SOLD", "Môn này chưa có gói lớp với thời hạn đã chọn!"),
+    CLASS_CANCEL_STARTED(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_CLASS_422_CANCEL_STARTED", "Lớp đã bắt đầu, hãy dùng chức năng Dừng lớp!"),
+    CLASS_STOP_NOT_STARTED(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_CLASS_422_STOP_NOT_STARTED", "Lớp chưa bắt đầu, hãy dùng chức năng Huỷ lớp!"),
     CLASS_SCHEDULE_CANNOT_MODIFY(HttpStatus.BAD_REQUEST, "ERR_CLASS_400_SCHEDULE_LOCKED", "Lớp đã có người đăng ký hoặc đã bắt đầu, không được sửa lịch học!"),
     CLASS_CANNOT_MODIFY_STARTED(HttpStatus.BAD_REQUEST, "ERR_CLASS_400_STARTED", "Lớp đã bắt đầu, chỉ được sửa sĩ số và ảnh!"),
     CLASS_ALREADY_STOPPED(HttpStatus.BAD_REQUEST, "ERR_CLASS_400_STOPPED", "Lớp học đã dừng hoặc đã kết thúc!"),

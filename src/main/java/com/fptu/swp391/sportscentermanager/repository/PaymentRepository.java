@@ -43,8 +43,11 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findFirstBySubscription_SubscriptionIdOrderByPaymentDateDesc(Long subscriptionId);
 
     @Query("""
-        select coalesce(sum(p.amount), 0) from Payment p
-        where p.status in ('COMPLETED', 'SUCCESS') and coalesce(p.paidAt, p.paymentDate) between :start and :end
+        select coalesce(sum(case when p.status in ('COMPLETED', 'SUCCESS') then p.amount
+                                 when p.status = 'REFUNDED' then p.amount - coalesce(p.refundAmount, p.amount)
+                                 else 0 end), 0)
+        from Payment p
+        where p.status in ('COMPLETED', 'SUCCESS', 'REFUNDED') and coalesce(p.paidAt, p.paymentDate) between :start and :end
     """)
     BigDecimal sumReveneBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
@@ -56,9 +59,11 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     @Query(value = """
         SELECT DATE_FORMAT(COALESCE(paid_at, payment_date), '%Y-%m-%d') AS dayLabel,
-               COALESCE(SUM(amount), 0) AS dailyRevenue
+               COALESCE(SUM(CASE WHEN status IN ('COMPLETED', 'SUCCESS') THEN amount
+                                 WHEN status = 'REFUNDED' THEN amount - COALESCE(refund_amount, amount)
+                                 ELSE 0 END), 0) AS dailyRevenue
         FROM payments
-        WHERE status IN ('COMPLETED', 'SUCCESS')
+        WHERE status IN ('COMPLETED', 'SUCCESS', 'REFUNDED')
           AND COALESCE(paid_at, payment_date) BETWEEN :start AND :end
         GROUP BY DATE_FORMAT(COALESCE(paid_at, payment_date), '%Y-%m-%d')
         ORDER BY dayLabel ASC
@@ -68,12 +73,14 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     @Query("""
         SELECT pkg.packageName,
-               COALESCE(SUM(p.amount), 0),
+               COALESCE(SUM(case when p.status in ('COMPLETED', 'SUCCESS') then p.amount
+                                 when p.status = 'REFUNDED' then p.amount - coalesce(p.refundAmount, p.amount)
+                                 else 0 end), 0),
                COUNT(p.paymentId)
         FROM Payment p
         JOIN p.subscription sub
         JOIN sub.membershipPackage pkg
-        WHERE p.status in ('COMPLETED', 'SUCCESS')
+        WHERE p.status in ('COMPLETED', 'SUCCESS', 'REFUNDED')
           AND COALESCE(p.paidAt, p.paymentDate) BETWEEN :start AND :end
         GROUP BY pkg.packageName
     """)
@@ -82,10 +89,12 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     @Query("""
         SELECT p.paymentMethod,
-               COALESCE(SUM(p.amount), 0),
+               COALESCE(SUM(case when p.status in ('COMPLETED', 'SUCCESS') then p.amount
+                                 when p.status = 'REFUNDED' then p.amount - coalesce(p.refundAmount, p.amount)
+                                 else 0 end), 0),
                COUNT(p.paymentId)
         FROM Payment p
-        WHERE p.status in ('COMPLETED', 'SUCCESS')
+        WHERE p.status in ('COMPLETED', 'SUCCESS', 'REFUNDED')
           AND COALESCE(p.paidAt, p.paymentDate) BETWEEN :start AND :end
         GROUP BY p.paymentMethod
     """)

@@ -20,15 +20,15 @@ Kết quả audit toàn bộ backend. Mỗi mục gồm: chỗ sửa, lỗi, cá
 
 | # | Mức | Lỗi | Người làm | Xong |
 |---|---|---|---|---|
-| 21 | 🔴 | HLV cũ chưa có môn trong `coach_subjects`, nên bị chặn khi gán lớp | C | [ ] |
-| 24 | 🔴 | 🆕 API đăng ký trả lỗi sai định dạng và lộ chi tiết bên trong | A | [ ] |
-| 10 | 🔴 | Báo cáo doanh thu bỏ sót tiền khi hoàn một phần | B | [ ] |
+| 21 | 🔴 | HLV cũ chưa có môn trong `coach_subjects`, nên bị chặn khi gán lớp | C | [x] |
+| 24 | 🔴 | 🆕 API đăng ký trả lỗi sai định dạng và lộ chi tiết bên trong | A | [x] |
+| 10 | 🔴 | Báo cáo doanh thu bỏ sót tiền khi hoàn một phần | B | [x] |
 | 11 | 🔴 | Deploy lên DB production sẽ làm sập trang gói | Cả team | [ ] |
-| 25 | 🟠 | 🆕 VNPay báo thanh toán muộn thì tiền về mà khách không có gói | A | [ ] |
+| 25 | 🟠 | 🆕 VNPay báo thanh toán muộn thì tiền về mà khách không có gói | A | [x] |
 | 14 | 🟠 | Đăng ký và đổi lớp chưa có test | C | [ ] |
-| 22 | 🟠 | Bỏ môn của HLV không xét các buổi HLV đó dạy thay | C | [ ] |
-| 19 | 🟡 | Giới hạn câu hỏi AI mỗi ngày có thể bị vượt | A | [ ] |
-| 23 | 🟡 | Hai lỗi khác nhau dùng chung mã `ERR_CLASS_400_DURATION` | B | [ ] |
+| 22 | 🟠 | Bỏ môn của HLV không xét các buổi HLV đó dạy thay | C | [x] |
+| 19 | 🟡 | Giới hạn câu hỏi AI mỗi ngày có thể bị vượt | A | [x] |
+| 23 | 🟡 | Hai lỗi khác nhau dùng chung mã `ERR_CLASS_400_DURATION` | B | [x] |
 
 **Thứ tự nên làm:**
 1. **Mục 21:** đang chặn việc tạo lớp ngay trên DB local. DB local có 9 HLV nhưng `coach_subjects` có 0 dòng.

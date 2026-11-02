@@ -3,22 +3,19 @@ package com.fptu.swp391.sportscentermanager.service.impl;
 import com.fptu.swp391.sportscentermanager.config.VNPayConfig;
 import com.fptu.swp391.sportscentermanager.dto.VNPayCallBackResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.VNPayPaymentResponseDTO;
-import com.fptu.swp391.sportscentermanager.entity.Member;
-import com.fptu.swp391.sportscentermanager.entity.MembershipPackage;
-import com.fptu.swp391.sportscentermanager.entity.Payment;
-import com.fptu.swp391.sportscentermanager.entity.Subscription;
+import com.fptu.swp391.sportscentermanager.entity.*;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import com.fptu.swp391.sportscentermanager.enums.SubscriptionStatus;
+import com.fptu.swp391.sportscentermanager.enums.UserStatus;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
-import com.fptu.swp391.sportscentermanager.repository.MemberRepository;
-import com.fptu.swp391.sportscentermanager.repository.MembershipPackageRepository;
-import com.fptu.swp391.sportscentermanager.repository.PaymentRepository;
-import com.fptu.swp391.sportscentermanager.repository.SubscriptionRepository;
+import com.fptu.swp391.sportscentermanager.repository.*;
+import com.fptu.swp391.sportscentermanager.service.NotificationService;
 import com.fptu.swp391.sportscentermanager.service.SubscriptionService;
 import com.fptu.swp391.sportscentermanager.service.VNPayService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.UnsupportedEncodingException;
@@ -29,6 +26,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class VNPayServiceImpl implements VNPayService {
@@ -38,6 +36,8 @@ public class VNPayServiceImpl implements VNPayService {
     private final SubscriptionRepository subscriptionRepository;
     private final PaymentRepository paymentRepository;
     private final SubscriptionService subscriptionService;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -155,6 +155,20 @@ public class VNPayServiceImpl implements VNPayService {
         }
 
         if (!"PENDING".equals(payment.getStatus())) {
+            if ("CANCELLED".equals(payment.getStatus()) && "00".equals(request.getParameter("vnp_ResponseCode"))) {
+                log.error("VNPay báo đã thu tiền cho giao dịch đã huỷ: paymentId={}, vnp_TransactionNo={}",
+                    paymentId, request.getParameter("vnp_TransactionNo"));
+                List<User> managers = userRepository.findByRole_RoleNameAndStatus("CENTER_MANAGER", UserStatus.ACTIVE);
+                if (!managers.isEmpty()) {
+                    notificationService.notifyUsers(
+                        managers,
+                        "Cảnh báo giao dịch VNPay thu tiền sau khi huỷ",
+                        "Giao dịch ID #" + paymentId + " (mã GD VNPay: " + request.getParameter("vnp_TransactionNo")
+                            + ") đã bị huỷ trước đó nhưng VNPay vừa báo thành công. Vui lòng kiểm tra đối soát và hoàn tiền tay cho khách hàng.",
+                        "PAYMENT_ALERT"
+                    );
+                }
+            }
             return VNPayCallBackResponseDTO.builder()
                 .success("COMPLETED".equals(payment.getStatus()))
                 .message("Giao dịch đã được xử lý trước đó")
