@@ -497,6 +497,44 @@ class IssueReportServiceImplTest {
     }
 
     @Test
+    @DisplayName("Gửi lại đúng trạng thái hiện tại mà không có phản hồi mới: bị chặn, không báo trùng cho người gửi")
+    void handleReport_sameStatusWithoutResponse_rejected() {
+        IssueReport r = IssueReport.builder()
+                .reportId(609L)
+                .reporter(memberUser)
+                .desk(IssueReportDesk.RECEPTION)
+                .status(IssueReportStatus.IN_PROGRESS)
+                .build();
+        when(issueReportRepository.findById(609L)).thenReturn(Optional.of(r));
+
+        AppException ex = assertThrows(AppException.class, () -> issueReportService.handleReport(609L, receptionistUser,
+                IssueReportHandleDTO.builder().status(IssueReportStatus.IN_PROGRESS).build()));
+
+        assertEquals(ErrorCode.REPORT_STATUS_UNCHANGED, ex.getErrorCode());
+        verify(notificationService, never()).notifyUsers(anyList(), anyString(), anyString(), anyString(), any());
+    }
+
+    @Test
+    @DisplayName("Đang xử lý mà gửi thêm phản hồi mới: được phép, người gửi nhận cập nhật")
+    void handleReport_sameStatusWithNewResponse_allowed() {
+        IssueReport r = IssueReport.builder()
+                .reportId(610L)
+                .reporter(memberUser)
+                .desk(IssueReportDesk.RECEPTION)
+                .status(IssueReportStatus.IN_PROGRESS)
+                .title("Máy lạnh không mát")
+                .build();
+        when(issueReportRepository.findById(610L)).thenReturn(Optional.of(r));
+        when(issueReportRepository.save(any(IssueReport.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        IssueReportResponseDTO res = issueReportService.handleReport(610L, receptionistUser,
+                IssueReportHandleDTO.builder().status(IssueReportStatus.IN_PROGRESS).response("Đã gọi thợ, chiều nay tới").build());
+
+        assertEquals("Đã gọi thợ, chiều nay tới", res.getResponse());
+        verify(notificationService).notifyUsers(eq(List.of(memberUser)), anyString(), anyString(), eq("ISSUE_REPORT_UPDATED"), eq(receptionistUser));
+    }
+
+    @Test
     @DisplayName("Thông báo gửi người báo cáo dùng nhãn tiếng Việt, không dùng mã trạng thái")
     void handleReport_notificationUsesVietnameseLabel() {
         IssueReport r = IssueReport.builder()

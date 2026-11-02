@@ -216,9 +216,14 @@ public class IssueReportServiceImpl implements IssueReportService {
         if (!HANDLER_STATUSES.contains(dto.getStatus())) {
             throw new AppException(ErrorCode.REPORT_INVALID_STATUS);
         }
+        // Gửi lại đúng trạng thái hiện tại mà không có phản hồi mới thì không có gì thay đổi, tránh báo trùng cho người gửi
+        boolean hasNewResponse = dto.getResponse() != null && !dto.getResponse().isBlank();
+        if (dto.getStatus() == report.getStatus() && !hasNewResponse) {
+            throw new AppException(ErrorCode.REPORT_STATUS_UNCHANGED);
+        }
         // Đóng báo cáo phải kèm phản hồi mới: người gửi cần biết kết quả, và phản hồi luôn là của người đóng
         boolean closing = dto.getStatus() == IssueReportStatus.RESOLVED || dto.getStatus() == IssueReportStatus.REJECTED;
-        if (closing && (dto.getResponse() == null || dto.getResponse().isBlank())) {
+        if (closing && !hasNewResponse) {
             throw new AppException(ErrorCode.REPORT_RESPONSE_REQUIRED);
         }
 
