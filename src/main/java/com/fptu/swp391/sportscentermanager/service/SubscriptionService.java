@@ -14,7 +14,7 @@ public interface SubscriptionService {
     SubscriptionResponseDTO subscribe(Long memberId, SubscriptionRequestDTO dto);
     List<SubscriptionResponseDTO> getSubscriptions(Long memberId);
 
-    // Mọi gói đang hiệu lực (member được có nhiều gói cùng lúc, BR-SUB-02)
+    // Gói đang dùng + gói đã thanh toán chờ kích hoạt (member được có nhiều gói cùng lúc, BR-SUB-02)
     List<SubscriptionResponseDTO> getCurrentSubscriptions(Long memberId);
 
     void markPaid(Subscription subscription, LocalDateTime paidAt);
