@@ -52,9 +52,25 @@ public class IssueReport {
     @Column(name = "desk", nullable = false, length = 20)
     private IssueReportDesk desk;
 
+    // Người xử lý cuối cùng (đổi trạng thái / phản hồi) và lúc xử lý
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "handled_by")
     private User handledBy;
+
+    @Column(name = "handled_at")
+    private LocalDateTime handledAt;
+
+    // Lễ tân chuyển báo cáo lên Quản lý: lưu riêng để không bị người xử lý sau ghi đè
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "escalated_by")
+    private User escalatedBy;
+
+    @Column(name = "escalated_at")
+    private LocalDateTime escalatedAt;
+
+    // Lý do chuyển cấp: ghi chú nội bộ giữa lễ tân và quản lý, không gửi cho người báo cáo
+    @Column(name = "escalate_reason", length = 500)
+    private String escalateReason;
 
     @Column(name = "response", length = 1000)
     private String response;

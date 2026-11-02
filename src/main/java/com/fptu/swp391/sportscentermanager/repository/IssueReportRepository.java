@@ -23,7 +23,9 @@ public interface IssueReportRepository extends JpaRepository<IssueReport, Long> 
         SELECT r FROM IssueReport r
         LEFT JOIN FETCH r.reporter rep
         LEFT JOIN FETCH r.handledBy hb
-        WHERE (:desk IS NULL OR r.desk = :desk)
+        LEFT JOIN FETCH r.escalatedBy eb
+        WHERE (:desk IS NULL OR r.desk = :desk
+               OR (:includeEscalated = true AND r.escalatedBy IS NOT NULL))
           AND (:status IS NULL OR r.status = :status)
           AND (:category IS NULL OR r.category = :category)
           AND (:from IS NULL OR r.createdAt >= :from)
@@ -38,7 +40,8 @@ public interface IssueReportRepository extends JpaRepository<IssueReport, Long> 
     countQuery = """
         SELECT COUNT(r) FROM IssueReport r
         LEFT JOIN r.reporter rep
-        WHERE (:desk IS NULL OR r.desk = :desk)
+        WHERE (:desk IS NULL OR r.desk = :desk
+               OR (:includeEscalated = true AND r.escalatedBy IS NOT NULL))
           AND (:status IS NULL OR r.status = :status)
           AND (:category IS NULL OR r.category = :category)
           AND (:from IS NULL OR r.createdAt >= :from)
@@ -51,6 +54,7 @@ public interface IssueReportRepository extends JpaRepository<IssueReport, Long> 
                OR LOWER(rep.email) LIKE LOWER(CONCAT('%', :keyword, '%')))
     """)
     Page<IssueReport> searchReports(@Param("desk") IssueReportDesk desk,
+                                    @Param("includeEscalated") boolean includeEscalated,
                                    @Param("status") IssueReportStatus status,
                                    @Param("category") IssueReportCategory category,
                                    @Param("from") LocalDateTime from,

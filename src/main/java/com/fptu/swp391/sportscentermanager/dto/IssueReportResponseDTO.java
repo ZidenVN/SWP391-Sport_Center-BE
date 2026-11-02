@@ -29,6 +29,12 @@ public class IssueReportResponseDTO {
 
     private Long handledById;
     private String handledByName;
+    private LocalDateTime handledAt;
+
+    private Long escalatedById;
+    private String escalatedByName;
+    private LocalDateTime escalatedAt;
+    private String escalateReason;
     private String response;
 
     private LocalDateTime createdAt;

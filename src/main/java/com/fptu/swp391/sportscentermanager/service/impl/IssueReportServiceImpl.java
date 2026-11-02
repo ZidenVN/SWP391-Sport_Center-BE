@@ -29,7 +29,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -42,6 +44,9 @@ public class IssueReportServiceImpl implements IssueReportService {
     private final ImageStorageService imageStorageService;
 
     private static final int MAX_PAGE_SIZE = 100;
+    // OPEN là trạng thái ban đầu, CANCELLED dành cho người gửi tự rút báo cáo
+    private static final Set<IssueReportStatus> HANDLER_STATUSES =
+            EnumSet.of(IssueReportStatus.IN_PROGRESS, IssueReportStatus.RESOLVED, IssueReportStatus.REJECTED);
 
     @Override
     @Transactional
@@ -105,7 +110,7 @@ public class IssueReportServiceImpl implements IssueReportService {
     public List<IssueReportResponseDTO> getMyReports(User currentUser) {
         return issueReportRepository.findByReporter_UserIdOrderByCreatedAtDesc(currentUser.getUserId())
                 .stream()
-                .map(this::toResponseDTO)
+                .map(this::toReporterView)
                 .toList();
     }
 
@@ -120,11 +125,15 @@ public class IssueReportServiceImpl implements IssueReportService {
         boolean isManager = "CENTER_MANAGER".equalsIgnoreCase(userRole);
         boolean isReceptionist = "RECEPTIONIST".equalsIgnoreCase(userRole);
 
-        if (!isReporter && !isManager && !(isReceptionist && report.getDesk() == IssueReportDesk.RECEPTION)) {
+        // Lễ tân xem được cả báo cáo đã chuyển lên Quản lý để trả lời hội viên ở quầy; xử lý vẫn bị chặn ở handleReport
+        boolean receptionCanSee = isReceptionist
+                && (report.getDesk() == IssueReportDesk.RECEPTION || report.getEscalatedBy() != null);
+        boolean isHandler = isManager || receptionCanSee;
+        if (!isReporter && !isHandler) {
             throw new AppException(ErrorCode.REPORT_ACCESS_DENIED);
         }
 
-        return toResponseDTO(report);
+        return isHandler ? toResponseDTO(report) : toReporterView(report);
     }
 
     @Override
@@ -140,12 +149,14 @@ public class IssueReportServiceImpl implements IssueReportService {
                                                       int size) {
         String userRole = currentUser.getRole() != null ? currentUser.getRole().getRoleName() : "";
 
-        // Kiểm soát phân quyền theo bàn xử lý
+        // Kiểm soát phân quyền theo bàn xử lý; lễ tân thấy thêm báo cáo đã chuyển lên để theo dõi
+        boolean includeEscalated = false;
         if ("RECEPTIONIST".equalsIgnoreCase(userRole)) {
             if (desk != null && desk != IssueReportDesk.RECEPTION) {
                 throw new AppException(ErrorCode.REPORT_DESK_ACCESS_DENIED);
             }
             desk = IssueReportDesk.RECEPTION;
+            includeEscalated = true;
         } else if (!"CENTER_MANAGER".equalsIgnoreCase(userRole)) {
             throw new AppException(ErrorCode.REPORT_ACCESS_DENIED);
         }
@@ -161,7 +172,7 @@ public class IssueReportServiceImpl implements IssueReportService {
         PageRequest pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), MAX_PAGE_SIZE),
                 Sort.by(Sort.Direction.DESC, "createdAt"));
 
-        Page<IssueReport> result = issueReportRepository.searchReports(desk, status, category, from, to, kw, pageable);
+        Page<IssueReport> result = issueReportRepository.searchReports(desk, includeEscalated, status, category, from, to, kw, pageable);
         return result.map(this::toResponseDTO);
     }
 
@@ -183,7 +194,7 @@ public class IssueReportServiceImpl implements IssueReportService {
         report.setUpdatedAt(LocalDateTime.now());
         IssueReport saved = issueReportRepository.save(report);
 
-        return toResponseDTO(saved);
+        return toReporterView(saved);
     }
 
     @Override
@@ -202,19 +213,29 @@ public class IssueReportServiceImpl implements IssueReportService {
         if ("RECEPTIONIST".equalsIgnoreCase(userRole) && report.getDesk() != IssueReportDesk.RECEPTION) {
             throw new AppException(ErrorCode.REPORT_DESK_ACCESS_DENIED);
         }
+        if (!HANDLER_STATUSES.contains(dto.getStatus())) {
+            throw new AppException(ErrorCode.REPORT_INVALID_STATUS);
+        }
+        // Đóng báo cáo phải kèm phản hồi mới: người gửi cần biết kết quả, và phản hồi luôn là của người đóng
+        boolean closing = dto.getStatus() == IssueReportStatus.RESOLVED || dto.getStatus() == IssueReportStatus.REJECTED;
+        if (closing && (dto.getResponse() == null || dto.getResponse().isBlank())) {
+            throw new AppException(ErrorCode.REPORT_RESPONSE_REQUIRED);
+        }
 
+        LocalDateTime now = LocalDateTime.now();
         report.setStatus(dto.getStatus());
         if (dto.getResponse() != null && !dto.getResponse().isBlank()) {
             report.setResponse(dto.getResponse().trim());
         }
         report.setHandledBy(currentUser);
-        report.setUpdatedAt(LocalDateTime.now());
+        report.setHandledAt(now);
+        report.setUpdatedAt(now);
 
         IssueReport saved = issueReportRepository.save(report);
 
         // Bắn thông báo Realtime cho người gửi
         try {
-            String msg = "Báo cáo sự cố \"" + saved.getTitle() + "\" của bạn đã chuyển sang: " + saved.getStatus().name()
+            String msg = "Báo cáo sự cố \"" + saved.getTitle() + "\" của bạn đã chuyển sang: " + saved.getStatus().getLabel()
                     + (saved.getResponse() != null ? ". Phản hồi: " + saved.getResponse() : "");
             notificationService.notifyUsers(List.of(saved.getReporter()), "Cập nhật báo cáo sự cố",
                     msg, "ISSUE_REPORT_UPDATED", currentUser);
@@ -241,20 +262,22 @@ public class IssueReportServiceImpl implements IssueReportService {
             throw new AppException(ErrorCode.REPORT_ALREADY_CLOSED);
         }
 
+        LocalDateTime now = LocalDateTime.now();
         report.setDesk(IssueReportDesk.MANAGER);
-        report.setHandledBy(currentUser);
-        report.setUpdatedAt(LocalDateTime.now());
+        // Chuyển cấp chưa phải là xử lý: ghi vào escalatedBy, handledBy để dành cho người xử lý thật
+        report.setEscalatedBy(currentUser);
+        report.setEscalatedAt(now);
+        report.setUpdatedAt(now);
 
         String reasonNote = dto != null && dto.getReason() != null && !dto.getReason().isBlank()
                 ? dto.getReason().trim()
                 : "Lễ tân chuyển tiếp lên Quản lý xử lý";
-        String existingResp = report.getResponse();
-        report.setResponse((existingResp != null && !existingResp.isBlank() ? existingResp + " | " : "")
-                + "[Chuyển lên Manager bởi " + currentUser.getFirstName() + "]: " + reasonNote);
+        // Lý do chuyển là trao đổi nội bộ: lưu riêng, không ghi vào phản hồi gửi cho người báo cáo
+        report.setEscalateReason(reasonNote);
 
         IssueReport saved = issueReportRepository.save(report);
 
-        // Bắn thông báo Realtime cho Manager và Reporter
+        // Chuyển cấp là việc nội bộ: chỉ báo Quản lý. Người báo cáo nhận thông báo khi có người xử lý
         try {
             List<User> managers = userRepository.findByRole_RoleNameAndStatus("CENTER_MANAGER", UserStatus.ACTIVE);
             if (!managers.isEmpty()) {
@@ -262,9 +285,6 @@ public class IssueReportServiceImpl implements IssueReportService {
                         "Báo cáo \"" + saved.getTitle() + "\" đã được Lễ tân chuyển lên. Lý do: " + reasonNote,
                         "ISSUE_REPORT_ESCALATED", currentUser);
             }
-            notificationService.notifyUsers(List.of(saved.getReporter()), "Báo cáo sự cố đã chuyển tiếp",
-                    "Báo cáo \"" + saved.getTitle() + "\" của bạn đã được chuyển lên cấp Quản lý để xử lý.",
-                    "ISSUE_REPORT_ESCALATED", currentUser);
         } catch (Exception e) {
             log.warn("Không thể gửi thông báo escalate sự cố: {}", e.getMessage());
         }
@@ -272,9 +292,22 @@ public class IssueReportServiceImpl implements IssueReportService {
         return toResponseDTO(saved);
     }
 
+    // Người báo cáo không thấy trao đổi nội bộ (ai chuyển cấp, lý do chuyển)
+    private IssueReportResponseDTO toReporterView(IssueReport r) {
+        IssueReportResponseDTO dto = toResponseDTO(r);
+        dto.setEscalatedById(null);
+        dto.setEscalatedByName(null);
+        dto.setEscalatedAt(null);
+        dto.setEscalateReason(null);
+        // nơi nhận ban đầu theo loại sự cố: không lộ việc đã chuyển cấp
+        dto.setDesk(r.getCategory().getDesk());
+        return dto;
+    }
+
     private IssueReportResponseDTO toResponseDTO(IssueReport r) {
         User rep = r.getReporter();
         User hb = r.getHandledBy();
+        User eb = r.getEscalatedBy();
         return IssueReportResponseDTO.builder()
                 .reportId(r.getReportId())
                 .reporterId(rep != null ? rep.getUserId() : null)
@@ -291,6 +324,11 @@ public class IssueReportServiceImpl implements IssueReportService {
                 .desk(r.getDesk())
                 .handledById(hb != null ? hb.getUserId() : null)
                 .handledByName(hb != null ? hb.getFirstName() + " " + hb.getLastName() : null)
+                .handledAt(r.getHandledAt())
+                .escalatedById(eb != null ? eb.getUserId() : null)
+                .escalatedByName(eb != null ? eb.getFirstName() + " " + eb.getLastName() : null)
+                .escalatedAt(r.getEscalatedAt())
+                .escalateReason(r.getEscalateReason())
                 .response(r.getResponse())
                 .createdAt(r.getCreatedAt())
                 .updatedAt(r.getUpdatedAt())
