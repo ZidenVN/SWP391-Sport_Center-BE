@@ -1,0 +1,56 @@
+- generic [ref=e662]:
+  - complementary [ref=e663]:
+    - button "Thu gọn menu" [ref=e664] [cursor=pointer]
+    - link "Sport Center SPORT CENTER Quản lý" [ref=e672] [cursor=pointer]:
+      - /url: "#/"
+      - img "Sport Center" [ref=e673]
+      - generic [ref=e674]:
+        - generic [ref=e675]: SPORT CENTER
+        - generic [ref=e676]: Quản lý
+    - navigation "Điều hướng" [ref=e678]:
+      - generic [ref=e679]:
+        - generic [ref=e680]: Menu
+        - link "Tổng quan" [ref=e681] [cursor=pointer]:
+          - /url: "#/manager/dashboard"
+        - link "Giao dịch" [ref=e689] [cursor=pointer]:
+          - /url: "#/manager/payments"
+        - link "Sự cố & phản ánh" [ref=e695] [cursor=pointer]:
+          - /url: "#/manager/issues"
+      - generic [ref=e703]:
+        - generic [ref=e704]: Vận hành
+        - link "Lớp học" [ref=e705] [cursor=pointer]:
+          - /url: "#/manager/classes"
+        - link "Gói tập" [ref=e710] [cursor=pointer]:
+          - /url: "#/manager/packages"
+        - link "Phòng tập" [ref=e717] [cursor=pointer]:
+          - /url: "#/manager/rooms"
+        - link "Bộ môn" [ref=e723] [cursor=pointer]:
+          - /url: "#/manager/subjects"
+        - link "Câu hỏi khảo sát" [ref=e728] [cursor=pointer]:
+          - /url: "#/manager/quiz"
+      - generic [ref=e734]:
+        - generic [ref=e735]: Nhân sự
+        - link "Huấn luyện viên" [ref=e736] [cursor=pointer]:
+          - /url: "#/manager/coaches"
+        - link "Lễ tân" [ref=e745] [cursor=pointer]:
+          - /url: "#/manager/staff"
+        - link "Tài khoản" [ref=e751] [cursor=pointer]:
+          - /url: "#/manager/users"
+      - generic [ref=e759]:
+        - generic [ref=e760]: Hệ thống
+        - link "Phân quyền" [ref=e761] [cursor=pointer]:
+          - /url: "#/manager/roles"
+        - link "Nhật ký thao tác" [ref=e767] [cursor=pointer]:
+          - /url: "#/manager/audit"
+    - button "Đăng xuất" [ref=e775] [cursor=pointer]
+  - generic [ref=e784]:
+    - banner [ref=e785]:
+      - generic [ref=e786]:
+        - button "Đổi giao diện sáng / tối" [ref=e787] [cursor=pointer]
+        - button "Center Manager manager@sportcenter.com C" [ref=e796] [cursor=pointer]:
+          - generic [ref=e797]:
+            - generic [ref=e798]: Center Manager
+            - generic [ref=e799]: manager@sportcenter.com
+          - generic [ref=e800]: C
+    - main [ref=e804]:
+      - generic [ref=e805]: Đang tải dữ liệu...

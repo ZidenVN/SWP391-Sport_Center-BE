@@ -1,0 +1,42 @@
+- generic [ref=e619]:
+  - banner [ref=e621]:
+    - link "Về trang chủ" [ref=e622] [cursor=pointer]:
+      - /url: "#/"
+  - main [ref=e625]:
+    - generic [ref=e626]:
+      - generic [ref=e627]:
+        - link "Sport Center" [ref=e628] [cursor=pointer]:
+          - /url: "#/"
+          - img "Sport Center" [ref=e629]
+        - heading "Đăng nhập" [level=1] [ref=e630]
+        - generic [ref=e631]:
+          - generic [ref=e632]:
+            - generic [ref=e633]: Email
+            - textbox "Email" [ref=e635]:
+              - /placeholder: ban@example.com
+              - text: manager@sportcenter.com
+          - generic [ref=e636]:
+            - generic [ref=e637]: Mật khẩu
+            - generic [ref=e638]:
+              - textbox "Mật khẩu Hiện mật khẩu" [ref=e639]:
+                - /placeholder: ••••••••
+                - text: wrongpass123
+              - button "Hiện mật khẩu" [ref=e640] [cursor=pointer]
+          - alert [ref=e661]: Sai email hoặc mật khẩu
+          - button "Đăng nhập" [ref=e644] [cursor=pointer]
+        - generic [ref=e645]: hoặc tiếp tục với
+        - generic [ref=e648]:
+          - generic: Đăng nhập bằng Google
+          - iframe [ref=e651]:
+            - button "Đăng nhập bằng GoogleMở trong thẻ mới" [ref=f1e3] [cursor=pointer]:
+              - generic [ref=f1e5]: Đăng nhập bằng Google
+        - paragraph [ref=e652]:
+          - text: Chưa có tài khoản?
+          - link "Đăng ký" [ref=e653] [cursor=pointer]:
+            - /url: "#/register"
+      - complementary [ref=e654]:
+        - generic [ref=e655]:
+          - heading "XIN CHÀO, BẠN MỚI!" [level=2] [ref=e656]: XIN CHÀO,BẠN MỚI!
+          - paragraph [ref=e657]: Tạo tài khoản để đặt lớp, theo dõi lịch tập và nhận giáo án từ huấn luyện viên.
+          - link "Tạo tài khoản" [ref=e658] [cursor=pointer]:
+            - /url: "#/register"
