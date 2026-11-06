@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 public interface IssueReportService {
 
@@ -31,6 +32,13 @@ public interface IssueReportService {
                                               String keyword,
                                               int page,
                                               int size);
+
+    Map<IssueReportStatus, Long> countReportsByStatus(User currentUser,
+                                                      IssueReportDesk desk,
+                                                      IssueReportCategory category,
+                                                      LocalDate fromDate,
+                                                      LocalDate toDate,
+                                                      String keyword);
 
     IssueReportResponseDTO cancelReport(Long reportId, User currentUser);
 

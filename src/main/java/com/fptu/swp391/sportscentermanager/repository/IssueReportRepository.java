@@ -61,4 +61,28 @@ public interface IssueReportRepository extends JpaRepository<IssueReport, Long> 
                                    @Param("to") LocalDateTime to,
                                    @Param("keyword") String keyword,
                                    Pageable pageable);
+
+    // Cùng điều kiện với searchReports (trừ status) để số đếm khớp danh sách
+    @Query("""
+        SELECT r.status, COUNT(r) FROM IssueReport r
+        LEFT JOIN r.reporter rep
+        WHERE (:desk IS NULL OR r.desk = :desk
+               OR (:includeEscalated = true AND r.escalatedBy IS NOT NULL))
+          AND (:category IS NULL OR r.category = :category)
+          AND (:from IS NULL OR r.createdAt >= :from)
+          AND (:to IS NULL OR r.createdAt <= :to)
+          AND (:keyword IS NULL
+               OR LOWER(r.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+               OR LOWER(r.content) LIKE LOWER(CONCAT('%', :keyword, '%'))
+               OR LOWER(rep.firstName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+               OR LOWER(rep.lastName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+               OR LOWER(rep.email) LIKE LOWER(CONCAT('%', :keyword, '%')))
+        GROUP BY r.status
+    """)
+    List<Object[]> countByStatus(@Param("desk") IssueReportDesk desk,
+                                 @Param("includeEscalated") boolean includeEscalated,
+                                 @Param("category") IssueReportCategory category,
+                                 @Param("from") LocalDateTime from,
+                                 @Param("to") LocalDateTime to,
+                                 @Param("keyword") String keyword);
 }

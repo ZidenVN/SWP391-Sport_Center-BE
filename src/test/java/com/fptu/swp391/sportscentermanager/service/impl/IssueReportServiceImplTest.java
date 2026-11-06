@@ -34,6 +34,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -316,6 +317,41 @@ class IssueReportServiceImplTest {
                 IssueReportCategory.MEMBER_FACILITY, null, null, null, 0, 10);
 
         assertEquals(1, result.getTotalElements());
+    }
+
+    @Test
+    @DisplayName("Đếm theo trạng thái - Status không có báo cáo vẫn trả về 0")
+    void countReportsByStatus_fillsMissingStatusWithZero() {
+        List<Object[]> rows = Collections.singletonList(new Object[] {IssueReportStatus.OPEN, 3L});
+        when(issueReportRepository.countByStatus(any(), eq(false), any(), any(), any(), any())).thenReturn(rows);
+
+        Map<IssueReportStatus, Long> result = issueReportService.countReportsByStatus(
+                managerUser, null, null, null, null, null);
+
+        assertEquals(IssueReportStatus.values().length, result.size());
+        assertEquals(3L, result.get(IssueReportStatus.OPEN));
+        assertEquals(0L, result.get(IssueReportStatus.RESOLVED));
+    }
+
+    @Test
+    @DisplayName("Đếm theo trạng thái - Lễ tân chỉ đếm ở bàn RECEPTION và báo cáo đã chuyển lên")
+    void countReportsByStatus_receptionistScopedToReceptionDesk() {
+        when(issueReportRepository.countByStatus(eq(IssueReportDesk.RECEPTION), eq(true), any(), any(), any(), any()))
+                .thenReturn(List.of());
+
+        Map<IssueReportStatus, Long> result = issueReportService.countReportsByStatus(
+                receptionistUser, null, null, null, null, null);
+
+        assertEquals(0L, result.get(IssueReportStatus.OPEN));
+    }
+
+    @Test
+    @DisplayName("Đếm theo trạng thái - Lễ tân không được đếm bàn MANAGER")
+    void countReportsByStatus_forbidden_receptionistAttemptsManagerDesk() {
+        AppException ex = assertThrows(AppException.class, () -> issueReportService.countReportsByStatus(
+                receptionistUser, IssueReportDesk.MANAGER, null, null, null, null));
+
+        assertEquals(ErrorCode.REPORT_DESK_ACCESS_DENIED, ex.getErrorCode());
     }
 
     @Test
