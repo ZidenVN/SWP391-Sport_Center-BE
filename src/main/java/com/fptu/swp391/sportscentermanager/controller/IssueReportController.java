@@ -24,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/issue-reports")
@@ -78,6 +79,20 @@ public class IssueReportController {
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(issueReportService.searchReports(principal.getUser(), desk, status, category,
                 fromDate, toDate, keyword, page, size));
+    }
+
+    // Đếm báo cáo theo từng trạng thái, dùng cùng bộ lọc với danh sách (trừ status)
+    @PreAuthorize("hasAuthority('HANDLE_ISSUE_REPORT')")
+    @GetMapping("/stats")
+    public ResponseEntity<Map<IssueReportStatus, Long>> countReportsByStatus(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @RequestParam(required = false) IssueReportDesk desk,
+            @RequestParam(required = false) IssueReportCategory category,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(required = false) String keyword) {
+        return ResponseEntity.ok(issueReportService.countReportsByStatus(principal.getUser(), desk, category,
+                fromDate, toDate, keyword));
     }
 
     // 4. Xem chi tiết 1 báo cáo sự cố

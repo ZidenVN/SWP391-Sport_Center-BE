@@ -29,8 +29,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -147,6 +149,42 @@ public class IssueReportServiceImpl implements IssueReportService {
                                                       String keyword,
                                                       int page,
                                                       int size) {
+        ReportScope scope = resolveScope(currentUser, desk, fromDate, toDate, keyword);
+
+        PageRequest pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), MAX_PAGE_SIZE),
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        Page<IssueReport> result = issueReportRepository.searchReports(scope.desk(), scope.includeEscalated(), status, category,
+                scope.from(), scope.to(), scope.keyword(), pageable);
+        return result.map(this::toResponseDTO);
+    }
+
+    @Override
+    public Map<IssueReportStatus, Long> countReportsByStatus(User currentUser,
+                                                             IssueReportDesk desk,
+                                                             IssueReportCategory category,
+                                                             LocalDate fromDate,
+                                                             LocalDate toDate,
+                                                             String keyword) {
+        ReportScope scope = resolveScope(currentUser, desk, fromDate, toDate, keyword);
+
+        // GROUP BY không trả về status chưa có báo cáo nên phải điền sẵn 0
+        Map<IssueReportStatus, Long> counts = new EnumMap<>(IssueReportStatus.class);
+        for (IssueReportStatus status : IssueReportStatus.values()) {
+            counts.put(status, 0L);
+        }
+        for (Object[] row : issueReportRepository.countByStatus(scope.desk(), scope.includeEscalated(), category,
+                scope.from(), scope.to(), scope.keyword())) {
+            counts.put((IssueReportStatus) row[0], (Long) row[1]);
+        }
+        return counts;
+    }
+
+    private record ReportScope(IssueReportDesk desk, boolean includeEscalated,
+                               LocalDateTime from, LocalDateTime to, String keyword) {
+    }
+
+    private ReportScope resolveScope(User currentUser, IssueReportDesk desk, LocalDate fromDate, LocalDate toDate, String keyword) {
         String userRole = currentUser.getRole() != null ? currentUser.getRole().getRoleName() : "";
 
         // Kiểm soát phân quyền theo bàn xử lý; lễ tân thấy thêm báo cáo đã chuyển lên để theo dõi
@@ -169,11 +207,7 @@ public class IssueReportServiceImpl implements IssueReportService {
         LocalDateTime to = toDate != null ? toDate.atTime(LocalTime.MAX) : null;
         String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
 
-        PageRequest pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), MAX_PAGE_SIZE),
-                Sort.by(Sort.Direction.DESC, "createdAt"));
-
-        Page<IssueReport> result = issueReportRepository.searchReports(desk, includeEscalated, status, category, from, to, kw, pageable);
-        return result.map(this::toResponseDTO);
+        return new ReportScope(desk, includeEscalated, from, to, kw);
     }
 
     @Override
