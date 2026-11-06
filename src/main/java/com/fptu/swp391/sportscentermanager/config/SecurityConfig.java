@@ -20,6 +20,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.http.HttpMethod;
 
 import java.io.IOException;
 import java.util.List;
@@ -57,6 +58,7 @@ public class SecurityConfig {
                     "/ws/**",
                     "/ws-sockjs/**"
                 ).permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/subjects/**", "/api/v1/packages/**").permitAll()
                     .anyRequest().authenticated()
             ).exceptionHandling(ex -> ex
                 // Chưa đăng nhập / token sai / token hết hạn -> 401
