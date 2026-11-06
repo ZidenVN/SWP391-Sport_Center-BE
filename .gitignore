@@ -50,3 +50,7 @@ application-local.properties
 
 .archify/
 .playwright-mcp/
+
+### Postman local sync ###
+.postman/
+postman/
