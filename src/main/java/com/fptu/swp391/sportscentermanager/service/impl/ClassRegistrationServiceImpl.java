@@ -15,6 +15,7 @@ import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import com.fptu.swp391.sportscentermanager.enums.PackageType;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.ClassRegistrationRepository;
+import org.springframework.transaction.annotation.Isolation;
 import com.fptu.swp391.sportscentermanager.repository.MemberRepository;
 import com.fptu.swp391.sportscentermanager.repository.ScheduleQueryRepository;
 import com.fptu.swp391.sportscentermanager.repository.SportClassRepository;
@@ -96,7 +97,7 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
 
     // ---------- Đăng ký ----------
     @Override
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public ClassRegistrationResponseDTO registerSelf(Long memberId, Long classId, Long subscriptionId) {
         Member member = memberRepository.findById(memberId)
             .orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
@@ -170,7 +171,7 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
 
     // ---------- Đổi lớp ----------
     @Override
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public ClassRegistrationResponseDTO switchSelf(Long memberId, Long registrationId, Long newClassId) {
         ClassRegistration current = registrationRepository
             .findByRegistrationIdAndMember_UserId(registrationId, memberId)
@@ -188,7 +189,7 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public ClassRegistrationResponseDTO switchByReceptionist(Long receptionistId, Long registrationId, Long newClassId) {
         ClassRegistration current = registrationRepository.findById(registrationId)
             .orElseThrow(() -> new AppException(ErrorCode.REGISTRATION_NOT_FOUND));
