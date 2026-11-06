@@ -54,3 +54,6 @@ application-local.properties
 ### Postman local sync ###
 .postman/
 postman/
+
+### Local docs ###
+docs/
