@@ -2,6 +2,7 @@ package com.fptu.swp391.sportscentermanager.service.impl;
 
 import com.fptu.swp391.sportscentermanager.dto.PermissionResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.RoleRequest;
+import com.fptu.swp391.sportscentermanager.dto.RoleResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.Permission;
 import com.fptu.swp391.sportscentermanager.entity.Role;
 import com.fptu.swp391.sportscentermanager.entity.RolePermission;
@@ -28,13 +29,13 @@ public class RoleServiceImpl implements RoleService {
     private final RolePermissionRepository rolePermissionRepository;
 
     @Override
-    public List<Role> getAllRoles() {
-        return roleRepository.findAll();
+    public List<RoleResponseDTO> getAllRoles() {
+        return roleRepository.findAll().stream().map(this::toResponse).toList();
     }
 
     @Override
     @Transactional
-    public Role updateRolePermissions(Long roleId, List<Long> permissionIds) {
+    public RoleResponseDTO updateRolePermissions(Long roleId, List<Long> permissionIds) {
         Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
 
@@ -52,7 +53,7 @@ public class RoleServiceImpl implements RoleService {
                 rolePermissionRepository.save(rolePermission);
             }
         }
-        return role;
+        return toResponse(role);
     }
 
     @Override
@@ -62,5 +63,13 @@ public class RoleServiceImpl implements RoleService {
         }
 
         return rolePermissionRepository.findAllByRole_RoleId(roleId).stream().map(rp -> PermissionResponseDTO.builder().permissionId(rp.getPermission().getPermissionId()).permissionName(rp.getPermission().getPermissionName()).description(rp.getPermission().getDescription()).build()).toList();
+    }
+
+    private RoleResponseDTO toResponse(Role role) {
+        return RoleResponseDTO.builder()
+            .roleId(role.getRoleId())
+            .roleName(role.getRoleName())
+            .description(role.getDescription())
+            .build();
     }
 }
