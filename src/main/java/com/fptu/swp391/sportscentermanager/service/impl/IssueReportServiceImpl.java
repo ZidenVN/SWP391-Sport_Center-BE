@@ -213,7 +213,7 @@ public class IssueReportServiceImpl implements IssueReportService {
     @Override
     @Transactional
     public IssueReportResponseDTO cancelReport(Long reportId, User currentUser) {
-        IssueReport report = issueReportRepository.findById(reportId)
+        IssueReport report = issueReportRepository.findByIdForUpdate(reportId)
                 .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
 
         if (!report.getReporter().getUserId().equals(currentUser.getUserId())) {
@@ -234,7 +234,7 @@ public class IssueReportServiceImpl implements IssueReportService {
     @Override
     @Transactional
     public IssueReportResponseDTO handleReport(Long reportId, User currentUser, IssueReportHandleDTO dto) {
-        IssueReport report = issueReportRepository.findById(reportId)
+        IssueReport report = issueReportRepository.findByIdForUpdate(reportId)
                 .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
 
         if (report.getStatus() == IssueReportStatus.RESOLVED
@@ -288,7 +288,7 @@ public class IssueReportServiceImpl implements IssueReportService {
     @Override
     @Transactional
     public IssueReportResponseDTO escalateReport(Long reportId, User currentUser, IssueReportEscalateDTO dto) {
-        IssueReport report = issueReportRepository.findById(reportId)
+        IssueReport report = issueReportRepository.findByIdForUpdate(reportId)
                 .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
 
         if (report.getDesk() != IssueReportDesk.RECEPTION) {

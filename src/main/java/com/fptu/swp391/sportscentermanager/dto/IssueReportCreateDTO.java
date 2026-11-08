@@ -17,5 +17,6 @@ public class IssueReportCreateDTO {
     private String title;
 
     @NotBlank(message = "Nội dung sự cố không được để trống")
+    @Size(max = 2000, message = "Nội dung không được vượt quá 2000 ký tự")
     private String content;
 }

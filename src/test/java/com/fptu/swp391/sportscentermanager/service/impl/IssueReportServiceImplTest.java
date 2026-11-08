@@ -400,7 +400,7 @@ class IssueReportServiceImplTest {
                 .status(IssueReportStatus.OPEN)
                 .build();
 
-        when(issueReportRepository.findById(500L)).thenReturn(Optional.of(r));
+        when(issueReportRepository.findByIdForUpdate(500L)).thenReturn(Optional.of(r));
         when(issueReportRepository.save(any(IssueReport.class))).thenAnswer(inv -> inv.getArgument(0));
 
         IssueReportResponseDTO res = issueReportService.cancelReport(500L, memberUser);
@@ -417,7 +417,7 @@ class IssueReportServiceImplTest {
                 .status(IssueReportStatus.IN_PROGRESS)
                 .build();
 
-        when(issueReportRepository.findById(501L)).thenReturn(Optional.of(r));
+        when(issueReportRepository.findByIdForUpdate(501L)).thenReturn(Optional.of(r));
 
         AppException ex = assertThrows(AppException.class, () -> issueReportService.cancelReport(501L, memberUser));
         assertEquals(ErrorCode.REPORT_CANNOT_CANCEL, ex.getErrorCode());
@@ -432,7 +432,7 @@ class IssueReportServiceImplTest {
                 .status(IssueReportStatus.OPEN)
                 .build();
 
-        when(issueReportRepository.findById(502L)).thenReturn(Optional.of(r));
+        when(issueReportRepository.findByIdForUpdate(502L)).thenReturn(Optional.of(r));
 
         AppException ex = assertThrows(AppException.class, () -> issueReportService.cancelReport(502L, coachUser));
         assertEquals(ErrorCode.REPORT_ACCESS_DENIED, ex.getErrorCode());
@@ -454,7 +454,7 @@ class IssueReportServiceImplTest {
                 .response("Đã cử kỹ thuật sửa chữa xong vòi nước.")
                 .build();
 
-        when(issueReportRepository.findById(600L)).thenReturn(Optional.of(r));
+        when(issueReportRepository.findByIdForUpdate(600L)).thenReturn(Optional.of(r));
         when(issueReportRepository.save(any(IssueReport.class))).thenAnswer(inv -> inv.getArgument(0));
 
         IssueReportResponseDTO res = issueReportService.handleReport(600L, receptionistUser, dto);
@@ -477,7 +477,7 @@ class IssueReportServiceImplTest {
                     .desk(IssueReportDesk.RECEPTION)
                     .status(IssueReportStatus.IN_PROGRESS)
                     .build();
-            when(issueReportRepository.findById(603L)).thenReturn(Optional.of(r));
+            when(issueReportRepository.findByIdForUpdate(603L)).thenReturn(Optional.of(r));
 
             AppException ex = assertThrows(AppException.class, () -> issueReportService.handleReport(603L, receptionistUser,
                     IssueReportHandleDTO.builder().status(bad).build()));
@@ -523,7 +523,7 @@ class IssueReportServiceImplTest {
                     .status(IssueReportStatus.IN_PROGRESS)
                     .response("Lễ tân đã ghi nhận")
                     .build();
-            when(issueReportRepository.findById(606L)).thenReturn(Optional.of(r));
+            when(issueReportRepository.findByIdForUpdate(606L)).thenReturn(Optional.of(r));
 
             AppException ex = assertThrows(AppException.class, () -> issueReportService.handleReport(606L, managerUser,
                     IssueReportHandleDTO.builder().status(closing).response("  ").build()));
@@ -541,7 +541,7 @@ class IssueReportServiceImplTest {
                 .desk(IssueReportDesk.RECEPTION)
                 .status(IssueReportStatus.IN_PROGRESS)
                 .build();
-        when(issueReportRepository.findById(609L)).thenReturn(Optional.of(r));
+        when(issueReportRepository.findByIdForUpdate(609L)).thenReturn(Optional.of(r));
 
         AppException ex = assertThrows(AppException.class, () -> issueReportService.handleReport(609L, receptionistUser,
                 IssueReportHandleDTO.builder().status(IssueReportStatus.IN_PROGRESS).build()));
@@ -560,7 +560,7 @@ class IssueReportServiceImplTest {
                 .status(IssueReportStatus.IN_PROGRESS)
                 .title("Máy lạnh không mát")
                 .build();
-        when(issueReportRepository.findById(610L)).thenReturn(Optional.of(r));
+        when(issueReportRepository.findByIdForUpdate(610L)).thenReturn(Optional.of(r));
         when(issueReportRepository.save(any(IssueReport.class))).thenAnswer(inv -> inv.getArgument(0));
 
         IssueReportResponseDTO res = issueReportService.handleReport(610L, receptionistUser,
@@ -580,7 +580,7 @@ class IssueReportServiceImplTest {
                 .status(IssueReportStatus.IN_PROGRESS)
                 .title("Vòi nước rò")
                 .build();
-        when(issueReportRepository.findById(607L)).thenReturn(Optional.of(r));
+        when(issueReportRepository.findByIdForUpdate(607L)).thenReturn(Optional.of(r));
         when(issueReportRepository.save(any(IssueReport.class))).thenAnswer(inv -> inv.getArgument(0));
 
         issueReportService.handleReport(607L, receptionistUser,
@@ -603,7 +603,9 @@ class IssueReportServiceImplTest {
                 .status(IssueReportStatus.OPEN)
                 .escalatedBy(receptionistUser)
                 .build();
+        // xem là đọc thường, xử lý thì khoá dòng
         when(issueReportRepository.findById(608L)).thenReturn(Optional.of(r));
+        when(issueReportRepository.findByIdForUpdate(608L)).thenReturn(Optional.of(r));
 
         IssueReportResponseDTO seen = issueReportService.getReportById(608L, receptionistUser);
         assertEquals(608L, seen.getReportId());
@@ -623,7 +625,7 @@ class IssueReportServiceImplTest {
                 .status(IssueReportStatus.OPEN)
                 .title("Máy chạy bộ hỏng")
                 .build();
-        when(issueReportRepository.findById(604L)).thenReturn(Optional.of(r));
+        when(issueReportRepository.findByIdForUpdate(604L)).thenReturn(Optional.of(r));
         when(issueReportRepository.save(any(IssueReport.class))).thenAnswer(inv -> inv.getArgument(0));
 
         issueReportService.escalateReport(604L, receptionistUser, IssueReportEscalateDTO.builder().reason("Cần thay máy mới").build());
@@ -649,7 +651,7 @@ class IssueReportServiceImplTest {
                 .status(IssueReportStatus.IN_PROGRESS)
                 .build();
 
-        when(issueReportRepository.findById(601L)).thenReturn(Optional.of(r));
+        when(issueReportRepository.findByIdForUpdate(601L)).thenReturn(Optional.of(r));
 
         AppException ex = assertThrows(AppException.class, () -> issueReportService.handleReport(601L, receptionistUser, dto));
         assertEquals(ErrorCode.REPORT_DESK_ACCESS_DENIED, ex.getErrorCode());
@@ -669,7 +671,7 @@ class IssueReportServiceImplTest {
                 .status(IssueReportStatus.IN_PROGRESS)
                 .build();
 
-        when(issueReportRepository.findById(602L)).thenReturn(Optional.of(r));
+        when(issueReportRepository.findByIdForUpdate(602L)).thenReturn(Optional.of(r));
 
         AppException ex = assertThrows(AppException.class, () -> issueReportService.handleReport(602L, receptionistUser, dto));
         assertEquals(ErrorCode.REPORT_ALREADY_CLOSED, ex.getErrorCode());
@@ -690,7 +692,7 @@ class IssueReportServiceImplTest {
                 .reason("Cần phê duyệt từ cấp Quản lý")
                 .build();
 
-        when(issueReportRepository.findById(700L)).thenReturn(Optional.of(r));
+        when(issueReportRepository.findByIdForUpdate(700L)).thenReturn(Optional.of(r));
         when(issueReportRepository.save(any(IssueReport.class))).thenAnswer(inv -> inv.getArgument(0));
         when(userRepository.findByRole_RoleNameAndStatus("CENTER_MANAGER", UserStatus.ACTIVE))
                 .thenReturn(List.of(managerUser));
@@ -720,7 +722,7 @@ class IssueReportServiceImplTest {
                 .status(IssueReportStatus.OPEN)
                 .build();
 
-        when(issueReportRepository.findById(701L)).thenReturn(Optional.of(r));
+        when(issueReportRepository.findByIdForUpdate(701L)).thenReturn(Optional.of(r));
 
         AppException ex = assertThrows(AppException.class, () -> issueReportService.escalateReport(701L, receptionistUser, null));
         assertEquals(ErrorCode.REPORT_CANNOT_ESCALATE, ex.getErrorCode());
@@ -736,7 +738,7 @@ class IssueReportServiceImplTest {
                 .status(IssueReportStatus.REJECTED)
                 .build();
 
-        when(issueReportRepository.findById(702L)).thenReturn(Optional.of(r));
+        when(issueReportRepository.findByIdForUpdate(702L)).thenReturn(Optional.of(r));
 
         AppException ex = assertThrows(AppException.class, () -> issueReportService.escalateReport(702L, receptionistUser, null));
         assertEquals(ErrorCode.REPORT_ALREADY_CLOSED, ex.getErrorCode());
