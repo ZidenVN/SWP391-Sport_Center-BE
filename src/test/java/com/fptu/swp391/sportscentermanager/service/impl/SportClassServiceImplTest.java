@@ -21,12 +21,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -167,9 +170,40 @@ class SportClassServiceImplTest {
         AppException ex = assertThrows(AppException.class, () -> sportClassService.createClass(req, null));
 
         assertEquals(ErrorCode.SESSION_SCHEDULE_CONFLICT, ex.getErrorCode());
+        // B6: báo rõ buổi bị trùng (buổi thứ 2 của khoá), giờ học và trùng phòng nào
+        LocalDate secondSession = req.getStartDate().datesUntil(req.getStartDate().plusDays(14))
+                .filter(d -> Set.of(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY).contains(d.getDayOfWeek()))
+                .skip(1).findFirst().orElseThrow();
+        assertTrue(ex.getMessage().contains(secondSession.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))), ex.getMessage());
+        assertTrue(ex.getMessage().contains("08:00 - 09:30"), ex.getMessage());
+        assertTrue(ex.getMessage().contains("trùng lịch phòng " + testRoom.getRoomName()), ex.getMessage());
         verify(sportClassRepository, never()).save(any());
         verify(classSessionRepository, never()).saveAll(anyList());
         verifyNoInteractions(imageStorageService);
+    }
+
+    @Test
+    @DisplayName("Trùng lịch HLV: thông báo nói rõ trùng HLV nào, không phải trùng phòng")
+    void testCreateClass_CoachConflict_NamesCoach() {
+        SportClassRequestDTO req = SportClassRequestDTO.builder()
+                .roomId(10L).subjectId(1L).coachId(5L).maxCapacity(20)
+                .startDate(LocalDate.now().plusDays(1)).durationDays(14).daysOfWeek("MON,WED,FRI")
+                .startClock(LocalTime.of(8, 0)).endClock(LocalTime.of(9, 30))
+                .build();
+
+        when(roomRepository.findByRoomIdAndStatusNot(10L, "INACTIVE")).thenReturn(Optional.of(testRoom));
+        when(subjectRepository.findBySubjectIdAndStatus(1L, "ACTIVE")).thenReturn(Optional.of(testSubject));
+        when(coachRepository.findById(5L)).thenReturn(Optional.of(testCoach));
+        when(membershipPackageService.getClassDurations(1L)).thenReturn(List.of(14, 30));
+        when(classSessionRepository.existsRoomConflict(anyLong(), any(), any(), any())).thenReturn(false);
+        when(classSessionRepository.existsCoachConflict(anyLong(), any(), any(), any())).thenReturn(true);
+
+        AppException ex = assertThrows(AppException.class, () -> sportClassService.createClass(req, null));
+
+        assertEquals(ErrorCode.SESSION_SCHEDULE_CONFLICT, ex.getErrorCode());
+        assertTrue(ex.getMessage().contains("trùng lịch HLV " + testCoach.getFirstName() + " " + testCoach.getLastName()),
+                ex.getMessage());
+        assertFalse(ex.getMessage().contains("phòng"), ex.getMessage());
     }
 
     @Test

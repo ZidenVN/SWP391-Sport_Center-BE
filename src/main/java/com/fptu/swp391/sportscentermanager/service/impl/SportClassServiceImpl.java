@@ -92,12 +92,7 @@ public class SportClassServiceImpl implements SportClassService {
                     LocalDateTime sStart = d.atTime(requestDTO.getStartClock());
                     LocalDateTime sEnd = d.atTime(requestDTO.getEndClock());
 
-                    if (classSessionRepository.existsRoomConflict(room.getRoomId(), sStart, sEnd, null)) {
-                        throw new AppException(ErrorCode.SESSION_SCHEDULE_CONFLICT);
-                    }
-                    if (coach != null && classSessionRepository.existsCoachConflict(coach.getUserId(), sStart, sEnd, null)) {
-                        throw new AppException(ErrorCode.SESSION_SCHEDULE_CONFLICT);
-                    }
+                    requireNoScheduleConflict(room, coach, sStart, sEnd);
 
                     sessionsToCreate.add(ClassSession.builder()
                             .startTime(sStart)
@@ -385,12 +380,7 @@ public class SportClassServiceImpl implements SportClassService {
                         LocalDateTime sStart = d.atTime(requestDTO.getStartClock());
                         LocalDateTime sEnd = d.atTime(requestDTO.getEndClock());
 
-                        if (classSessionRepository.existsRoomConflict(room.getRoomId(), sStart, sEnd, null)) {
-                            throw new AppException(ErrorCode.SESSION_SCHEDULE_CONFLICT);
-                        }
-                        if (coach != null && classSessionRepository.existsCoachConflict(coach.getUserId(), sStart, sEnd, null)) {
-                            throw new AppException(ErrorCode.SESSION_SCHEDULE_CONFLICT);
-                        }
+                        requireNoScheduleConflict(room, coach, sStart, sEnd);
 
                         sessionsToCreate.add(ClassSession.builder()
                                 .sportClass(sportClass)
@@ -587,6 +577,23 @@ public class SportClassServiceImpl implements SportClassService {
     private void requireOpening(SportClass sportClass) {
         if (!ClassStatus.OPENING.name().equals(sportClass.getStatus())) {
             throw new AppException(ErrorCode.CLASS_ALREADY_CLOSED);
+        }
+    }
+
+    private static final DateTimeFormatter SESSION_DAY = DateTimeFormatter.ofPattern("EEEE dd/MM/yyyy", Locale.forLanguageTag("vi"));
+    private static final DateTimeFormatter SESSION_CLOCK = DateTimeFormatter.ofPattern("HH:mm");
+
+    // Trùng 1 buổi là chặn cả lớp; báo rõ buổi nào và trùng phòng hay HLV để Manager biết đường sửa
+    private void requireNoScheduleConflict(Room room, Coach coach, LocalDateTime start, LocalDateTime end) {
+        String what = null;
+        if (classSessionRepository.existsRoomConflict(room.getRoomId(), start, end, null)) {
+            what = "phòng " + room.getRoomName();
+        } else if (coach != null && classSessionRepository.existsCoachConflict(coach.getUserId(), start, end, null)) {
+            what = "HLV " + coach.getFirstName() + " " + coach.getLastName();
+        }
+        if (what != null) {
+            throw new AppException(ErrorCode.SESSION_SCHEDULE_CONFLICT, "Buổi " + start.format(SESSION_DAY) + " "
+                    + start.format(SESSION_CLOCK) + " - " + end.format(SESSION_CLOCK) + " bị trùng lịch " + what + "!");
         }
     }
 

@@ -10,4 +10,10 @@ public class AppException extends RuntimeException {
         super(errorCode.getMessage());
         this.errorCode = errorCode;
     }
+
+    // Giữ nguyên mã lỗi cho FE, chỉ thay câu thông báo bằng chi tiết cụ thể (vd buổi nào bị trùng lịch)
+    public AppException(ErrorCode errorCode, String message) {
+        super(message);
+        this.errorCode = errorCode;
+    }
 }
