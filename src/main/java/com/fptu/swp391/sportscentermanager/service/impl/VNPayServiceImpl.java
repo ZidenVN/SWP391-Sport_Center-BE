@@ -65,7 +65,7 @@ public class VNPayServiceImpl implements VNPayService {
         long amountInVND = (long) (pkg.getPrice() * 100);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         String vnpCreateDate = now.format(formatter);
-        String vnpExpireDate = now.plusMinutes(15).format(formatter);
+        String vnpExpireDate = now.plusMinutes(VNPayConfig.PAYMENT_LINK_TTL_MINUTES).format(formatter);
 
         Map<String, String> vnpParams = new HashMap<>();
         vnpParams.put("vnp_Version", "2.1.0");

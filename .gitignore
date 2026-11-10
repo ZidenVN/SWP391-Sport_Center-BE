@@ -57,3 +57,9 @@ postman/
 
 ### Local docs ###
 docs/
+
+### Claude Code ###
+.claude/
+
+### UI/UX audit screenshots ###
+ux-audit/

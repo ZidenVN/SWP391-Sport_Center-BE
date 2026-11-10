@@ -17,6 +17,9 @@ import java.util.*;
 @Setter
 @Configuration
 public class VNPayConfig {
+    // Link VNPay hết hạn sau ngần này phút: dùng chung cho vnp_ExpireDate, chặn 409 và cờ "Hết hạn"
+    public static final int PAYMENT_LINK_TTL_MINUTES = 15;
+
     @Value("${vnpay.tmn-code}")
     private String vnpTmnCode;
 
