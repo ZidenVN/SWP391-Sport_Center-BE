@@ -25,4 +25,6 @@ public class PaymentResponseDTO {
     private String note;
 
     private BigDecimal refundAmount;
+
+    private boolean expired;
 }

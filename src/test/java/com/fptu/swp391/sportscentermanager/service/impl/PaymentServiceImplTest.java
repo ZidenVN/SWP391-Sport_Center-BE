@@ -16,7 +16,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+
+import com.fptu.swp391.sportscentermanager.config.VNPayConfig;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -169,5 +172,115 @@ class PaymentServiceImplTest {
         AppException ex = assertThrows(AppException.class, () -> paymentService.refundPayment(PAYMENT_ID, null));
 
         assertEquals(ErrorCode.REFUND_NOT_ALLOWED, ex.getErrorCode());
+    }
+
+    // ----- Hội viên tự hủy giao dịch đang chờ -----
+
+    private static final Long OWNER_ID = 5L; // trùng userId trong helper subscription(...)
+
+    private Payment pendingPayment(PaymentMethod method, LocalDateTime createdAt) {
+        return Payment.builder()
+            .paymentId(PAYMENT_ID)
+            .amount(BigDecimal.TEN)
+            .paymentMethod(method.name())
+            .paymentDate(createdAt)
+            .status(PaymentStatus.PENDING.name())
+            .subscription(subscription(PackageType.MEMBERSHIP, SubscriptionStatus.PENDING))
+            .build();
+    }
+
+    private Payment lockedPending(PaymentMethod method) {
+        Payment p = pendingPayment(method, LocalDateTime.now());
+        when(paymentRepository.findByIdForUpdate(PAYMENT_ID)).thenReturn(Optional.of(p));
+        return p;
+    }
+
+    @Test
+    @DisplayName("Hội viên hủy giao dịch VNPay đang chờ của mình")
+    void cancelMine_ownVnpayPending_cancelled() {
+        Payment p = lockedPending(PaymentMethod.VNPAY);
+
+        PaymentResponseDTO res = paymentService.cancelMyPendingPayment(PAYMENT_ID, OWNER_ID);
+
+        assertEquals(PaymentStatus.CANCELLED.name(), res.getStatus());
+        assertEquals(SubscriptionStatus.CANCELLED.name(), p.getSubscription().getStatus());
+        assertEquals("Hội viên tự huỷ giao dịch", p.getNote());
+        verify(paymentRepository).save(p);
+        verify(subscriptionRepository).save(p.getSubscription());
+    }
+
+    @Test
+    @DisplayName("Hội viên hủy giao dịch tại quầy đang chờ của mình")
+    void cancelMine_ownCounterPending_cancelled() {
+        Payment p = lockedPending(PaymentMethod.CASH);
+
+        paymentService.cancelMyPendingPayment(PAYMENT_ID, OWNER_ID);
+
+        assertEquals(PaymentStatus.CANCELLED.name(), p.getStatus());
+    }
+
+    @Test
+    @DisplayName("Không hủy được giao dịch của hội viên khác và không lưu gì")
+    void cancelMine_otherMembersPayment_notFound() {
+        lockedPending(PaymentMethod.VNPAY);
+
+        AppException ex = assertThrows(AppException.class,
+            () -> paymentService.cancelMyPendingPayment(PAYMENT_ID, 999L));
+
+        assertEquals(ErrorCode.PAYMENT_NOT_FOUND, ex.getErrorCode());
+        verify(paymentRepository, never()).save(any());
+        verify(subscriptionRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Giao dịch đã thu tiền thì hội viên không hủy được")
+    void cancelMine_completedPayment_rejected() {
+        Payment p = lockedPending(PaymentMethod.CASH);
+        p.setStatus(PaymentStatus.COMPLETED.name());
+
+        AppException ex = assertThrows(AppException.class,
+            () -> paymentService.cancelMyPendingPayment(PAYMENT_ID, OWNER_ID));
+
+        assertEquals(ErrorCode.PAYMENT_ALREADY_PROCESSED, ex.getErrorCode());
+        verify(paymentRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Giao dịch không tồn tại")
+    void cancelMine_notExists_notFound() {
+        when(paymentRepository.findByIdForUpdate(PAYMENT_ID)).thenReturn(Optional.empty());
+
+        AppException ex = assertThrows(AppException.class,
+            () -> paymentService.cancelMyPendingPayment(PAYMENT_ID, OWNER_ID));
+
+        assertEquals(ErrorCode.PAYMENT_NOT_FOUND, ex.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("Lễ tân vẫn hủy được giao dịch chờ thu sau khi tách hàm cancel")
+    void cancelPending_byReceptionist_keepsReason() {
+        Payment p = lockedPending(PaymentMethod.CASH);
+
+        paymentService.cancelPendingPayment(PAYMENT_ID, "Khách đổi ý");
+
+        assertEquals(PaymentStatus.CANCELLED.name(), p.getStatus());
+        assertEquals("Khách đổi ý", p.getNote());
+    }
+
+    @Test
+    @DisplayName("Chỉ VNPay PENDING quá hạn link mới bị đánh dấu Hết hạn")
+    void memberPayments_expiredFlag() {
+        LocalDateTime old = LocalDateTime.now().minusMinutes(VNPayConfig.PAYMENT_LINK_TTL_MINUTES + 1);
+        Payment staleVnpay = pendingPayment(PaymentMethod.VNPAY, old);
+        Payment freshVnpay = pendingPayment(PaymentMethod.VNPAY, LocalDateTime.now());
+        Payment oldCounter = pendingPayment(PaymentMethod.CASH, old);
+        when(memberRepository.existsById(OWNER_ID)).thenReturn(true);
+        when(paymentRepository.findByMemberId(OWNER_ID)).thenReturn(List.of(staleVnpay, freshVnpay, oldCounter));
+
+        List<PaymentResponseDTO> res = paymentService.getMemberPayments(OWNER_ID);
+
+        assertTrue(res.get(0).isExpired());
+        assertFalse(res.get(1).isExpired());
+        assertFalse(res.get(2).isExpired(), "giao dịch tại quầy không có link nên không bao giờ hết hạn");
     }
 }

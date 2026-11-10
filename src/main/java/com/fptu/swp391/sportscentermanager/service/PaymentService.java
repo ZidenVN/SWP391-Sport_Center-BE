@@ -33,4 +33,6 @@ public interface PaymentService {
 
     // BE-24: xuất CSV theo đúng bộ lọc của danh sách
     byte[] exportPaymentsCsv(LocalDate fromDate, LocalDate toDate, String status, String method, String keyword);
+
+    PaymentResponseDTO cancelMyPendingPayment(Long paymentId, Long memberId);
 }

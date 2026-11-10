@@ -1,5 +1,6 @@
 package com.fptu.swp391.sportscentermanager.controller;
 
+import com.fptu.swp391.sportscentermanager.annotation.LogAudit;
 import com.fptu.swp391.sportscentermanager.dto.InvoiceResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.PaymentResponseDTO;
 import com.fptu.swp391.sportscentermanager.security.CustomUserDetails;
@@ -34,5 +35,15 @@ public class PaymentController {
         @PathVariable Long paymentId) {
         return ResponseEntity.ok(
             paymentService.getInvoice(paymentId, principal.getUser().getUserId()));
+    }
+
+    @LogAudit(actionType = "CANCEL_PAYMENT", targetEntity = "Payment")
+    @PreAuthorize("hasRole('MEMBER') AND hasAuthority('SUBSCRIBE_PACKAGE')")
+    @PatchMapping("/{paymentId}/cancel")
+    public ResponseEntity<PaymentResponseDTO> cancelMyPending(
+        @AuthenticationPrincipal CustomUserDetails principal,
+        @PathVariable Long paymentId
+    ){
+        return ResponseEntity.ok(paymentService.cancelMyPendingPayment(paymentId, principal.getUser().getUserId()));
     }
 }

@@ -1,5 +1,6 @@
 package com.fptu.swp391.sportscentermanager.service.impl;
 
+import com.fptu.swp391.sportscentermanager.config.VNPayConfig;
 import com.fptu.swp391.sportscentermanager.dto.PurchasePreviewResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.PurchaseWarningDTO;
 import com.fptu.swp391.sportscentermanager.dto.SubscriptionRequestDTO;
@@ -178,7 +179,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             Payment pendingPayment = latestPayment(pending);
             if (pendingPayment == null || !PaymentStatus.PENDING.name().equals(pendingPayment.getStatus())) continue;
             boolean staleOnline = PaymentMethod.VNPAY.name().equals(pendingPayment.getPaymentMethod())
-                && pendingPayment.getPaymentDate().isBefore(now.minusMinutes(15));
+                && pendingPayment.getPaymentDate().isBefore(now.minusMinutes(VNPayConfig.PAYMENT_LINK_TTL_MINUTES));
             if (!staleOnline) {
                 throw new AppException(ErrorCode.PAYMENT_PENDING_EXISTS);
             }

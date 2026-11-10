@@ -1,5 +1,6 @@
 package com.fptu.swp391.sportscentermanager.service.impl;
 
+import com.fptu.swp391.sportscentermanager.config.VNPayConfig;
 import com.fptu.swp391.sportscentermanager.dto.InvoiceResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.PaymentResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.*;
@@ -142,19 +143,7 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentResponseDTO cancelPendingPayment(Long paymentId, String reason) {
         Payment payment = paymentRepository.findByIdForUpdate(paymentId)
             .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
-        if (!PaymentStatus.PENDING.name().equals(payment.getStatus())) {
-            throw new AppException(ErrorCode.PAYMENT_ALREADY_PROCESSED);
-        }
-
-        payment.setStatus(PaymentStatus.CANCELLED.name());
-        payment.setNote(reason);
-        paymentRepository.save(payment);
-
-        Subscription sub = payment.getSubscription();
-        sub.setStatus("CANCELLED");
-        subscriptionRepository.save(sub);
-
-        return toResponse(payment);
+        return cancel(payment, reason);
     }
 
     @Override
@@ -232,6 +221,35 @@ public class PaymentServiceImpl implements PaymentService {
         return csv.toString().getBytes(StandardCharsets.UTF_8);
     }
 
+    @Override
+    @Transactional
+    public PaymentResponseDTO cancelMyPendingPayment(Long paymentId, Long memberId) {
+        Payment payment = paymentRepository.findByIdForUpdate(paymentId).orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
+
+        if (!memberId.equals(payment.getSubscription().getMember().getUserId())) {
+            throw new AppException(ErrorCode.PAYMENT_NOT_FOUND);
+        }
+
+        return cancel(payment, "Hội viên tự huỷ giao dịch");
+    }
+
+    // Dùng chung cho lễ tân và hội viên; payment phải lấy bằng findByIdForUpdate trong cùng transaction
+    private PaymentResponseDTO cancel(Payment payment, String reason) {
+        if (!PaymentStatus.PENDING.name().equals(payment.getStatus())) {
+            throw new AppException(ErrorCode.PAYMENT_ALREADY_PROCESSED);
+        }
+
+        payment.setStatus(PaymentStatus.CANCELLED.name());
+        payment.setNote(reason);
+        paymentRepository.save(payment);
+
+        Subscription sub = payment.getSubscription();
+        sub.setStatus(SubscriptionStatus.CANCELLED.name());
+        subscriptionRepository.save(sub);
+
+        return toResponse(payment);
+    }
+
     private LocalDateTime[] toRange(LocalDate fromDate, LocalDate toDate) {
         if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
             throw new AppException(ErrorCode.INVALID_DATE_RANGE);
@@ -267,6 +285,7 @@ public class PaymentServiceImpl implements PaymentService {
             .paymentMethod(p.getPaymentMethod())
             .paymentDate(p.getPaymentDate())
             .status(p.getStatus())
+            .expired(isExpiredVnpay(p))
             .memberId(m.getUserId())
             .memberName(fullName(m))
             .paidAt(p.getPaidAt())
@@ -317,5 +336,12 @@ public class PaymentServiceImpl implements PaymentService {
             content.append(" Lý do: ").append(reason.trim()).append(".");
         }
         notificationService.notifyUsers(List.of(sub.getMember()), "Gói tập đã được hoàn tiền", content.toString(), "SUBSCRIPTION_REFUNDED");
+    }
+
+    private boolean isExpiredVnpay(Payment p) {
+        return PaymentStatus.PENDING.name().equals(p.getStatus())
+            && PaymentMethod.VNPAY.name().equals(p.getPaymentMethod())
+            && p.getPaymentDate() != null
+            && p.getPaymentDate().isBefore(LocalDateTime.now().minusMinutes(VNPayConfig.PAYMENT_LINK_TTL_MINUTES));
     }
 }
