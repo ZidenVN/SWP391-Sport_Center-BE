@@ -41,6 +41,10 @@ public class WorkoutPlanServiceImpl implements WorkoutPlanService {
     @Override
     public WorkoutPlanResponseDTO createAndAssignWorkoutPlan(Long coachId, WorkoutPlanRequestDTO requestDTO) {
         Coach coach = coachRepository.findById(coachId).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
+        // không cho giao giáo án có hạn trong quá khứ (chặn trước khi lưu gì)
+        if (requestDTO.getDueDate() != null && requestDTO.getDueDate().isBefore(LocalDate.now())) {
+            throw new AppException(ErrorCode.WORKOUT_PLAN_DUE_DATE_PAST);
+        }
 
         WorkoutPlan plan = WorkoutPlan.builder()
             .planName(requestDTO.getPlanName())

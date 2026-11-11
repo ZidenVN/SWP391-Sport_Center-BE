@@ -113,6 +113,7 @@ public enum ErrorCode {
     ATTENDANCE_CLASS_NOT_ACTIVE(HttpStatus.UNPROCESSABLE_ENTITY, "ERR_ATTENDANCE_005", "Lớp đã bị huỷ, không thể điểm danh!"),
     WORKOUT_PLAN_INVALID_TARGET(HttpStatus.BAD_REQUEST, "ERR_PLAN_001", "Loại đối tượng không hợp lệ! Chỉ chấp nhận INDIVIDUAL hoặc CLASS"),
     WORKOUT_PLAN_INVALID_STATUS(HttpStatus.BAD_REQUEST, "ERR_PLAN_002", "Trạng thái giáo án chỉ nhận IN_PROGRESS hoặc COMPLETED!"),
+    WORKOUT_PLAN_DUE_DATE_PAST(HttpStatus.BAD_REQUEST, "ERR_PLAN_003", "Hạn hoàn thành không được ở trong quá khứ!"),
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "ERR_NOTI_404", "Không tìm thấy thông báo!"),
     NOTIFICATION_NO_RECIPIENT(HttpStatus.BAD_REQUEST, "ERR_NOTI_001", "Cần chọn ít nhất 1 hội viên nhận thông báo!"),
     NOTIFICATION_INVALID_TARGET(HttpStatus.BAD_REQUEST, "ERR_NOTI_002", "Kiểu người nhận không hợp lệ! Chỉ chấp nhận MEMBERS hoặc ALL_ACTIVE!"),
