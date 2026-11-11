@@ -24,6 +24,16 @@ public class ImageStorageServiceImpl implements ImageStorageService {
 
     @Override
     public String uploadClassImage(MultipartFile file) {
+        return uploadRequired(file, "sports-center/classes");
+    }
+
+    @Override
+    public String uploadSubjectImage(MultipartFile file) {
+        return uploadRequired(file, "sports-center/subjects");
+    }
+
+    // Ảnh bắt buộc: thiếu file, sai đuôi hoặc Cloudinary lỗi đều báo lỗi rõ ràng
+    private String uploadRequired(MultipartFile file, String folder) {
        if (file == null || file.isEmpty()) {
            throw new AppException(ErrorCode.IMAGE_REQUIRED);
        }
@@ -34,10 +44,10 @@ public class ImageStorageServiceImpl implements ImageStorageService {
            throw new AppException(ErrorCode.IMAGE_VALID_TYPE);
        }
        try {
-           Map<?, ?> result = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap("folder", "sports-center/classes", "resource_type", "image", "format", "jpg", "transformation", new Transformation<>().width(1200).crop("limit").quality("auto")));
+           Map<?, ?> result = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap("folder", folder, "resource_type", "image", "format", "jpg", "transformation", new Transformation<>().width(1200).crop("limit").quality("auto")));
            return (String) result.get("secure_url");
        } catch (Exception e) {
-           log.error("Upload ảnh lớp học lên Cloudinary thất bại", e);
+           log.error("Upload ảnh lên Cloudinary ({}) thất bại", folder, e);
            throw new AppException(ErrorCode.IMAGE_UPLOAD_FAILED);
        }
     }
