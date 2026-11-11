@@ -63,3 +63,7 @@ docs/
 
 ### UI/UX audit screenshots ###
 ux-audit/
+
+### Seed demo (mật khẩu local) ###
+scripts/.seed.env
+scripts/seed-accounts.md

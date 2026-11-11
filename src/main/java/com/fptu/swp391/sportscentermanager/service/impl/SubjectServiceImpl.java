@@ -18,6 +18,8 @@ import java.util.List;
 import static com.fptu.swp391.sportscentermanager.dto.SubjectResponseDTO.*;
 import com.fptu.swp391.sportscentermanager.enums.AreaAccess;
 import com.fptu.swp391.sportscentermanager.repository.MembershipPackageRepository;
+import com.fptu.swp391.sportscentermanager.service.ImageStorageService;
+import org.springframework.web.multipart.MultipartFile;
 @Service
 @RequiredArgsConstructor
 public class SubjectServiceImpl implements SubjectService {
@@ -25,6 +27,7 @@ public class SubjectServiceImpl implements SubjectService {
     private final SubjectRepository subjectRepository;
     private final SportClassRepository sportClassRepository;
     private final MembershipPackageRepository packageRepository;
+    private final ImageStorageService imageStorageService;
     @Override
     public List<Subject> getAllSubjects() {
         return subjectRepository.findByStatus("ACTIVE");
@@ -37,25 +40,20 @@ public class SubjectServiceImpl implements SubjectService {
 
     @Override
     @Transactional
-    public SubjectResponseDTO createSubject(SubjectRequestDTO subjectRequestDTO) {
+    public SubjectResponseDTO createSubject(SubjectRequestDTO subjectRequestDTO, MultipartFile image) {
+            // ảnh bắt buộc khi tạo môn: upload trước, lỗi thì không lưu môn
+            String imageUrl = imageStorageService.uploadSubjectImage(image);
             Subject newSubject = Subject.builder()
                 .subjectName(subjectRequestDTO.getSubjectName())
                 .description(subjectRequestDTO.getDescription())
+                .imageUrl(imageUrl)
                 .areaAccess(subjectRequestDTO.getAreaAccess() != null ? subjectRequestDTO.getAreaAccess() : AreaAccess.OPEN)
                 .build();
-            Subject savedSubject = subjectRepository.save(newSubject);
-
-            return SubjectResponseDTO.builder()
-                .subjectId(savedSubject.getSubjectId())
-                .subjectName(savedSubject.getSubjectName())
-                .description(savedSubject.getDescription())
-                .areaAccess(savedSubject.getAreaAccess())
-                .build();
-
+            return toResponse(subjectRepository.save(newSubject));
     }
 
     @Override
-    public SubjectResponseDTO updateSubject(Long id, SubjectRequestDTO requestDTO) {
+    public SubjectResponseDTO updateSubject(Long id, SubjectRequestDTO requestDTO, MultipartFile image) {
        Subject existingSubject = getSubjectById(id);
        existingSubject.setSubjectName(requestDTO.getSubjectName());
        existingSubject.setDescription(requestDTO.getDescription());
@@ -66,13 +64,22 @@ public class SubjectServiceImpl implements SubjectService {
             existingSubject.setAreaAccess(newAccess);
         }
 
-       Subject updatedSubject = subjectRepository.save(existingSubject);
-       return SubjectResponseDTO.builder()
-           .subjectId(updatedSubject.getSubjectId())
-           .subjectName(updatedSubject.getSubjectName())
-           .description(updatedSubject.getDescription())
-           .areaAccess(updatedSubject.getAreaAccess())
-           .build();
+        // sửa môn: không gửi ảnh thì giữ ảnh cũ
+        if (image != null && !image.isEmpty()) {
+            existingSubject.setImageUrl(imageStorageService.uploadSubjectImage(image));
+        }
+
+       return toResponse(subjectRepository.save(existingSubject));
+    }
+
+    private SubjectResponseDTO toResponse(Subject subject) {
+        return SubjectResponseDTO.builder()
+            .subjectId(subject.getSubjectId())
+            .subjectName(subject.getSubjectName())
+            .description(subject.getDescription())
+            .imageUrl(subject.getImageUrl())
+            .areaAccess(subject.getAreaAccess())
+            .build();
     }
 
     @Override

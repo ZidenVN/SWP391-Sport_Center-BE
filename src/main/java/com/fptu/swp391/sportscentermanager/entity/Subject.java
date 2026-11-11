@@ -26,6 +26,10 @@ public class Subject {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
+    // Ảnh bộ môn trên Cloudinary; bắt buộc khi tạo, môn cũ có thể null
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
     @Column(name = "status")
     @Builder.Default
     private String status = "ACTIVE";

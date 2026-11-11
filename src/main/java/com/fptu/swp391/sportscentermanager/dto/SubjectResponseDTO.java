@@ -12,5 +12,6 @@ public class SubjectResponseDTO {
     private Long subjectId;
     private String subjectName;
     private String description;
+    private String imageUrl;
     private AreaAccess areaAccess;
 }

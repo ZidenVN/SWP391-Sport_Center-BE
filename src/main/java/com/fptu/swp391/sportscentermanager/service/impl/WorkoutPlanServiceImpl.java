@@ -1,11 +1,13 @@
 package com.fptu.swp391.sportscentermanager.service.impl;
 
+import com.fptu.swp391.sportscentermanager.dto.NotificationRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.WorkoutPlanRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.WorkoutPlanResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.*;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.*;
+import com.fptu.swp391.sportscentermanager.service.NotificationService;
 import com.fptu.swp391.sportscentermanager.service.WorkoutPlanService;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
@@ -24,14 +26,16 @@ public class WorkoutPlanServiceImpl implements WorkoutPlanService {
     private final MemberRepository memberRepository;
     private final SportClassRepository sportClassRepository;
     private final ClassPlanRepository classPlanRepository;
+    private final NotificationService notificationService;
 
-    public WorkoutPlanServiceImpl(CoachRepository coachRepository, WorkoutPlanRepository workoutPlanRepository, MemberPlanRepository memberPlanRepository, MemberRepository memberRepository, SportClassRepository sportClassRepository, ClassPlanRepository classPlanRepository) {
+    public WorkoutPlanServiceImpl(CoachRepository coachRepository, WorkoutPlanRepository workoutPlanRepository, MemberPlanRepository memberPlanRepository, MemberRepository memberRepository, SportClassRepository sportClassRepository, ClassPlanRepository classPlanRepository, NotificationService notificationService) {
         this.coachRepository = coachRepository;
         this.workoutPlanRepository = workoutPlanRepository;
         this.memberPlanRepository = memberPlanRepository;
         this.memberRepository = memberRepository;
         this.sportClassRepository = sportClassRepository;
         this.classPlanRepository = classPlanRepository;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -60,6 +64,7 @@ public class WorkoutPlanServiceImpl implements WorkoutPlanService {
         memberPlanRepository.save(memberPlan);
 
         targetName = member.getFirstName() + " " + member.getLastName();
+        notificationService.sendNotificationToMember(coachId, member.getUserId(), planNotice(savedPlan));
     } else if("CLASS".equalsIgnoreCase(requestDTO.getTargetType())) {
         SportClass sportClass = sportClassRepository.findById(requestDTO.getTargetId()).orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
 
@@ -74,6 +79,8 @@ public class WorkoutPlanServiceImpl implements WorkoutPlanService {
             .build();
         classPlanRepository.save(classPlan);
         targetName = sportClass.getSubject() != null ? sportClass.getSubject().getSubjectName() : "Lớp " + sportClass.getClassId();
+        // báo cho học viên đang học lớp; đẩy realtime sau khi commit
+        notificationService.sendNotificationToClass(coachId, sportClass.getClassId(), planNotice(savedPlan));
 
     } else {
         throw new AppException(ErrorCode.WORKOUT_PLAN_INVALID_TARGET);
@@ -187,5 +194,14 @@ public class WorkoutPlanServiceImpl implements WorkoutPlanService {
         }
         memberPlan.setStatus(newStatus);
         memberPlanRepository.save(memberPlan);
+    }
+
+    private NotificationRequestDTO planNotice(WorkoutPlan plan) {
+        return NotificationRequestDTO.builder()
+            .title("Giáo án mới: " + plan.getPlanName())
+            .content("Huấn luyện viên vừa giao giáo án \"" + plan.getPlanName() + "\""
+                + (plan.getDuration() != null && !plan.getDuration().isBlank() ? " (" + plan.getDuration() + ")" : "")
+                + ". Xem chi tiết trong mục Tập luyện.")
+            .build();
     }
 }
