@@ -84,6 +84,6 @@ public class ClassRegistrationController {
     public ResponseEntity<List<MemberSessionResponseDTO>> schedule(
         @AuthenticationPrincipal CustomUserDetails principal) {
         return ResponseEntity.ok(
-            registrationService.getUpcomingSchedule(principal.getUser().getUserId()));
+            registrationService.getSchedule(principal.getUser().getUserId()));
     }
 }
