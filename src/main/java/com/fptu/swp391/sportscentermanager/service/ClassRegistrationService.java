@@ -32,6 +32,9 @@ public interface ClassRegistrationService {
     // Lịch sắp tới theo buổi (gồm buổi bù, HLV dạy thay)
     List<MemberSessionResponseDTO> getUpcomingSchedule(Long memberId);
 
+    // Lịch đầy đủ theo buổi (cả buổi đã qua) cho trang Lịch tập
+    List<MemberSessionResponseDTO> getSchedule(Long memberId);
+
     // Hàm cho người khác gọi
     void releaseForCancelledClass(Long classId);   // B: huỷ lớp trước khi bắt đầu -> đăng ký CANCELLED, gói về chờ
     void stopRegistrations(Long classId);          // B: dừng lớp giữa khoá -> đăng ký STOPPED

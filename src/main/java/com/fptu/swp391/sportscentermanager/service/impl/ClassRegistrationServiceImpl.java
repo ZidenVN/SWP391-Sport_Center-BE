@@ -278,6 +278,14 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
             .stream().map(this::toSessionResponse).toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<MemberSessionResponseDTO> getSchedule(Long memberId) {
+        requireMember(memberId);
+        return scheduleQueryRepository.findMemberSessions(memberId)
+            .stream().map(this::toSessionResponse).toList();
+    }
+
     // ---------- Hàm cho B gọi (A hoàn tiền tự xử lý đăng ký trong PaymentServiceImpl) ----------
     @Override
     @Transactional

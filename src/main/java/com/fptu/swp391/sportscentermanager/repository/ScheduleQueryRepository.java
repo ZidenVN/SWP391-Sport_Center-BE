@@ -76,6 +76,23 @@ public interface ScheduleQueryRepository extends Repository<ClassSession, Long> 
     List<ClassSession> findMemberUpcomingSessions(@Param("memberId") Long memberId,
                                                   @Param("now") LocalDateTime now);
 
+    // Lịch đầy đủ của hội viên (trang Lịch tập): mọi buổi của các lớp đang học, cả buổi đã qua,
+    // giống lịch dạy của HLV; bỏ buổi đã huỷ
+    @Query("""
+        SELECT s FROM ClassSession s
+        JOIN FETCH s.sportClass c
+        LEFT JOIN FETCH c.subject
+        LEFT JOIN FETCH c.coach
+        LEFT JOIN FETCH s.coach
+        LEFT JOIN FETCH s.room
+        WHERE s.status <> com.fptu.swp391.sportscentermanager.enums.SessionStatus.CANCELLED
+          AND c.classId IN (
+              SELECT r.sportClass.classId FROM ClassRegistration r
+              WHERE r.member.userId = :memberId AND r.status = 'REGISTERED')
+        ORDER BY s.startTime ASC
+        """)
+    List<ClassSession> findMemberSessions(@Param("memberId") Long memberId);
+
     // Nhắc lịch: buổi bắt đầu trong (from, to]
     @Query("""
         SELECT s FROM ClassSession s
