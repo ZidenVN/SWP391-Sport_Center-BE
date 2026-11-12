@@ -13,4 +13,5 @@ public class RoomResponseDTO {
     private String roomName;
     private Integer capacity;
     private String status;
+    private String imageUrl;
 }

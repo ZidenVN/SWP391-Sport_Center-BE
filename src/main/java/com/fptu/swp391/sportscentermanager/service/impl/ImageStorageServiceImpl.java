@@ -32,6 +32,11 @@ public class ImageStorageServiceImpl implements ImageStorageService {
         return uploadRequired(file, "sports-center/subjects");
     }
 
+    @Override
+    public String uploadRoomImage(MultipartFile file) {
+        return uploadRequired(file, "sports-center/rooms");
+    }
+
     // Ảnh bắt buộc: thiếu file, sai đuôi hoặc Cloudinary lỗi đều báo lỗi rõ ràng
     private String uploadRequired(MultipartFile file, String folder) {
        if (file == null || file.isEmpty()) {
