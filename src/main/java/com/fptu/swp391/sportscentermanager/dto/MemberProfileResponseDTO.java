@@ -15,4 +15,7 @@ public class MemberProfileResponseDTO {
     private String email;
     private String phone;
     private String trainingGoal;
+    private Double heightCm;
+    private Double weightKg;
+    private String coverImage;
 }

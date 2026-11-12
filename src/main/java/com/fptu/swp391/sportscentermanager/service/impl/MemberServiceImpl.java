@@ -1,6 +1,7 @@
 package com.fptu.swp391.sportscentermanager.service.impl;
 
 import com.fptu.swp391.sportscentermanager.dto.MemberAttendanceResponseDTO;
+import com.fptu.swp391.sportscentermanager.dto.MemberCoverImageDTO;
 import com.fptu.swp391.sportscentermanager.dto.MemberProfileResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.MemberProfileUpdateDTO;
 import com.fptu.swp391.sportscentermanager.entity.Member;
@@ -43,6 +44,9 @@ public class MemberServiceImpl implements MemberService {
             .email(m.getEmail())
             .phone(m.getPhone())
             .trainingGoal(m.getTrainingGoal())
+            .heightCm(m.getHeightCm())
+            .weightKg(m.getWeightKg())
+            .coverImage(m.getCoverImage())
             .build();
     }
 
@@ -67,7 +71,16 @@ public class MemberServiceImpl implements MemberService {
         member.setGender(dto.getGender());
         member.setPhone(dto.getPhone());
         member.setTrainingGoal(dto.getTrainingGoal());
+        if (dto.getHeightCm() != null) member.setHeightCm(dto.getHeightCm());
+        if (dto.getWeightKg() != null) member.setWeightKg(dto.getWeightKg());
 
+        return toResponse(memberRepository.save(member));
+    }
+
+    @Override
+    public MemberProfileResponseDTO updateCoverImage(Long memberId, MemberCoverImageDTO dto) {
+        Member member = findMember(memberId);
+        member.setCoverImage(dto.getCoverImage());
         return toResponse(memberRepository.save(member));
     }
 

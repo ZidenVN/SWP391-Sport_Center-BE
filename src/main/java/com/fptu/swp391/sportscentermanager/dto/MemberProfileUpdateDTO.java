@@ -2,6 +2,8 @@ package com.fptu.swp391.sportscentermanager.dto;
 
 import lombok.*;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
@@ -16,5 +18,14 @@ public class MemberProfileUpdateDTO {
     private String gender;
     @NotBlank private String phone;
     @NotBlank private String trainingGoal;
+
+    // Không gửi (null) = giữ nguyên giá trị đang có
+    @DecimalMin(value = "50", message = "Chiều cao từ 50 đến 250 cm")
+    @DecimalMax(value = "250", message = "Chiều cao từ 50 đến 250 cm")
+    private Double heightCm;
+
+    @DecimalMin(value = "20", message = "Cân nặng từ 20 đến 300 kg")
+    @DecimalMax(value = "300", message = "Cân nặng từ 20 đến 300 kg")
+    private Double weightKg;
 
 }

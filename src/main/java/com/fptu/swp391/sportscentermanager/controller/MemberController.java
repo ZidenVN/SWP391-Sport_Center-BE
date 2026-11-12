@@ -48,6 +48,15 @@ public class MemberController {
         return ResponseEntity.ok(memberService.updateProfile(principal.getUser().getUserId(), dto));
     }
 
+    // Đổi ảnh bìa riêng: tài khoản Google chưa có giới tính / SĐT vẫn đổi được, không phải gửi lại cả hồ sơ
+    @PreAuthorize("hasRole('MEMBER') and hasAuthority('UPDATE_OWN_PROFILE')")
+    @PatchMapping("/me/cover-image")
+    public ResponseEntity<MemberProfileResponseDTO> updateMyCoverImage(
+        @AuthenticationPrincipal CustomUserDetails principal,
+        @Valid @RequestBody MemberCoverImageDTO dto) {
+        return ResponseEntity.ok(memberService.updateCoverImage(principal.getUser().getUserId(), dto));
+    }
+
     @PreAuthorize("hasRole('MEMBER')")
     @GetMapping("/me/workout-plans")
     public ResponseEntity<java.util.List<com.fptu.swp391.sportscentermanager.dto.WorkoutPlanResponseDTO>> getMyWorkoutPlans(

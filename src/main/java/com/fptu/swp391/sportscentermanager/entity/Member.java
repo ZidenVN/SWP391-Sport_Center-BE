@@ -25,6 +25,10 @@ public class Member extends User {
     @Column(name = "weight_kg")
     private Double weightKg;
 
+    // Ảnh bìa trang hồ sơ: tên 1 ảnh có sẵn ở FE (/landing/<tên>.jpg), không phải ảnh upload
+    @Column(name = "cover_image", length = 30)
+    private String coverImage;
+
     @Column(name = "quiz_completed_at")
     private LocalDateTime quizCompletedAt;
 }
