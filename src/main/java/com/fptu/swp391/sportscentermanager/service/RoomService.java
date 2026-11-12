@@ -4,6 +4,8 @@ import com.fptu.swp391.sportscentermanager.dto.RoomRequestDTO;
 import com.fptu.swp391.sportscentermanager.dto.RoomResponseDTO;
 import com.fptu.swp391.sportscentermanager.entity.Room;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import java.util.List;
 
 public interface RoomService {
@@ -12,4 +14,5 @@ public interface RoomService {
     RoomResponseDTO createRoom(RoomRequestDTO requestDTO);
     RoomResponseDTO updateRoom(Long id, RoomRequestDTO RequestDTO);
     void deleteRoomById(Long id);
+    RoomResponseDTO updateRoomImage(Long id, MultipartFile image);
 }

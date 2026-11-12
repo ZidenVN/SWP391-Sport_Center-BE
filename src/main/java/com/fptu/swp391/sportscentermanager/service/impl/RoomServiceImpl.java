@@ -7,9 +7,11 @@ import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.RoomRepository;
 import com.fptu.swp391.sportscentermanager.repository.SportClassRepository;
+import com.fptu.swp391.sportscentermanager.service.ImageStorageService;
 import com.fptu.swp391.sportscentermanager.service.RoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,6 +21,7 @@ import java.util.List;
 public class RoomServiceImpl implements RoomService {
     private final RoomRepository roomRepository;
     private final SportClassRepository sportClassRepository;
+    private final ImageStorageService imageStorageService;
 
     @Override
     public List<Room> getAllRooms() {
@@ -43,12 +46,7 @@ public class RoomServiceImpl implements RoomService {
             .build();
 
         Room savedRoom = roomRepository.save(newRoom);
-        return RoomResponseDTO.builder()
-            .roomId(savedRoom.getRoomId())
-            .roomName(savedRoom.getRoomName())
-            .capacity(savedRoom.getCapacity())
-            .status(savedRoom.getStatus())
-            .build();
+        return toDTO(savedRoom);
     }
 
     @Override
@@ -72,12 +70,7 @@ public class RoomServiceImpl implements RoomService {
         }
 
         Room updatedRoom = roomRepository.save(existingRoom);
-        return RoomResponseDTO.builder()
-            .roomId(updatedRoom.getRoomId())
-            .roomName(updatedRoom.getRoomName())
-            .capacity(updatedRoom.getCapacity())
-            .status(updatedRoom.getStatus())
-            .build();
+        return toDTO(updatedRoom);
     }
 
     @Override
@@ -87,5 +80,24 @@ public class RoomServiceImpl implements RoomService {
             throw new AppException(ErrorCode.ROOM_IN_USE);
         }
         roomRepository.delete(room);
+    }
+
+    @Override
+    public RoomResponseDTO updateRoomImage(Long id, MultipartFile image) {
+        // tìm phòng trước khi upload: id sai thì không đẩy ảnh rác lên Cloudinary
+        Room room = getRoomById(id);
+        // ảnh cũ giữ nguyên trên Cloudinary (giống luật ảnh lớp/môn), chỉ thay URL
+        room.setImageUrl(imageStorageService.uploadRoomImage(image));
+        return toDTO(roomRepository.save(room));
+    }
+
+    private RoomResponseDTO toDTO(Room room) {
+        return RoomResponseDTO.builder()
+            .roomId(room.getRoomId())
+            .roomName(room.getRoomName())
+            .capacity(room.getCapacity())
+            .status(room.getStatus())
+            .imageUrl(room.getImageUrl())
+            .build();
     }
 }

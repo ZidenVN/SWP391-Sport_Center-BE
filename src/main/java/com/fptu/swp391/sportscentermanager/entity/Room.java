@@ -22,4 +22,7 @@ public class Room {
 
     private Integer capacity;
     private String status;
+
+    @Column(name = "image_url")
+    private String imageUrl;
 }

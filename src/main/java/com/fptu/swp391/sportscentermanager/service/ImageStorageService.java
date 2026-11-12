@@ -5,5 +5,6 @@ import org.springframework.web.multipart.MultipartFile;
 public interface ImageStorageService {
     String uploadClassImage(MultipartFile file);
     String uploadSubjectImage(MultipartFile file);
+    String uploadRoomImage(MultipartFile file);
     String uploadReportImage(MultipartFile file);
 }

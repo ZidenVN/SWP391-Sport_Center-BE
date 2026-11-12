@@ -8,9 +8,11 @@ import com.fptu.swp391.sportscentermanager.repository.RoomRepository;
 import com.fptu.swp391.sportscentermanager.service.RoomService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -43,6 +45,15 @@ public class RoomController {
     @PutMapping("/{id}")
     public ResponseEntity<RoomResponseDTO> updateRoom(@PathVariable Long id, @Valid @RequestBody RoomRequestDTO roomRequestDTO) throws  Exception{
         return ResponseEntity.ok(roomService.updateRoom(id, roomRequestDTO));
+    }
+
+    // multipart part "image"; required=false để thiếu ảnh trả IMAGE_REQUIRED thay vì lỗi 500 của Spring
+    @LogAudit(actionType = "UPDATE", targetEntity = "Room")
+    @PreAuthorize("hasAuthority('MANAGE_ROOM')")
+    @PatchMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<RoomResponseDTO> updateRoomImage(@PathVariable Long id,
+                                                           @RequestPart(value = "image", required = false) MultipartFile image) {
+        return ResponseEntity.ok(roomService.updateRoomImage(id, image));
     }
 
     @LogAudit(actionType = "DELETE", targetEntity = "Room")
