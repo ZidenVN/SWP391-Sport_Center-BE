@@ -69,3 +69,6 @@ scripts/.seed.env
 scripts/seed-accounts.md
 
 .agents/
+
+# Ảnh tải về từ Cloudinary để xem/xử lý local, không commit
+/images/
