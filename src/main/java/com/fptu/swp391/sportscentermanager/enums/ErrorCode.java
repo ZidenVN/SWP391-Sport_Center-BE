@@ -82,7 +82,7 @@ public enum ErrorCode {
     SUBJECT_IN_USE(HttpStatus.CONFLICT, "ERR_SUB_409", "Môn học đang có lớp sắp diễn ra, hãy huỷ các lớp đó trước!"),
     MEMBER_INACTIVE(HttpStatus.BAD_REQUEST, "ERR_CHECKIN_002", "Tài khoản hội viên đang bị khoá!"),
 
-    IMAGE_REQUIRED(HttpStatus.BAD_REQUEST, "ERR_IMG_001", "Vui lòng chọn ảnh cho lớp học"),
+    IMAGE_REQUIRED(HttpStatus.BAD_REQUEST, "ERR_IMG_001", "Vui lòng chọn ảnh"),
     IMAGE_VALID_TYPE(HttpStatus.BAD_REQUEST, "ERR_IMG_002", "Chỉ hỗ trợ ảnh JPG, PNG, WEBP, HEIC!"),
     IMAGE_TOO_LARGE(HttpStatus.BAD_REQUEST, "ERR_IMG_003", "Ảnh tối đa 10MB!"),
     IMAGE_UPLOAD_FAILED(HttpStatus.BAD_GATEWAY, "ERR_IMG_004", "Upload ảnh thất bại, vui lòng thử lại!"),
