@@ -22,6 +22,7 @@ import com.fptu.swp391.sportscentermanager.entity.Member;
 import com.fptu.swp391.sportscentermanager.enums.PackageType;
 import com.fptu.swp391.sportscentermanager.enums.SessionType;
 import com.fptu.swp391.sportscentermanager.repository.ScheduleQueryRepository;
+import com.fptu.swp391.sportscentermanager.repository.ClassSessionRepository;
 import java.time.temporal.ChronoUnit;
 @Slf4j
 @Component
@@ -33,6 +34,7 @@ public class ReminderScheduler {
     private final SubscriptionRepository subscriptionRepository;
     private final ClassRegistrationRepository classRegistrationRepository;
     private final ScheduleQueryRepository scheduleQueryRepository;
+    private final ClassSessionRepository classSessionRepository;
     private final NotificationService notificationService;
     private final SubscriptionService subscriptionService;
 
@@ -57,20 +59,22 @@ public class ReminderScheduler {
             // Chỉ nhắc membership; gói lớp hết hạn theo lớp nên không nhắc gia hạn
             if (s.getMembershipPackage().getPackageType() != PackageType.MEMBERSHIP) continue;
             if (subscriptionService.hasRenewal(s)) continue;
+            // nhiều BE cùng chạy job này: chỉ BE giành được dòng mới gửi
+            if (subscriptionRepository.claimExpiryReminder(s.getSubscriptionId(), now) == 0) continue;
             String content = s.getMembershipPackage().getPackageName() + " của bạn sẽ hết hạn vào " + s.getEndDate().format(DATE) + ". Hãy gia hạn để không bị gián đoạn lịch tập.";
             notificationService.notifyUsers(List.of(s.getMember()), "Gói tập sắp hết hạn", content, "SUBSCRIPTION_EXPIRING");
-            s.setExpiryReminderSentAt(now);
             sent++;
         }
         log.info("Subscription reminders sent: {}", sent);
     }
 
-    // Nhắc theo buổi: mỗi lần chạy lấy các buổi bắt đầu trong đúng 1 khung = chu kỳ cron,
-    // cách bây giờ classHoursBefore giờ. Mỗi buổi rơi vào đúng 1 khung nên không cần cột đánh dấu đã nhắc
+    // Nhắc theo buổi: mỗi lần chạy lấy các buổi bắt đầu trong đúng 1 khung = chu kỳ cron, cách bây giờ classHoursBefore giờ.
+    // Nhiều BE cùng nối 1 DB đều chạy job này cùng lúc -> mỗi buổi phải "giành" reminder_sent_at trước khi gửi (bị gửi 3 lần 13/11)
     @Scheduled(cron = "${app.reminder.class-cron:0 */15 * * * *}", zone = "Asia/Ho_Chi_Minh")
     @Transactional
     public void remindUpcomingClasses() {
-        LocalDateTime to = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES).plusHours(classHoursBefore);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime to = now.truncatedTo(ChronoUnit.MINUTES).plusHours(classHoursBefore);
         LocalDateTime from = to.minusMinutes(classIntervalMinutes);
         int sent = 0;
         for (ClassSession s : scheduleQueryRepository.findSessionsStartingBetween(from, to)) {
@@ -78,6 +82,7 @@ public class ReminderScheduler {
             List<Member> members = classRegistrationRepository.findActiveByClassId(c.getClassId()).stream()
                 .map(ClassRegistration::getMember).toList();
             if (members.isEmpty()) continue;
+            if (classSessionRepository.claimReminder(s.getSessionId(), now) == 0) continue;
             String subject = c.getSubject() != null ? c.getSubject().getSubjectName() : "Lớp học";
             String room = s.getRoom() != null ? s.getRoom().getRoomName() : "Chưa xếp phòng";
             String content = (s.getType() == SessionType.MAKEUP ? "Buổi bù lớp " : "Lớp ") + subject

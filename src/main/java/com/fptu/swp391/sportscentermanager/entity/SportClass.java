@@ -24,6 +24,26 @@ public class SportClass {
     @Column(name = "class_id")
     private Long classId;
 
+    // Mã lớp cho người dùng (vd YOG-0012): sinh 1 lần sau khi có id, không đổi dù sau này đổi môn/ngày
+    @Column(name = "class_code", length = 20, unique = true)
+    private String classCode;
+
+    public void assignCodeIfMissing() {
+        if (classCode != null || classId == null) return;
+        String name = subject != null && subject.getSubjectName() != null ? subject.getSubjectName() : "";
+        // bỏ dấu tiếng Việt, chỉ giữ chữ cái: "Bơi Lội" -> "BOI"
+        String letters = java.text.Normalizer.normalize(name.replace('Đ', 'D').replace('đ', 'd'), java.text.Normalizer.Form.NFD)
+            .replaceAll("[^A-Za-z]", "").toUpperCase();
+        String prefix = letters.length() >= 3 ? letters.substring(0, 3) : "LOP";
+        classCode = prefix + "-" + String.format("%04d", classId);
+    }
+
+    // Tên lớp hiển thị trong chữ do BE ghép sẵn (giáo án lớp, check-in): "Yoga YOG-0012"
+    public String displayName() {
+        String name = subject != null && subject.getSubjectName() != null ? subject.getSubjectName() : "Lớp";
+        return name + " " + (classCode != null ? classCode : "#" + classId);
+    }
+
     private Integer maxCapacity;
 
     @Column(name = "start_date")

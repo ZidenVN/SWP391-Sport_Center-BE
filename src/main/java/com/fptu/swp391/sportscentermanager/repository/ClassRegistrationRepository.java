@@ -74,14 +74,15 @@ public interface ClassRegistrationRepository extends JpaRepository<ClassRegistra
                    CONCAT(coach.lastName, ' ', coach.firstName),
                    room.roomName,
                    c.maxCapacity,
-                   COUNT(CASE WHEN r.status = 'REGISTERED' THEN 1 END) AS registeredCount
+                   COUNT(CASE WHEN r.status = 'REGISTERED' THEN 1 END) AS registeredCount,
+                   c.classCode
             FROM SportClass c
             JOIN c.subject sub
             LEFT JOIN c.coach coach
             LEFT JOIN c.room room
             LEFT JOIN ClassRegistration r ON r.sportClass.classId = c.classId
                         WHERE c.status = 'OPENING' AND c.startTime BETWEEN :start AND :end
-            GROUP BY c.classId, sub.subjectName, coach.lastName, coach.firstName, room.roomName, c.maxCapacity
+            GROUP BY c.classId, sub.subjectName, coach.lastName, coach.firstName, room.roomName, c.maxCapacity, c.classCode
         """)
     List<Object[]> getClassOccupancyStats(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 

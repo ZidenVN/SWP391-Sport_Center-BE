@@ -411,6 +411,7 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
     private EligibleClassResponseDTO toEligible(SportClass c, long registered) {
         return EligibleClassResponseDTO.builder()
             .classId(c.getClassId())
+            .classCode(c.getClassCode())
             .subjectName(c.getSubject() != null ? c.getSubject().getSubjectName() : null)
             .coachName(c.getCoach() != null ? fullName(c.getCoach()) : "Chưa có HLV")
             .roomName(c.getRoom() != null ? c.getRoom().getRoomName() : null)
@@ -434,6 +435,7 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
         return MemberSessionResponseDTO.builder()
             .sessionId(s.getSessionId())
             .classId(c.getClassId())
+            .classCode(c.getClassCode())
             .subjectName(c.getSubject() != null ? c.getSubject().getSubjectName() : null)
             .roomName(s.getRoom() != null ? s.getRoom().getRoomName() : null)
             .coachName(teacher != null ? fullName(teacher) : "Chưa có HLV")
@@ -454,6 +456,7 @@ public class ClassRegistrationServiceImpl implements ClassRegistrationService {
             .registrationId(r.getRegistrationId())
             .memberId(r.getMember().getUserId())
             .classId(c.getClassId())
+            .classCode(c.getClassCode())
             .imageUrl(c.getImageUrl())
             .subjectName(c.getSubject() != null ? c.getSubject().getSubjectName() : null)
             .roomName(c.getRoom() != null ? c.getRoom().getRoomName() : null)

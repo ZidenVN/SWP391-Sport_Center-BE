@@ -25,6 +25,7 @@ public class DataInitializer implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
     private final QuizQuestionRepository quizQuestionRepository;
     private final SubjectRepository subjectRepository;
+    private final SportClassRepository sportClassRepository;
 
     private static final String DEFAULT_COACH_EMAIL = "coach@Sportcenter.com";
 
@@ -98,6 +99,7 @@ public class DataInitializer implements CommandLineRunner {
         assignSubjectToDefaultCoach();
         seedDefaultReceptionist(roles.get("RECEPTIONIST"));
         seedQuizSystemQuestions();
+        backfillClassCodes();
     }
 
     private Map<String, Permission> seedPermissions() {
@@ -238,6 +240,11 @@ public class DataInitializer implements CommandLineRunner {
             .role(receptionistRole)
             .build());
         System.out.println("Đã tạo tài khoản Lễ tân mặc định: " + email);
+    }
+
+    // Lớp tạo trước khi có mã lớp: gán mã 1 lần (lớp đã có mã thì bỏ qua)
+    private void backfillClassCodes() {
+        sportClassRepository.findByClassCodeIsNull().forEach(SportClass::assignCodeIfMissing);
     }
 
     private void seedQuizSystemQuestions() {

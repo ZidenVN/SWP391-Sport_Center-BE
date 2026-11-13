@@ -15,6 +15,8 @@ import java.util.Optional;
 
 public interface SportClassRepository extends JpaRepository<SportClass, Long> {
 
+    List<SportClass> findByClassCodeIsNull();
+
     // Khóa dòng của lớp trong lúc đăng ký: 2 người bấm cùng lúc sẽ xếp hàng,
     // không thể cùng lọt vào chỗ cuối cùng. Phải gọi trong @Transactional.
     @Lock(LockModeType.PESSIMISTIC_WRITE)

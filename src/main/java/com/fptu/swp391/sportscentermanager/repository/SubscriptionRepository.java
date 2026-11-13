@@ -3,6 +3,7 @@ package com.fptu.swp391.sportscentermanager.repository;
 import com.fptu.swp391.sportscentermanager.entity.ClassRegistration;
 import com.fptu.swp391.sportscentermanager.entity.Subscription;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -44,6 +45,11 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
         and s.endDate <= :deadline
         """)
     List<Subscription> findExpiringWithoutReminder(@Param("now") LocalDateTime now, @Param("deadline") LocalDateTime deadline);
+
+    // Giành quyền gửi nhắc hết hạn (cùng cách với ClassSessionRepository.claimReminder)
+    @Modifying
+    @Query("update Subscription s set s.expiryReminderSentAt = :now where s.subscriptionId = :id and s.expiryReminderSentAt is null")
+    int claimExpiryReminder(@Param("id") Long id, @Param("now") LocalDateTime now);
 
     // ===== Gói tập theo buổi =====
 

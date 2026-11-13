@@ -136,7 +136,7 @@ public class CheckInServiceImpl implements CheckInService {
             ClassSession s = ci.getSession();
             dto.setClassSessionId(s.getSessionId());
 
-            dto.setClassName(s.getSportClass().getSubject().getSubjectName());
+            dto.setClassName(s.getSportClass().displayName());
 
             dto.setSessionStartTime(s.getStartTime());
         }

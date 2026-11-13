@@ -123,6 +123,7 @@ public class ReportServiceImpl implements ReportService {
 
             details.add(ClassOccurpancyDetailDTO.builder()
                     .classId(classId)
+                    .classCode((String) row[6])
                     .coachName(coach)
                     .subjectName(subject)
                     .roomName(room)
