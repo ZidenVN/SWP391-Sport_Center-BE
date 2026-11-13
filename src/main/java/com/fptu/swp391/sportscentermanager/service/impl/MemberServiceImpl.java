@@ -94,6 +94,7 @@ public class MemberServiceImpl implements MemberService {
                 .attendanceId(a.getAttendanceId())
                 .sessionId(s.getSessionId())
                 .classId(c.getClassId())
+                .classCode(c.getClassCode())
                 .subjectName(c.getSubject() != null ? c.getSubject().getSubjectName() : null)
                 .coachName(s.getCoach() != null ? s.getCoach().getLastName() + " " + s.getCoach().getFirstName() : null)
                 .roomName(s.getRoom() != null ? s.getRoom().getRoomName() : null)

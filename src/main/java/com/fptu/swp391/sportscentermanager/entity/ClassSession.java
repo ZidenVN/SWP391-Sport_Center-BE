@@ -51,4 +51,8 @@ public class ClassSession {
 
     @Column(name = "note", length = 500)
     private String note;
+
+    // Đã gửi nhắc lịch buổi này (nhiều BE cùng chạy scheduler chỉ 1 BE được gửi, xem ClassSessionRepository.claimReminder)
+    @Column(name = "reminder_sent_at")
+    private LocalDateTime reminderSentAt;
 }

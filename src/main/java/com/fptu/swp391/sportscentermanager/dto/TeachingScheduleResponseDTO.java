@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 public class TeachingScheduleResponseDTO {
     private Long sessionId;            // buổi học cụ thể
     private Long classId;
+    private String classCode;   // mã lớp hiển thị, vd YOG-0012
     private String subjectName;
     private String roomName;
     private LocalDateTime startTime;

@@ -272,6 +272,7 @@ public class CoachServiceImpl implements CoachService {
             result.add(TeachingScheduleResponseDTO.builder()
                 .sessionId(s.getSessionId())
                 .classId(c.getClassId())
+                .classCode(c.getClassCode())
                 .subjectName(c.getSubject() != null ? c.getSubject().getSubjectName() : "Chưa có môn nào")
                 .roomName(s.getRoom() != null ? s.getRoom().getRoomName() : "Chưa có phòng")
                 .startTime(s.getStartTime())

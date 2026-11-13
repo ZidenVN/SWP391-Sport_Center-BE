@@ -10,6 +10,7 @@ import java.time.LocalTime;
 @Builder @NoArgsConstructor @AllArgsConstructor
 public class SportClassResponseDTO {
     private Long classId;
+    private String classCode;   // mã lớp hiển thị, vd YOG-0012
     private Integer maxCapacity;
     private Long currentEnrolled;
     private Long availableSeats;

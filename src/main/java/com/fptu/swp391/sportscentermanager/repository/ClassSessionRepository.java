@@ -3,6 +3,7 @@ package com.fptu.swp391.sportscentermanager.repository;
 import com.fptu.swp391.sportscentermanager.entity.ClassSession;
 import com.fptu.swp391.sportscentermanager.enums.SessionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -11,6 +12,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ClassSessionRepository extends JpaRepository<ClassSession, Long> {
+
+    // Giành quyền gửi nhắc lịch: UPDATE có điều kiện là nguyên tử, BE nào nhận 1 thì gửi, nhận 0 thì BE khác đã gửi
+    @Modifying
+    @Query("update ClassSession s set s.reminderSentAt = :now where s.sessionId = :id and s.reminderSentAt is null")
+    int claimReminder(@Param("id") Long id, @Param("now") LocalDateTime now);
 
     List<ClassSession> findBySportClass_ClassIdOrderByStartTimeAsc(Long classId);
 

@@ -252,6 +252,7 @@ public class ClassSessionServiceImpl implements ClassSessionService {
         return ClassSessionResponseDTO.builder()
                 .sessionId(s.getSessionId())
                 .classId(s.getSportClass() != null ? s.getSportClass().getClassId() : null)
+                .classCode(s.getSportClass() != null ? s.getSportClass().getClassCode() : null)
                 .className(s.getSportClass() != null && s.getSportClass().getSubject() != null
                         ? s.getSportClass().getSubject().getSubjectName() : null)
                 .subjectId(s.getSportClass() != null && s.getSportClass().getSubject() != null

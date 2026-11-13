@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 public class ClassSessionResponseDTO {
     private Long sessionId;
     private Long classId;
+    private String classCode;   // mã lớp hiển thị, vd YOG-0012
     private String className;
     private Long subjectId;
     private String subjectName;

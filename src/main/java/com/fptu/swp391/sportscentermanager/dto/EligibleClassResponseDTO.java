@@ -15,6 +15,7 @@ import java.time.LocalTime;
 @Builder @NoArgsConstructor @AllArgsConstructor
 public class EligibleClassResponseDTO {
     private Long classId;
+    private String classCode;   // mã lớp hiển thị, vd YOG-0012
     private String subjectName;
     private String coachName;
     private String roomName;

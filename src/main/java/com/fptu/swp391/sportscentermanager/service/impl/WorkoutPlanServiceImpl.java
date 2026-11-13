@@ -82,7 +82,7 @@ public class WorkoutPlanServiceImpl implements WorkoutPlanService {
             .assignedDate(now.atStartOfDay())
             .build();
         classPlanRepository.save(classPlan);
-        targetName = sportClass.getSubject() != null ? sportClass.getSubject().getSubjectName() : "Lớp " + sportClass.getClassId();
+        targetName = sportClass.displayName();
         // báo cho học viên đang học lớp; đẩy realtime sau khi commit
         notificationService.sendNotificationToClass(coachId, sportClass.getClassId(), planNotice(savedPlan));
 
@@ -183,22 +183,17 @@ public class WorkoutPlanServiceImpl implements WorkoutPlanService {
                 SportClass sportClass =
                     classAssignment.getSportClass();
 
-                String subjectName =
-                    sportClass.getSubject() == null
-                        ? "Lớp"
-                        : sportClass.getSubject().getSubjectName();
 
                 dto.setTargetType("CLASS");
                 dto.setTargetId(sportClass.getClassId());
-                dto.setTargetName(
-                    subjectName + " #" + sportClass.getClassId()
-                );
+                dto.setTargetName(sportClass.displayName());
                 dto.setAssignedDate(
                     classAssignment.getAssignedDate() == null
                         ? null
                         : classAssignment.getAssignedDate().toLocalDate()
                 );
-                dto.setStatus("ACTIVE");
+                dto.setStatus(classPlanStatus(sportClass));
+                dto.setDueDate(sportClass.getEndDate());
             }
 
             result.add(dto);
@@ -240,10 +235,6 @@ public class WorkoutPlanServiceImpl implements WorkoutPlanService {
             Coach coach = plan.getCoach();
             SportClass sportClass = classPlan.getSportClass();
 
-            String subjectName =
-                sportClass.getSubject() == null
-                    ? "Lớp"
-                    : sportClass.getSubject().getSubjectName();
 
             result.add(
                 WorkoutPlanResponseDTO.builder()
@@ -261,15 +252,14 @@ public class WorkoutPlanServiceImpl implements WorkoutPlanService {
                     )
                     .targetType("CLASS")
                     .targetId(sportClass.getClassId())
-                    .targetName(
-                        subjectName + " #" + sportClass.getClassId()
-                    )
+                    .targetName(sportClass.displayName())
+                    .dueDate(sportClass.getEndDate())
                     .assignedDate(
                         classPlan.getAssignedDate() == null
                             ? null
                             : classPlan.getAssignedDate().toLocalDate()
                     )
-                    .status("ACTIVE")
+                    .status(classPlanStatus(sportClass))
                     .createdAt(plan.getCreatedAt())
                     .build()
             );
@@ -286,9 +276,7 @@ public class WorkoutPlanServiceImpl implements WorkoutPlanService {
             WorkoutPlan wp = cp.getWorkoutPlan();
             SportClass sc = cp.getSportClass();
             Coach c = wp.getCoach();
-            String className = (sc != null && sc.getSubject() != null)
-                    ? sc.getSubject().getSubjectName()
-                    : (sc != null ? "Lớp " + sc.getClassId() : "");
+            String className = sc != null ? sc.displayName() : "";
             result.add(WorkoutPlanResponseDTO.builder()
                     .planId(wp.getPlanId())
                     .planName(wp.getPlanName())
@@ -300,11 +288,17 @@ public class WorkoutPlanServiceImpl implements WorkoutPlanService {
                     .targetId(classId)
                     .targetName(className)
                     .assignedDate(cp.getAssignedDate() != null ? cp.getAssignedDate().toLocalDate() : null)
-                    .status("ACTIVE")
+                    .dueDate(sc != null ? sc.getEndDate() : null)
+                    .status(classPlanStatus(sc))
                     .createdAt(wp.getCreatedAt())
                     .build());
         }
         return result;
+    }
+
+    // Giáo án lớp không có nút hoàn thành: lớp đã kết thúc (qua ngày kết thúc) thì coi như hoàn thành
+    private static String classPlanStatus(SportClass c) {
+        return c != null && c.getEndDate() != null && c.getEndDate().isBefore(LocalDate.now()) ? "COMPLETED" : "ACTIVE";
     }
 
     @Override

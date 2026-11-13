@@ -133,6 +133,7 @@ public class SportClassServiceImpl implements SportClassService {
                     .build();
 
             SportClass savedClass = sportClassRepository.save(newClass);
+            savedClass.assignCodeIfMissing(); // cần id nên gán sau khi lưu; cùng transaction nên tự UPDATE
             for (ClassSession s : sessionsToCreate) {
                 s.setSportClass(savedClass);
             }
@@ -679,6 +680,7 @@ public class SportClassServiceImpl implements SportClassService {
         int totalSessions = (int) classSessionRepository.countBySportClass_ClassId(c.getClassId());
         return SportClassResponseDTO.builder()
                 .classId(c.getClassId())
+                .classCode(c.getClassCode())
                 .maxCapacity(c.getMaxCapacity())
                 .startTime(c.getStartTime())
                 .endTime(c.getEndTime())

@@ -55,9 +55,16 @@ public class AuthController {
             Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
             User user = userDetails.getUser();
-
-            String token = jwtUtils.generateToken(user);
             String roleName = (user.getRole() != null) ? user.getRole().getRoleName() : "USER";
+
+            // Nhân viên: mỗi tài khoản 1 phiên. Đăng nhập mới = tăng token_version như đăng xuất -> token ở tab/máy khác hết hạn.
+            // Hội viên giữ nhiều phiên (điện thoại + máy tính)
+            if (!"MEMBER".equals(roleName)) {
+                userService.logout(user.getUserId());
+                // đọc lại version vừa tăng (không tự +1: với open-in-view, user ở đây có thể chính là bản logout() đã sửa)
+                user = userRepository.findById(user.getUserId()).orElse(user);
+            }
+            String token = jwtUtils.generateToken(user);
             String fullName = user.getFirstName() + " " + user.getLastName();
 
             SubscriptionResponseDTO currentPackage = getActiveSubscription(user.getUserId());
