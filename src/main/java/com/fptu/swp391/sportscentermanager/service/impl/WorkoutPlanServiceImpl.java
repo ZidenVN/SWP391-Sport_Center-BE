@@ -108,21 +108,103 @@ public class WorkoutPlanServiceImpl implements WorkoutPlanService {
 
     @Override
     public List<WorkoutPlanResponseDTO> getPlansByCoach(Long coachId) {
-        List<WorkoutPlan> plans = workoutPlanRepository.findByCoach_UserIdOrderByCreatedAtDesc(coachId);
-        List<WorkoutPlanResponseDTO> dtos = new ArrayList<>();
-        for (WorkoutPlan p : plans) {
-            Coach c = p.getCoach();
-            dtos.add(WorkoutPlanResponseDTO.builder()
-                    .planId(p.getPlanId())
-                    .planName(p.getPlanName())
-                    .exerciseDetails(p.getExerciseDetails())
-                    .duration(p.getDuration())
+        List<WorkoutPlan> plans =
+            workoutPlanRepository
+                .findByCoach_UserIdOrderByCreatedAtDesc(coachId);
+
+        List<MemberPlan> personalAssignments =
+            memberPlanRepository
+                .findByWorkoutPlan_Coach_UserId(coachId);
+
+        List<ClassPlan> classAssignments =
+            classPlanRepository
+                .findByWorkoutPlan_Coach_UserId(coachId);
+
+        List<WorkoutPlanResponseDTO> result = new ArrayList<>();
+
+        for (WorkoutPlan plan : plans) {
+            Coach coach = plan.getCoach();
+
+            WorkoutPlanResponseDTO dto =
+                WorkoutPlanResponseDTO.builder()
+                    .planId(plan.getPlanId())
+                    .planName(plan.getPlanName())
+                    .exerciseDetails(plan.getExerciseDetails())
+                    .duration(plan.getDuration())
                     .coachId(coachId)
-                    .coachName(c != null ? c.getFirstName() + " " + c.getLastName() : "")
-                    .createdAt(p.getCreatedAt())
-                .build());
+                    .coachName(
+                        coach == null
+                            ? ""
+                            : coach.getFirstName() + " " + coach.getLastName()
+                    )
+                    .createdAt(plan.getCreatedAt())
+                    .build();
+
+            MemberPlan personalAssignment =
+                personalAssignments.stream()
+                    .filter(assignment ->
+                        assignment.getWorkoutPlan().getPlanId()
+                            .equals(plan.getPlanId())
+                    )
+                    .findFirst()
+                    .orElse(null);
+
+            ClassPlan classAssignment =
+                classAssignments.stream()
+                    .filter(assignment ->
+                        assignment.getWorkoutPlan().getPlanId()
+                            .equals(plan.getPlanId())
+                    )
+                    .findFirst()
+                    .orElse(null);
+
+            if (personalAssignment != null) {
+                Member member = personalAssignment.getMember();
+
+                dto.setTargetType("INDIVIDUAL");
+                dto.setTargetId(member.getUserId());
+                dto.setTargetName(
+                    member.getFirstName() + " " + member.getLastName()
+                );
+                dto.setMemberPlanId(
+                    personalAssignment.getMemberPlanId()
+                );
+                dto.setAssignedDate(
+                    personalAssignment.getAssignedDate()
+                );
+                dto.setDueDate(
+                    personalAssignment.getDueDate() == null
+                        ? null
+                        : personalAssignment.getDueDate().toLocalDate()
+                );
+                dto.setStatus(personalAssignment.getStatus());
+
+            } else if (classAssignment != null) {
+                SportClass sportClass =
+                    classAssignment.getSportClass();
+
+                String subjectName =
+                    sportClass.getSubject() == null
+                        ? "Lớp"
+                        : sportClass.getSubject().getSubjectName();
+
+                dto.setTargetType("CLASS");
+                dto.setTargetId(sportClass.getClassId());
+                dto.setTargetName(
+                    subjectName + " #" + sportClass.getClassId()
+                );
+                dto.setAssignedDate(
+                    classAssignment.getAssignedDate() == null
+                        ? null
+                        : classAssignment.getAssignedDate().toLocalDate()
+                );
+                dto.setStatus("ACTIVE");
+            }
+
+            result.add(dto);
         }
-        return dtos;
+
+        return result;
     }
 
     @Override
@@ -150,6 +232,49 @@ public class WorkoutPlanServiceImpl implements WorkoutPlanService {
                     .createdAt(wp.getCreatedAt())
                     .build());
         }
+
+        for (ClassPlan classPlan :
+            classPlanRepository.findVisibleToMember(memberId)) {
+
+            WorkoutPlan plan = classPlan.getWorkoutPlan();
+            Coach coach = plan.getCoach();
+            SportClass sportClass = classPlan.getSportClass();
+
+            String subjectName =
+                sportClass.getSubject() == null
+                    ? "Lớp"
+                    : sportClass.getSubject().getSubjectName();
+
+            result.add(
+                WorkoutPlanResponseDTO.builder()
+                    .planId(plan.getPlanId())
+                    .planName(plan.getPlanName())
+                    .exerciseDetails(plan.getExerciseDetails())
+                    .duration(plan.getDuration())
+                    .coachId(
+                        coach == null ? null : coach.getUserId()
+                    )
+                    .coachName(
+                        coach == null
+                            ? ""
+                            : coach.getFirstName() + " " + coach.getLastName()
+                    )
+                    .targetType("CLASS")
+                    .targetId(sportClass.getClassId())
+                    .targetName(
+                        subjectName + " #" + sportClass.getClassId()
+                    )
+                    .assignedDate(
+                        classPlan.getAssignedDate() == null
+                            ? null
+                            : classPlan.getAssignedDate().toLocalDate()
+                    )
+                    .status("ACTIVE")
+                    .createdAt(plan.getCreatedAt())
+                    .build()
+            );
+        }
+
         return result;
     }
 

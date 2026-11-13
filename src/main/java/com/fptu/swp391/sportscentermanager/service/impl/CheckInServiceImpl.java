@@ -20,7 +20,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-
+import com.fptu.swp391.sportscentermanager.service.NotificationService;
+import java.time.format.DateTimeFormatter;
 @Service
 @RequiredArgsConstructor
 public class CheckInServiceImpl implements CheckInService {
@@ -31,7 +32,7 @@ public class CheckInServiceImpl implements CheckInService {
     private final ReceptionistRepository receptionistRepository;
     private final SubscriptionService subscriptionService;
     private final ClassSessionRepository classSessionRepository;
-
+    private final NotificationService notificationService;
     @Value("${app.checkin.class-open-minutes-before:30}")
     private long classOpenMinutesBefore;
 
@@ -80,9 +81,24 @@ public class CheckInServiceImpl implements CheckInService {
         }
 
         // getCurrentSubscriptions trả kèm gói chờ kích hoạt; lễ tân chỉ cần gói đang dùng được
-        dto.setActiveSubscriptions(subscriptionService.getCurrentSubscriptions(memberId).stream()
-            .filter(s -> SubscriptionStatus.ACTIVE.name().equals(s.getStatus()))
-            .toList());
+        dto.setActiveSubscriptions(
+            subscriptionService.getCurrentSubscriptions(memberId).stream()
+                .filter(s ->
+                    SubscriptionStatus.ACTIVE.name().equals(s.getStatus())
+                )
+                .toList()
+        );
+
+        notificationService.notifyUsers(
+            List.of(member),
+            "Check-in thành công",
+            "Bạn đã check-in tại trung tâm lúc "
+                + now.format(
+                DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy")
+            ),
+            "INDIVIDUAL"
+        );
+
         return dto;
     }
 
