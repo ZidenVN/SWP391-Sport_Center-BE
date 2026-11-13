@@ -3,6 +3,10 @@ package com.fptu.swp391.sportscentermanager.service.impl;
 import com.fptu.swp391.sportscentermanager.dto.AiChatResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.AiConversationResponseDTO;
 import com.fptu.swp391.sportscentermanager.dto.AiMessageResponseDTO;
+import com.fptu.swp391.sportscentermanager.dto.MemberProfileResponseDTO;
+import com.fptu.swp391.sportscentermanager.dto.WorkoutResultResponseDTO;
+import com.fptu.swp391.sportscentermanager.service.MemberService;
+import com.fptu.swp391.sportscentermanager.service.WorkoutResultService;
 import com.fptu.swp391.sportscentermanager.entity.AiConversation;
 import com.fptu.swp391.sportscentermanager.entity.AiMessage;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
@@ -35,12 +39,15 @@ public class AiChatServiceImpl implements AiChatService {
     private final AiConversationRepository aiConversationRepository;
     private final AiMessageRepository aiMessageRepository;
     private final UserRepository userRepository;
+    private final MemberService memberService;
+    private final WorkoutResultService workoutResultService;
     private final int memberDailyLimit;
     private final int historySize;
 
     public AiChatServiceImpl(GeminiClient geminiClient, List<AiTool> allTools,
                              AiConversationRepository aiConversationRepository,
                              AiMessageRepository aiMessageRepository, UserRepository userRepository,
+                             MemberService memberService, WorkoutResultService workoutResultService,
                              @Value("${ai.daily-limit.member}") int memberDailyLimit,
                              @Value("${ai.history-size}") int historySize) {
         this.geminiClient = geminiClient;
@@ -48,8 +55,54 @@ public class AiChatServiceImpl implements AiChatService {
         this.aiConversationRepository = aiConversationRepository;
         this.aiMessageRepository = aiMessageRepository;
         this.userRepository = userRepository;
+        this.memberService = memberService;
+        this.workoutResultService = workoutResultService;
         this.memberDailyLimit = memberDailyLimit;
         this.historySize = historySize;
+    }
+
+    private static final int SUGGEST_HISTORY = 5;
+    private static final String COACH_SYSTEM_PROMPT = """
+        Bạn là trợ lý cho huấn luyện viên của trung tâm thể thao. Soạn NHÁP giáo án cho 1 học viên bằng tiếng Việt.
+        Chỉ viết chữ thường, KHÔNG dùng markdown (không **, #, bảng). Tối đa 15 dòng, mỗi dòng 1 bài:
+        tên bài - số hiệp x số lần hoặc thời gian - ghi chú ngắn. Dòng cuối: 1 câu lưu ý an toàn.
+        Chọn bài theo mục tiêu, BMI và trình độ (tự suy ra từ số buổi đã tập và nội dung các buổi gần nhất).
+        Chưa có buổi tập nào thì coi là người mới bắt đầu. Không chẩn đoán bệnh hay chấn thương.
+        """;
+
+    // shortcut: HLV không giới hạn lượt/ngày, thêm khi bị lạm dụng hoặc hết hạn mức Gemini
+    @Override
+    @SuppressWarnings("unchecked")
+    public String suggestWorkout(Long memberId) {
+        MemberProfileResponseDTO m = memberService.getProfile(memberId);
+        List<WorkoutResultResponseDTO> results = workoutResultService.getResultsByMember(memberId);
+        Map<String, Object> content = firstCandidateContent(geminiClient.generate(
+            COACH_SYSTEM_PROMPT, List.of(textContent("user", coachPrompt(m, results))), List.of()));
+        String text = ((List<Map<String, Object>>) content.getOrDefault("parts", List.of())).stream()
+            .map(p -> (String) p.get("text")).filter(Objects::nonNull).collect(Collectors.joining()).trim();
+        // rỗng = Gemini chặn vì an toàn hoặc không trả lời
+        if (text.isEmpty()) throw new AppException(ErrorCode.AI_UNAVAILABLE);
+        return text;
+    }
+
+    // Chỉ gửi số liệu tập luyện, KHÔNG gửi tên/email/SĐT (gói Gemini miễn phí có thể dùng dữ liệu để huấn luyện)
+    static String coachPrompt(MemberProfileResponseDTO m, List<WorkoutResultResponseDTO> results) {
+        StringBuilder sb = new StringBuilder("Học viên:\n");
+        sb.append("- Giới tính: ").append(m.getGender() == null ? "không rõ" : m.getGender()).append('\n');
+        sb.append("- Mục tiêu: ").append(m.getTrainingGoal() == null ? "chưa cập nhật" : m.getTrainingGoal()).append('\n');
+        if (m.getHeightCm() != null && m.getWeightKg() != null && m.getHeightCm() > 0) {
+            double h = m.getHeightCm() / 100;
+            sb.append(String.format(Locale.ROOT, "- Chiều cao %.0f cm, cân nặng %.1f kg, BMI %.1f%n", m.getHeightCm(), m.getWeightKg(), m.getWeightKg() / (h * h)));
+        } else {
+            sb.append("- Chưa có chiều cao/cân nặng\n");
+        }
+        sb.append("- Số buổi đã ghi kết quả: ").append(results.size()).append('\n');
+        results.stream().limit(SUGGEST_HISTORY).forEach(r -> sb.append("  + ")
+            .append(r.getLoggedDate() == null ? "" : r.getLoggedDate().toLocalDate() + ": ")
+            .append(r.getActivityDetails())
+            .append(r.getCoachFeedback() == null || r.getCoachFeedback().isBlank() ? "" : " (HLV nhận xét: " + r.getCoachFeedback() + ")")
+            .append('\n'));
+        return sb.append("Hãy soạn nháp giáo án cho buổi/tuần tới.").toString();
     }
 
     @Override

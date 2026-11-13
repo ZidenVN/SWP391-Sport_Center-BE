@@ -26,6 +26,7 @@ public class CoachController {
     private final WorkoutResultService workoutResultService;
     private final NotificationService notificationService;
     private final CoachAccessGuard coachAccessGuard;
+    private final AiChatService aiChatService;
 
     // API cho MANAGE CENTER
 
@@ -127,6 +128,14 @@ public class CoachController {
             coachAccessGuard.requireTeachesMember(coachId, requestDTO.getTargetId());
         }
         return ResponseEntity.ok(workoutPlanService.createAndAssignWorkoutPlan(coachId, requestDTO));
+    }
+
+    // AI gợi ý nháp giáo án cho học viên của mình; POST vì mỗi lần gọi tốn hạn mức và ra kết quả khác nhau
+    @PreAuthorize("hasRole('COACH')")
+    @PostMapping("/me/members/{memberId}/ai-suggestion")
+    public ResponseEntity<AiSuggestionResponseDTO> suggestWorkout(@PathVariable Long memberId, @AuthenticationPrincipal CustomUserDetails principal) {
+        coachAccessGuard.requireTeachesMember(principal.getUser().getUserId(), memberId);
+        return ResponseEntity.ok(new AiSuggestionResponseDTO(aiChatService.suggestWorkout(memberId)));
     }
 
     // Xem tat ca giao an ma Coach tao ra

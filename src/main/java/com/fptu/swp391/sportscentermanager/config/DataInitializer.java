@@ -138,6 +138,8 @@ public class DataInitializer implements CommandLineRunner {
             Role role = roles.get(roleName);
             // Lấy danh sách các quyền hiện tại của Role đó ra trước
             List<RolePermission> existingRPs = rolePermissionRepository.findAllByRole_RoleId(role.getRoleId());
+            // Role đã có quyền = Manager đã phân quyền, không thêm lại quyền họ đã gỡ (CENTER_MANAGER luôn đủ quyền)
+            if (!existingRPs.isEmpty() && !"CENTER_MANAGER".equals(roleName)) return;
 
             for (PermissionCode code : codes) {
                 Permission permission = permissions.get(code.name());

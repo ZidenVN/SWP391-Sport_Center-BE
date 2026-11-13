@@ -13,4 +13,7 @@ public interface AiChatService {
     List<AiConversationResponseDTO> getMyConversations(Long userId);
 
     List<AiMessageResponseDTO> getMessages(Long userId, Long conversationId);
+
+    // Nháp giáo án cho 1 học viên (HLV sửa rồi giao bằng API giáo án); caller phải kiểm tra HLV dạy học viên này
+    String suggestWorkout(Long memberId);
 }
