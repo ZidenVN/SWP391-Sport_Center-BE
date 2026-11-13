@@ -110,8 +110,9 @@ public class MemberQuizServiceImpl implements MemberQuizService {
                 for (Long id : ids) {
                     QuizOption option = activeOptions.get(id);
                     if (option == null) throw new AppException(ErrorCode.QUIZ_INVALID_ANSWER);
-                    result.add(newAnswer(member, question, now).option(option).build());
-                    applyToProfile(member, question.getCode(), null, option);
+                    String custom = QuizOption.OTHER_CODE.equals(option.getCode()) ? requireOtherText(item) : null;
+                    result.add(newAnswer(member, question, now).option(option).textValue(custom).build());
+                    applyToProfile(member, question.getCode(), null, custom != null ? custom : option.getContent());
                 }
             }
         }
@@ -122,11 +123,19 @@ public class MemberQuizServiceImpl implements MemberQuizService {
         return MemberQuizAnswer.builder().member(member).question(question).answeredAt(now);
     }
 
+    // Chọn "Khác" thì bắt buộc tự nhập, tối đa 100 ký tự
+    private String requireOtherText(QuizAnswerItemDTO item) {
+        String text = item.getTextValue() == null ? "" : item.getTextValue().trim();
+        if (text.isEmpty()) throw new AppException(ErrorCode.QUIZ_MISSING_ANSWER);
+        if (text.length() > QuizOption.OTHER_TEXT_MAX) throw new AppException(ErrorCode.QUIZ_TEXT_TOO_LONG);
+        return text;
+    }
+
     // 3 câu hệ thống ghi thẳng vào hồ sơ member
-    private void applyToProfile(Member member, String code, Double number, QuizOption option) {
+    private void applyToProfile(Member member, String code, Double number, String goal) {
         if ("HEIGHT".equals(code)) member.setHeightCm(number);
         else if ("WEIGHT".equals(code)) member.setWeightKg(number);
-        else if ("TRAINING_GOAL".equals(code)) member.setTrainingGoal(option.getContent());
+        else if ("TRAINING_GOAL".equals(code)) member.setTrainingGoal(goal);
     }
 
     private QuizStatusResponseDTO toStatus(Member member) {

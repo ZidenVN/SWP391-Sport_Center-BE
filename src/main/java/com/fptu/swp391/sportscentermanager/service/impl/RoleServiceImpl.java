@@ -38,6 +38,10 @@ public class RoleServiceImpl implements RoleService {
     public RoleResponseDTO updateRolePermissions(Long roleId, List<Long> permissionIds) {
         Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+        // Quản lý luôn có toàn quyền: gỡ MANAGE_ROLE sẽ tự khoá mình khỏi trang phân quyền
+        if ("CENTER_MANAGER".equals(role.getRoleName())) {
+            throw new AppException(ErrorCode.ROLE_LOCKED);
+        }
 
         // 1. Xóa toàn bộ quyền cũ của Role này
         rolePermissionRepository.deleteByRole(role);

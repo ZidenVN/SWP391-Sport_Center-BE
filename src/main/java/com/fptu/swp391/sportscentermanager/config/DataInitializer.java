@@ -138,6 +138,8 @@ public class DataInitializer implements CommandLineRunner {
             Role role = roles.get(roleName);
             // Lấy danh sách các quyền hiện tại của Role đó ra trước
             List<RolePermission> existingRPs = rolePermissionRepository.findAllByRole_RoleId(role.getRoleId());
+            // Role đã có quyền = Manager đã phân quyền, không thêm lại quyền họ đã gỡ (CENTER_MANAGER luôn đủ quyền)
+            if (!existingRPs.isEmpty() && !"CENTER_MANAGER".equals(roleName)) return;
 
             for (PermissionCode code : codes) {
                 Permission permission = permissions.get(code.name());
@@ -188,8 +190,8 @@ public class DataInitializer implements CommandLineRunner {
 
         List<Subject> activeSubjects = subjectRepository.findByStatus("ACTIVE");
         userRepository.save(Coach.builder()
-            .firstName("Default")
-            .lastName("Coach")
+            .firstName("Michael")
+            .lastName("Carrick")
             .gender("MALE")
             .email(email)
             .phone("098789654")
@@ -226,8 +228,8 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         userRepository.save(Receptionist.builder()
-            .firstName("Default")
-            .lastName("Receptionist")
+            .firstName("Hoàng")
+            .lastName("Thị Thuý")
             .gender("FEMALE")
             .email(email)
             .phone("0341234567")
@@ -242,22 +244,28 @@ public class DataInitializer implements CommandLineRunner {
         seedNumberQuestion("HEIGHT", "Chiều cao của bạn?", 120.0, 230.0, "cm", 1);
         seedNumberQuestion("WEIGHT", "Cân nặng của bạn?", 30.0, 250.0, "kg", 2);
 
-        if (quizQuestionRepository.findByCode("TRAINING_GOAL").isPresent()) return;
-        QuizQuestion goal = QuizQuestion.builder()
+        QuizQuestion goal = quizQuestionRepository.findByCode("TRAINING_GOAL").orElseGet(() -> QuizQuestion.builder()
             .content("Mục tiêu tập luyện chính của bạn?")
             .type(QuestionType.SINGLE)
             .code("TRAINING_GOAL")
             .displayOrder(3)
             .systemQuestion(true)
-            .build();
+            .build());
+        // Nhãn phải khớp GOALS ở FE (core/quiz.js); OTHER = "Khác", hội viên tự nhập mục tiêu
         String[][] options = {
             {"LOSE", "Giảm cân, giảm mỡ"},
             {"GAIN", "Tăng cơ, tăng sức mạnh"},
             {"FLEX", "Dẻo dai, cải thiện tư thế"},
             {"RELAX", "Giảm căng thẳng"},
-            {"HEALTH", "Duy trì sức khỏe"}
+            {"HEALTH", "Duy trì sức khỏe"},
+            {QuizOption.OTHER_CODE, "Khác"}
         };
+        // Câu hệ thống Manager không sửa được, nên thêm lựa chọn còn thiếu là an toàn (DB cũ chưa có "Khác")
+        boolean changed = goal.getQuestionId() == null;
         for (int i = 0; i < options.length; i++) {
+            String code = options[i][0];
+            if (goal.getOptions().stream().anyMatch(o -> code.equals(o.getCode()))) continue;
+            changed = true;
             goal.getOptions().add(QuizOption.builder()
                 .question(goal)
                 .code(options[i][0])
@@ -265,7 +273,7 @@ public class DataInitializer implements CommandLineRunner {
                 .displayOrder(i + 1)
                 .build());
         }
-        quizQuestionRepository.save(goal);
+        if (changed) quizQuestionRepository.save(goal);
     }
 
     private void seedNumberQuestion(String code, String content, Double min, Double max, String unit, int order) {

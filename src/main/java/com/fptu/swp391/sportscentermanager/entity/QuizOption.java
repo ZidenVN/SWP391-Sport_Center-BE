@@ -11,6 +11,10 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class QuizOption {
+    // Lựa chọn "Khác" của câu TRAINING_GOAL: chọn thì hội viên tự nhập mục tiêu
+    public static final String OTHER_CODE = "OTHER";
+    public static final int OTHER_TEXT_MAX = 100;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "option_id")
