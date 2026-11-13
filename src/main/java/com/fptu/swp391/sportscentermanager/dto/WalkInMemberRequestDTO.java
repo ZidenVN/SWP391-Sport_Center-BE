@@ -3,6 +3,7 @@ package com.fptu.swp391.sportscentermanager.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 @Getter
@@ -24,5 +25,6 @@ public class WalkInMemberRequestDTO {
     private String phone;
 
     // Không bắt buộc: nếu để trống sẽ dùng "Chưa cập nhật"
+    @Size(max = 100, message = "Mục tiêu tập luyện tối đa 100 ký tự")
     private String trainingGoal;
 }
