@@ -6,6 +6,7 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 @AllArgsConstructor @NoArgsConstructor
 @Getter @Setter @Builder
@@ -17,7 +18,9 @@ public class MemberProfileUpdateDTO {
     @Pattern(regexp = "^(MALE|FEMALE|OTHER)$", message = "Giới tính không hợp lệ")
     private String gender;
     @NotBlank private String phone;
-    @NotBlank private String trainingGoal;
+    @NotBlank
+    @Size(max = 100, message = "Mục tiêu tập luyện tối đa 100 ký tự")
+    private String trainingGoal;
 
     // Không gửi (null) = giữ nguyên giá trị đang có
     @DecimalMin(value = "50", message = "Chiều cao từ 50 đến 250 cm")
