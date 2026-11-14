@@ -72,7 +72,7 @@ public class SportClassServiceImpl implements SportClassService {
 
         // Lớp là 1 khoá học có lịch cố định; thiếu lịch lặp thì không tạo (chế độ lớp đơn lẻ cũ không khớp gói lớp nào)
         if (requestDTO.getStartDate() != null && requestDTO.getDurationDays() != null && requestDTO.getDurationDays() > 0) {
-            if (!requestDTO.getStartDate().isAfter(LocalDate.now())) {
+            if (requestDTO.getStartDate().isBefore(LocalDate.now())) {
                 throw new AppException(ErrorCode.CLASS_START_DATE_INVALID);
             }
             if (!membershipPackageService.getClassDurations(subject.getSubjectId()).contains(requestDTO.getDurationDays())) {
@@ -361,7 +361,7 @@ public class SportClassServiceImpl implements SportClassService {
             classSessionRepository.deleteBySportClass_ClassId(id);
 
             if (requestDTO.getStartDate() != null && requestDTO.getDurationDays() != null && requestDTO.getDurationDays() > 0) {
-                if (!requestDTO.getStartDate().isAfter(LocalDate.now())) {
+                if (requestDTO.getStartDate().isBefore(LocalDate.now())) {
                     throw new AppException(ErrorCode.CLASS_START_DATE_INVALID);
                 }
                 if (!membershipPackageService.getClassDurations(subject.getSubjectId()).contains(requestDTO.getDurationDays())) {

@@ -113,7 +113,7 @@ class SportClassServiceImplTest {
     @Test
     @DisplayName("Tạo lớp học theo lịch lặp cố định thành công và sinh danh sách buổi học")
     void testCreateClass_Recurring_Success() {
-        LocalDate startDate = LocalDate.now().plusDays(1);
+        LocalDate startDate = LocalDate.now(); // mở lớp ngay hôm nay được phép
         SportClassRequestDTO req = SportClassRequestDTO.builder()
                 .roomId(10L)
                 .subjectId(1L)
@@ -292,15 +292,15 @@ class SportClassServiceImplTest {
     }
 
     @Test
-    @DisplayName("Tạo lớp thất bại khi ngày bắt đầu là hôm nay hoặc trong quá khứ")
-    void testCreateClass_StartDateNotFuture() {
-        LocalDate today = LocalDate.now();
+    @DisplayName("Tạo lớp thất bại khi ngày bắt đầu trong quá khứ")
+    void testCreateClass_StartDateInPast() {
+        LocalDate yesterday = LocalDate.now().minusDays(1);
         SportClassRequestDTO req = SportClassRequestDTO.builder()
                 .roomId(10L)
                 .subjectId(1L)
                 .coachId(5L)
                 .maxCapacity(25)
-                .startDate(today) // Hôm nay -> Không hợp lệ
+                .startDate(yesterday) // Hôm qua -> Không hợp lệ (hôm nay vẫn được)
                 .durationDays(30)
                 .daysOfWeek("MON,WED,FRI")
                 .startClock(LocalTime.of(8, 0))

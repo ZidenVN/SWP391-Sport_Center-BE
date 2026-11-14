@@ -134,7 +134,7 @@ public enum ErrorCode {
     SESSION_CANNOT_POSTPONE(HttpStatus.BAD_REQUEST, "ERR_SESSION_400_POSTPONE", "Chỉ được hoãn buổi học chưa diễn ra và đang được lên lịch!"),
     SESSION_CANNOT_SUBSTITUTE(HttpStatus.BAD_REQUEST, "ERR_SESSION_400_SUBSTITUTE", "Chỉ được gán dạy thay cho buổi học chưa diễn ra!"),
     MAKEUP_SESSION_INVALID(HttpStatus.BAD_REQUEST, "ERR_SESSION_400_MAKEUP", "Buổi học cần bù không hợp lệ hoặc chưa bị hoãn!"),
-    CLASS_START_DATE_INVALID(HttpStatus.BAD_REQUEST, "ERR_CLASS_400_START_DATE", "Ngày bắt đầu khoá học phải ở tương lai!"),
+    CLASS_START_DATE_INVALID(HttpStatus.BAD_REQUEST, "ERR_CLASS_400_START_DATE", "Ngày bắt đầu khoá học không được ở quá khứ!"),
     CLASS_DAYS_OF_WEEK_INVALID(HttpStatus.BAD_REQUEST, "ERR_CLASS_400_DAYS", "Thứ trong tuần không hợp lệ (ví dụ: MON,WED,FRI)!"),
     SESSION_SCHEDULE_CONFLICT(HttpStatus.CONFLICT, "ERR_SESSION_409_CONFLICT", "Buổi học bị trùng lịch phòng hoặc trùng lịch HLV!"),
     MEMBERSHIP_PACKAGE_HAS_SUBJECT(HttpStatus.BAD_REQUEST, "ERR_PACKAGE_004", "Gói membership dùng toàn bộ cơ sở vật chất, không gắn môn học!"),
