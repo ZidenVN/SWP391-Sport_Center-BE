@@ -31,4 +31,6 @@ public class Notification {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_id")
     private User sender;
+
+    private String actionUrl;
 }

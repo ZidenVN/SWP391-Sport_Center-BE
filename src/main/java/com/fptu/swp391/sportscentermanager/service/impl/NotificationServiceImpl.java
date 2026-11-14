@@ -96,18 +96,41 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional
-    public void notifyUsers(List<? extends User> users, String title, String content, String targetType, User sender) {
+    public void notifyUsers(
+        List<? extends User> users,
+        String title,
+        String content,
+        String targetType,
+        User sender) {
+
+        notifyUsers(users, title, content, targetType, sender, null);
+    }
+
+    @Override
+    @Transactional
+    public void notifyUsers(
+        List<? extends User> users,
+        String title,
+        String content,
+        String targetType,
+        User sender,
+        String actionUrl) {
+
         if (users == null || users.isEmpty()) {
             return;
         }
 
-        Notification notification = notificationRepository.save(Notification.builder()
-            .title(title)
-            .content(content)
-            .targetType(targetType)
-            .sentDate(LocalDateTime.now())
-            .sender(sender)
-            .build());
+        Notification notification = notificationRepository.save(
+            Notification.builder()
+                .title(title)
+                .content(content)
+                .targetType(targetType)
+                .sentDate(LocalDateTime.now())
+                .sender(sender)
+                .actionUrl(actionUrl)
+                .build()
+        );
+
         saveRecipients(notification, users, "Cá nhân");
     }
 
@@ -171,11 +194,40 @@ public class NotificationServiceImpl implements NotificationService {
             .title(n.getTitle())
             .content(n.getContent())
             .targetType(n.getTargetType())
+            .actionUrl(n.getActionUrl())
             .sendDate(n.getSentDate())
             .targetName(targetName)
             .read(read)
             .senderName(sender != null ? sender.getFirstName() + " " + sender.getLastName() : null)
             .category(sender != null ? "STAFF" : "SYSTEM")
             .build();
+    }
+
+    @Override
+    @Transactional
+    public void notifyClassRecipients(
+        Long coachId,
+        SportClass sc,
+        List<Member> recipients,
+        NotificationRequestDTO notice) {
+
+        Notification saved = notificationRepository.save(
+            Notification.builder()
+                .title(notice.getTitle())
+                .content(notice.getContent())
+                .targetType("CLASS")
+                .sentDate(LocalDateTime.now())
+                .sender(userRepository.getReferenceById(coachId))
+                .build()
+        );
+
+        notificationClassRepository.save(
+            NotificationClass.builder()
+                .notification(saved)
+                .sportClass(sc)
+                .build()
+        );
+
+        saveRecipients(saved, recipients, "Lớp #" + sc.getClassId());
     }
 }

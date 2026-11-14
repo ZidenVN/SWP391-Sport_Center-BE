@@ -22,4 +22,19 @@ public interface NotificationService {
     long cntUnread(Long memberId);
     void markAsRead(Long memberId, Long notificationId);
     int markAllAsRead(Long memberId);
+    void notifyUsers(
+        List<? extends User> users,
+        String title,
+        String content,
+        String targetType,
+        User sender,
+        String actionUrl
+    );
+
+    void notifyClassRecipients(
+        Long coachId,
+        com.fptu.swp391.sportscentermanager.entity.SportClass sportClass,
+        List<com.fptu.swp391.sportscentermanager.entity.Member> recipients,
+        NotificationRequestDTO notice
+    );
 }

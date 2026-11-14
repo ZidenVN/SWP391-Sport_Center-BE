@@ -74,7 +74,9 @@ public class WorkoutResultServiceImpl implements WorkoutResultService {
 
         List<MemberPlan> plans = memberPlanRepository.findByMember_UserId(memberId);
         int completed = (int) plans.stream().filter(p -> "COMPLETED".equalsIgnoreCase(p.getStatus())).count();
-        int inProgress = (int) plans.stream().filter(p -> "IN_PROGRESS".equalsIgnoreCase(p.getStatus())).count();
+        int inProgress = (int) plans.stream()
+            .filter(p -> !"COMPLETED".equalsIgnoreCase(p.getStatus()))
+            .count();
 
         List<WorkoutResult> results =workoutResultRepository.findByMember_UserIdOrderByLoggedDateDesc(memberId);
         String latestFeedback = results.isEmpty() ? "Chưa có nhận xét nào" : results.get(0).getCoachFeedback();

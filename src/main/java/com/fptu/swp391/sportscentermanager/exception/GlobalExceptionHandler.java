@@ -59,4 +59,21 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> hanleMaxUploadSize(MaxUploadSizeExceededException ex){
         return handleAppException(new AppException(ErrorCode.IMAGE_TOO_LARGE));
     }
+
+    @ExceptionHandler(
+        org.springframework.web.server.ResponseStatusException.class
+    )
+    public ResponseEntity<ErrorResponseDTO> handleWorkflowError(
+        org.springframework.web.server.ResponseStatusException ex) {
+
+        return ResponseEntity.status(ex.getStatusCode())
+            .body(
+                ErrorResponseDTO.builder()
+                    .timestamp(LocalDateTime.now())
+                    .status(ex.getStatusCode().value())
+                    .error("ERR_PLAN_WORKFLOW")
+                    .message(ex.getReason())
+                    .build()
+            );
+    }
 }
