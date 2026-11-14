@@ -26,5 +26,5 @@ public class ClassPlan {
     @JoinColumn(name = "class_id", nullable = false)
     private SportClass sportClass;
     private LocalDateTime assignedDate;
-
+    private java.time.LocalDate dueDate;
 }

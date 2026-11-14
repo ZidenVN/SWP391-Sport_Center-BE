@@ -1,24 +1,24 @@
 package com.fptu.swp391.sportscentermanager.service.impl;
 
-import com.fptu.swp391.sportscentermanager.dto.NotificationRequestDTO;
-import com.fptu.swp391.sportscentermanager.dto.WorkoutPlanRequestDTO;
-import com.fptu.swp391.sportscentermanager.dto.WorkoutPlanResponseDTO;
+import com.fptu.swp391.sportscentermanager.dto.*;
 import com.fptu.swp391.sportscentermanager.entity.*;
 import com.fptu.swp391.sportscentermanager.enums.ErrorCode;
 import com.fptu.swp391.sportscentermanager.exception.AppException;
 import com.fptu.swp391.sportscentermanager.repository.*;
-import com.fptu.swp391.sportscentermanager.service.NotificationService;
-import com.fptu.swp391.sportscentermanager.service.WorkoutPlanService;
-import jakarta.transaction.Transactional;
+import com.fptu.swp391.sportscentermanager.service.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.*;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class WorkoutPlanServiceImpl implements WorkoutPlanService {
     private final CoachRepository coachRepository;
     private final WorkoutPlanRepository workoutPlanRepository;
@@ -26,305 +26,313 @@ public class WorkoutPlanServiceImpl implements WorkoutPlanService {
     private final MemberRepository memberRepository;
     private final SportClassRepository sportClassRepository;
     private final ClassPlanRepository classPlanRepository;
-    private final NotificationService notificationService;
-
-    public WorkoutPlanServiceImpl(CoachRepository coachRepository, WorkoutPlanRepository workoutPlanRepository, MemberPlanRepository memberPlanRepository, MemberRepository memberRepository, SportClassRepository sportClassRepository, ClassPlanRepository classPlanRepository, NotificationService notificationService) {
-        this.coachRepository = coachRepository;
-        this.workoutPlanRepository = workoutPlanRepository;
-        this.memberPlanRepository = memberPlanRepository;
-        this.memberRepository = memberRepository;
-        this.sportClassRepository = sportClassRepository;
-        this.classPlanRepository = classPlanRepository;
-        this.notificationService = notificationService;
-    }
+    private final ClassRegistrationRepository registrations;
+    private final NotificationService notifications;
 
     @Override
-    public WorkoutPlanResponseDTO createAndAssignWorkoutPlan(Long coachId, WorkoutPlanRequestDTO requestDTO) {
-        Coach coach = coachRepository.findById(coachId).orElseThrow(() -> new AppException(ErrorCode.COACH_NOT_FOUND));
-        // không cho giao giáo án có hạn trong quá khứ (chặn trước khi lưu gì)
-        if (requestDTO.getDueDate() != null && requestDTO.getDueDate().isBefore(LocalDate.now())) {
-            throw new AppException(ErrorCode.WORKOUT_PLAN_DUE_DATE_PAST);
-        }
+    public WorkoutPlanResponseDTO createAndAssignWorkoutPlan(
+        Long coachId, WorkoutPlanRequestDTO input) {
 
-        WorkoutPlan plan = WorkoutPlan.builder()
-            .planName(requestDTO.getPlanName())
-            .exerciseDetails(requestDTO.getExerciseDetails())
-            .duration(requestDTO.getDuration())
-            .coach(coach)
-            .createdAt(LocalDateTime.now())
-            .build();
-    WorkoutPlan savedPlan = workoutPlanRepository.save(plan);
+        LocalDate today = LocalDate.now(PlanWorkflowService.ZONE);
 
-    String targetName = "";
-    LocalDate now = LocalDate.now();
-
-    if ("INDIVIDUAL".equalsIgnoreCase(requestDTO.getTargetType())){
-        Member member =memberRepository.findById(requestDTO.getTargetId()).orElseThrow(() -> new AppException(ErrorCode.MEMBER_NOT_FOUND));
-
-        MemberPlan memberPlan = MemberPlan.builder().workoutPlan(savedPlan).member(member)
-            .assignedDate(now)
-            .dueDate((requestDTO.getDueDate() != null ? requestDTO.getDueDate() : now.plusWeeks(4)).atStartOfDay()).status("IN_PROGRESS")
-            .build();
-        memberPlanRepository.save(memberPlan);
-
-        targetName = member.getFirstName() + " " + member.getLastName();
-        notificationService.sendNotificationToMember(coachId, member.getUserId(), planNotice(savedPlan));
-    } else if("CLASS".equalsIgnoreCase(requestDTO.getTargetType())) {
-        SportClass sportClass = sportClassRepository.findById(requestDTO.getTargetId()).orElseThrow(() -> new AppException(ErrorCode.CLASS_NOT_FOUND));
-
-        if (sportClass.getCoach() == null || !sportClass.getCoach().getUserId().equals(coachId)) {
-            throw new AppException(ErrorCode.CLASS_NOT_FOUND);
-        }
-
-        ClassPlan classPlan = ClassPlan.builder()
-            .workoutPlan(savedPlan)
-            .sportClass(sportClass)
-            .assignedDate(now.atStartOfDay())
-            .build();
-        classPlanRepository.save(classPlan);
-        targetName = sportClass.displayName();
-        // báo cho học viên đang học lớp; đẩy realtime sau khi commit
-        notificationService.sendNotificationToClass(coachId, sportClass.getClassId(), planNotice(savedPlan));
-
-    } else {
-        throw new AppException(ErrorCode.WORKOUT_PLAN_INVALID_TARGET);
-    }
-    return WorkoutPlanResponseDTO.builder()
-        .planId(savedPlan.getPlanId())
-        .planName(savedPlan.getPlanName())
-        .exerciseDetails(savedPlan.getExerciseDetails())
-        .duration(savedPlan.getDuration())
-        .coachId(coach.getUserId())
-        .coachName(coach.getFirstName() + " " + coach.getLastName())
-        .targetId(requestDTO.getTargetId())
-        .targetType(requestDTO.getTargetType())
-        .targetName(targetName)
-        .assignedDate(now)
-        .dueDate(requestDTO.getDueDate())
-        .status("IN_PROGRESS")
-        .createdAt(savedPlan.getCreatedAt())
-        .build();
-    }
-
-    @Override
-    public List<WorkoutPlanResponseDTO> getPlansByCoach(Long coachId) {
-        List<WorkoutPlan> plans =
-            workoutPlanRepository
-                .findByCoach_UserIdOrderByCreatedAtDesc(coachId);
-
-        List<MemberPlan> personalAssignments =
-            memberPlanRepository
-                .findByWorkoutPlan_Coach_UserId(coachId);
-
-        List<ClassPlan> classAssignments =
-            classPlanRepository
-                .findByWorkoutPlan_Coach_UserId(coachId);
-
-        List<WorkoutPlanResponseDTO> result = new ArrayList<>();
-
-        for (WorkoutPlan plan : plans) {
-            Coach coach = plan.getCoach();
-
-            WorkoutPlanResponseDTO dto =
-                WorkoutPlanResponseDTO.builder()
-                    .planId(plan.getPlanId())
-                    .planName(plan.getPlanName())
-                    .exerciseDetails(plan.getExerciseDetails())
-                    .duration(plan.getDuration())
-                    .coachId(coachId)
-                    .coachName(
-                        coach == null
-                            ? ""
-                            : coach.getFirstName() + " " + coach.getLastName()
-                    )
-                    .createdAt(plan.getCreatedAt())
-                    .build();
-
-            MemberPlan personalAssignment =
-                personalAssignments.stream()
-                    .filter(assignment ->
-                        assignment.getWorkoutPlan().getPlanId()
-                            .equals(plan.getPlanId())
-                    )
-                    .findFirst()
-                    .orElse(null);
-
-            ClassPlan classAssignment =
-                classAssignments.stream()
-                    .filter(assignment ->
-                        assignment.getWorkoutPlan().getPlanId()
-                            .equals(plan.getPlanId())
-                    )
-                    .findFirst()
-                    .orElse(null);
-
-            if (personalAssignment != null) {
-                Member member = personalAssignment.getMember();
-
-                dto.setTargetType("INDIVIDUAL");
-                dto.setTargetId(member.getUserId());
-                dto.setTargetName(
-                    member.getFirstName() + " " + member.getLastName()
-                );
-                dto.setMemberPlanId(
-                    personalAssignment.getMemberPlanId()
-                );
-                dto.setAssignedDate(
-                    personalAssignment.getAssignedDate()
-                );
-                dto.setDueDate(
-                    personalAssignment.getDueDate() == null
-                        ? null
-                        : personalAssignment.getDueDate().toLocalDate()
-                );
-                dto.setStatus(personalAssignment.getStatus());
-
-            } else if (classAssignment != null) {
-                SportClass sportClass =
-                    classAssignment.getSportClass();
-
-
-                dto.setTargetType("CLASS");
-                dto.setTargetId(sportClass.getClassId());
-                dto.setTargetName(sportClass.displayName());
-                dto.setAssignedDate(
-                    classAssignment.getAssignedDate() == null
-                        ? null
-                        : classAssignment.getAssignedDate().toLocalDate()
-                );
-                dto.setStatus(classPlanStatus(sportClass));
-                dto.setDueDate(sportClass.getEndDate());
-            }
-
-            result.add(dto);
-        }
-
-        return result;
-    }
-
-    @Override
-    public List<WorkoutPlanResponseDTO> getPlansByMember(Long memberId) {
-        List<MemberPlan> memberPlans = memberPlanRepository.findByMember_UserId(memberId);
-        List<WorkoutPlanResponseDTO> result = new ArrayList<>();
-        for (MemberPlan mp : memberPlans) {
-            WorkoutPlan wp = mp.getWorkoutPlan();
-            Member m = mp.getMember();
-            Coach c = wp.getCoach();
-            result.add(WorkoutPlanResponseDTO.builder()
-                    .planId(wp.getPlanId())
-                    .planName(wp.getPlanName())
-                    .exerciseDetails(wp.getExerciseDetails())
-                    .duration(wp.getDuration())
-                    .coachId(c != null ? c.getUserId() : null)
-                    .coachName(c != null ? c.getFirstName() + " " + c.getLastName() : "")
-                    .memberPlanId(mp.getMemberPlanId())
-                    .targetType("INDIVIDUAL")
-                    .targetId(memberId)
-                    .targetName(m != null ? m.getFirstName() + " " + m.getLastName() : "")
-                    .assignedDate(mp.getAssignedDate())
-                    .dueDate(mp.getDueDate() != null ? mp.getDueDate().toLocalDate() : null)
-                    .status(mp.getStatus())
-                    .createdAt(wp.getCreatedAt())
-                    .build());
-        }
-
-        for (ClassPlan classPlan :
-            classPlanRepository.findVisibleToMember(memberId)) {
-
-            WorkoutPlan plan = classPlan.getWorkoutPlan();
-            Coach coach = plan.getCoach();
-            SportClass sportClass = classPlan.getSportClass();
-
-
-            result.add(
-                WorkoutPlanResponseDTO.builder()
-                    .planId(plan.getPlanId())
-                    .planName(plan.getPlanName())
-                    .exerciseDetails(plan.getExerciseDetails())
-                    .duration(plan.getDuration())
-                    .coachId(
-                        coach == null ? null : coach.getUserId()
-                    )
-                    .coachName(
-                        coach == null
-                            ? ""
-                            : coach.getFirstName() + " " + coach.getLastName()
-                    )
-                    .targetType("CLASS")
-                    .targetId(sportClass.getClassId())
-                    .targetName(sportClass.displayName())
-                    .dueDate(sportClass.getEndDate())
-                    .assignedDate(
-                        classPlan.getAssignedDate() == null
-                            ? null
-                            : classPlan.getAssignedDate().toLocalDate()
-                    )
-                    .status(classPlanStatus(sportClass))
-                    .createdAt(plan.getCreatedAt())
-                    .build()
+        if (input.getDueDate() == null) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Hạn hoàn thành là bắt buộc"
             );
         }
 
+        if (input.getDueDate().isBefore(today)) {
+            throw new AppException(
+                ErrorCode.WORKOUT_PLAN_DUE_DATE_PAST
+            );
+        }
+
+        Coach coach = coachRepository.findById(coachId)
+            .orElseThrow(() ->
+                new AppException(ErrorCode.COACH_NOT_FOUND)
+            );
+
+        WorkoutPlan plan = workoutPlanRepository.save(
+            WorkoutPlan.builder()
+                .planName(input.getPlanName())
+                .exerciseDetails(input.getExerciseDetails())
+                .duration(null)
+                .coach(coach)
+                .createdAt(
+                    LocalDateTime.now(PlanWorkflowService.ZONE)
+                )
+                .build()
+        );
+
+        if ("INDIVIDUAL".equalsIgnoreCase(input.getTargetType())) {
+            Member member = memberRepository
+                .findById(input.getTargetId())
+                .orElseThrow(() ->
+                    new AppException(ErrorCode.MEMBER_NOT_FOUND)
+                );
+
+            MemberPlan row = memberPlanRepository.save(
+                MemberPlan.builder()
+                    .workoutPlan(plan)
+                    .member(member)
+                    .assignedDate(today)
+                    .dueDate(input.getDueDate().atTime(23, 59, 59))
+                    .status("IN_PROGRESS")
+                    .build()
+            );
+
+            notifications.sendNotificationToMember(
+                coachId,
+                member.getUserId(),
+                NotificationRequestDTO.builder()
+                    .title("Giáo án mới: " + plan.getPlanName())
+                    .content(
+                        "Hạn hết ngày " + input.getDueDate()
+                            + " (giờ Việt Nam). Xem mục Tập luyện."
+                    )
+                    .build()
+            );
+
+            return memberDTO(row);
+        }
+
+        if (!"CLASS".equalsIgnoreCase(input.getTargetType())) {
+            throw new AppException(
+                ErrorCode.WORKOUT_PLAN_INVALID_TARGET
+            );
+        }
+
+        SportClass sc = sportClassRepository
+            .findById(input.getTargetId())
+            .orElseThrow(() ->
+                new AppException(ErrorCode.CLASS_NOT_FOUND)
+            );
+
+        if (sc.getCoach() == null
+            || !coachId.equals(sc.getCoach().getUserId())) {
+            throw new AppException(ErrorCode.CLASS_NOT_FOUND);
+        }
+
+        var recipients = registrations
+            .findActiveByClassId(sc.getClassId())
+            .stream()
+            .map(ClassRegistration::getMember)
+            .collect(Collectors.toMap(
+                Member::getUserId,
+                m -> m,
+                (a, b) -> a
+            ))
+            .values();
+
+        if (recipients.isEmpty()) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Lớp chưa có học viên để giao giáo án"
+            );
+        }
+
+        ClassPlan cp = classPlanRepository.save(
+            ClassPlan.builder()
+                .workoutPlan(plan)
+                .sportClass(sc)
+                .assignedDate(
+                    LocalDateTime.now(PlanWorkflowService.ZONE)
+                )
+                .dueDate(input.getDueDate())
+                .build()
+        );
+
+        memberPlanRepository.saveAll(
+            recipients.stream()
+                .map(m -> MemberPlan.builder()
+                    .workoutPlan(plan)
+                    .member(m)
+                    .sourceClassId(sc.getClassId())
+                    .sourceClassName(subject(sc))
+                    .assignedDate(today)
+                    .dueDate(input.getDueDate().atTime(23, 59, 59))
+                    .status("IN_PROGRESS")
+                    .build()
+                )
+                .toList()
+        );
+
+        notifications.notifyClassRecipients(
+            coachId,
+            sc,
+            new ArrayList<>(recipients),
+            NotificationRequestDTO.builder()
+                .title("Giáo án lớp mới: " + plan.getPlanName())
+                .content(
+                    "Lớp #" + sc.getClassId()
+                        + " · Hạn hết ngày " + input.getDueDate()
+                        + " (giờ Việt Nam). Xem mục Tập luyện."
+                )
+                .build()
+        );
+
+        return classDTO(cp);
+    }
+
+    @Override
+    public List<WorkoutPlanResponseDTO> getPlansByCoach(
+        Long coachId) {
+
+        var personal = memberPlanRepository
+            .findByWorkoutPlan_Coach_UserId(coachId)
+            .stream()
+            .filter(p -> p.getSourceClassId() == null)
+            .collect(Collectors.toMap(
+                p -> p.getWorkoutPlan().getPlanId(),
+                p -> p,
+                (a, b) -> a
+            ));
+
+        var classes = classPlanRepository
+            .findByWorkoutPlan_Coach_UserId(coachId)
+            .stream()
+            .collect(Collectors.toMap(
+                p -> p.getWorkoutPlan().getPlanId(),
+                p -> p,
+                (a, b) -> a
+            ));
+
+        return workoutPlanRepository
+            .findByCoach_UserIdOrderByCreatedAtDesc(coachId)
+            .stream()
+            .map(p -> {
+                if (classes.containsKey(p.getPlanId())) {
+                    return classDTO(classes.get(p.getPlanId()));
+                }
+
+                if (personal.containsKey(p.getPlanId())) {
+                    return memberDTO(personal.get(p.getPlanId()));
+                }
+
+                return base(p);
+            })
+            .toList();
+    }
+
+    @Override
+    public List<WorkoutPlanResponseDTO> getPlansByMember(
+        Long memberId) {
+
+        List<WorkoutPlanResponseDTO> result = new ArrayList<>(
+            memberPlanRepository.findByMember_UserId(memberId)
+                .stream()
+                .map(this::memberDTO)
+                .toList()
+        );
+
+        // Giáo án lớp cũ: giữ để đọc.
+        // Giáo án mới đã có bản giao riêng cho từng học viên.
+        classPlanRepository.findVisibleToMember(memberId)
+            .stream()
+            .filter(cp -> cp.getDueDate() == null)
+            .map(this::classDTO)
+            .forEach(result::add);
+
         return result;
     }
 
     @Override
-    public List<WorkoutPlanResponseDTO> getPlansByClass(Long classId) {
-        List<ClassPlan> classPlans = classPlanRepository.findBySportClass_ClassId(classId);
-        List<WorkoutPlanResponseDTO> result = new ArrayList<>();
-        for (ClassPlan cp : classPlans) {
-            WorkoutPlan wp = cp.getWorkoutPlan();
-            SportClass sc = cp.getSportClass();
-            Coach c = wp.getCoach();
-            String className = sc != null ? sc.displayName() : "";
-            result.add(WorkoutPlanResponseDTO.builder()
-                    .planId(wp.getPlanId())
-                    .planName(wp.getPlanName())
-                    .exerciseDetails(wp.getExerciseDetails())
-                    .duration(wp.getDuration())
-                    .coachId(c != null ? c.getUserId() : null)
-                    .coachName(c != null ? c.getFirstName() + " " + c.getLastName() : "")
-                    .targetType("CLASS")
-                    .targetId(classId)
-                    .targetName(className)
-                    .assignedDate(cp.getAssignedDate() != null ? cp.getAssignedDate().toLocalDate() : null)
-                    .dueDate(sc != null ? sc.getEndDate() : null)
-                    .status(classPlanStatus(sc))
-                    .createdAt(wp.getCreatedAt())
-                    .build());
-        }
-        return result;
-    }
-
-    // Giáo án lớp không có nút hoàn thành: lớp đã kết thúc (qua ngày kết thúc) thì coi như hoàn thành
-    private static String classPlanStatus(SportClass c) {
-        return c != null && c.getEndDate() != null && c.getEndDate().isBefore(LocalDate.now()) ? "COMPLETED" : "ACTIVE";
+    public List<WorkoutPlanResponseDTO> getPlansByClass(
+        Long classId) {
+        return classPlanRepository
+            .findBySportClass_ClassId(classId)
+            .stream()
+            .map(this::classDTO)
+            .toList();
     }
 
     @Override
-    @Transactional
-    public void updateMemberPlanStatus(Long coachId, Long memberPlanId, String status) {
-        MemberPlan memberPlan = memberPlanRepository.findById(memberPlanId).orElseThrow(() -> new AppException(ErrorCode.RESOUCE_NOT_FOUND));
-        // kiem tra giao an nay co dung do HLV nay giao khong
-        if (!memberPlan.getWorkoutPlan().getCoach().getUserId().equals(coachId)) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
-        }
+    public void updateMemberPlanStatus(
+        Long coachId, Long memberPlanId, String status) {
 
-        // chỉ nhận 2 trạng thái là IN_PROGRESS hoặc COMPLETED
-        String newStatus = status == null ? "" : status.trim().toUpperCase();
-        if (!newStatus.equals("IN_PROGRESS") && !newStatus.equals("COMPLETED")) {
-            throw new AppException(ErrorCode.WORKOUT_PLAN_INVALID_STATUS);
-        }
-        memberPlan.setStatus(newStatus);
-        memberPlanRepository.save(memberPlan);
+        throw new ResponseStatusException(
+            HttpStatus.GONE,
+            "Dùng luồng Member báo hoàn thành và Coach duyệt; "
+                + "không đổi trạng thái trực tiếp."
+        );
     }
 
-    private NotificationRequestDTO planNotice(WorkoutPlan plan) {
-        return NotificationRequestDTO.builder()
-            .title("Giáo án mới: " + plan.getPlanName())
-            .content("Huấn luyện viên vừa giao giáo án \"" + plan.getPlanName() + "\""
-                + (plan.getDuration() != null && !plan.getDuration().isBlank() ? " (" + plan.getDuration() + ")" : "")
-                + ". Xem chi tiết trong mục Tập luyện.")
+    private WorkoutPlanResponseDTO base(WorkoutPlan plan) {
+        Coach coach = plan.getCoach();
+
+        return WorkoutPlanResponseDTO.builder()
+            .planId(plan.getPlanId())
+            .planName(plan.getPlanName())
+            .exerciseDetails(plan.getExerciseDetails())
+            .duration(plan.getDuration())
+            .coachId(coach.getUserId())
+            .coachName(name(coach))
+            .createdAt(plan.getCreatedAt())
             .build();
+    }
+
+    private WorkoutPlanResponseDTO memberDTO(MemberPlan row) {
+        var dto = base(row.getWorkoutPlan());
+        boolean personal = row.getSourceClassId() == null;
+
+        dto.setMemberPlanId(row.getMemberPlanId());
+        dto.setTargetType(personal ? "INDIVIDUAL" : "CLASS");
+
+        dto.setTargetId(
+            personal
+                ? row.getMember().getUserId()
+                : row.getSourceClassId()
+        );
+
+        dto.setTargetName(
+            personal
+                ? name(row.getMember())
+                : "Lớp #" + row.getSourceClassId()
+                + " · " + row.getSourceClassName()
+        );
+
+        dto.setAssignedDate(row.getAssignedDate());
+        dto.setDueDate(
+            row.getDueDate() == null
+                ? null
+                : row.getDueDate().toLocalDate()
+        );
+        dto.setStatus(row.getStatus());
+
+        return dto;
+    }
+
+    private WorkoutPlanResponseDTO classDTO(ClassPlan row) {
+        var dto = base(row.getWorkoutPlan());
+
+        dto.setTargetType("CLASS");
+        dto.setTargetId(row.getSportClass().getClassId());
+        dto.setTargetName(
+            subject(row.getSportClass())
+                + " #" + row.getSportClass().getClassId()
+        );
+        dto.setAssignedDate(
+            row.getAssignedDate() == null
+                ? null
+                : row.getAssignedDate().toLocalDate()
+        );
+        dto.setDueDate(row.getDueDate());
+
+        // Trạng thái bản giao chung.
+        // Trạng thái từng học viên nằm trong MemberPlan.
+        dto.setStatus("ACTIVE");
+
+        return dto;
+    }
+
+    private String subject(SportClass sc) {
+        return sc.getSubject() == null
+            ? "Lớp"
+            : sc.getSubject().getSubjectName();
+    }
+
+    private String name(User user) {
+        return user.getFirstName() + " " + user.getLastName();
     }
 }

@@ -19,4 +19,5 @@ public class NotificationResponseDTO {
     private boolean read;
     private String senderName; // null == system
     private String category;   // SYSTEM / STAFF
+    private String actionUrl;
 }

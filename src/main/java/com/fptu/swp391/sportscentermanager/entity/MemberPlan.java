@@ -33,6 +33,12 @@ public class MemberPlan {
     @Column(name = "due_date")
     private LocalDateTime dueDate;
 
+    @Column(name = "source_class_id")
+    private Long sourceClassId;
+
+    @Column(name = "source_class_name")
+    private String sourceClassName;
+
     @Column(name = "status")
     private String status;
 }

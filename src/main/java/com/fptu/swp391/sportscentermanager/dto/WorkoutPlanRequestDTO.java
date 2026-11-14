@@ -20,6 +20,7 @@ public class WorkoutPlanRequestDTO {
 
     private String duration;
 
+    @NotNull(message = "Hạn hoàn thành là bắt buộc")
     private LocalDate dueDate;
 
     @NotNull(message = "Loại đối tượng áp dụng bắt buộc (INDIVIDUAL hoặc CLASS)")
